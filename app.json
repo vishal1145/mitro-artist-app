@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Mitro Artist",
+    "slug": "mitro-artist",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "scheme": "mitroartist",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "backgroundColor": "#141122",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#141122"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mitro.artist",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.mitro.artist",
+      "backgroundColor": "#141122"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#141122",
+          "resizeMode": "contain"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "https://api.mitro.app",
+      "apiTimeoutMs": 20000,
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}
