@@ -4,13 +4,12 @@ import {
   AuthBackground,
   Divider,
   FormInput,
-  GlassCard,
   Screen,
   SocialButton,
 } from '@components/shared';
 import { GradientButton, LogoBadge, Text } from '@components/ui';
 import { useLogin } from '@screens/auth/login/useLogin';
-import { radius, spacing } from '@theme';
+import { spacing } from '@theme';
 import { wp } from '@utils/responsive';
 
 /** Login screen — UI only. All behavior lives in useLogin(). */
@@ -30,7 +29,7 @@ const LoginScreen = () => {
   return (
     <Screen scrollable padded={false} background={<AuthBackground />}>
       <View style={styles.screenPadding}>
-        <GlassCard style={styles.card}>
+        <View style={styles.card}>
           <View style={styles.header}>
             <LogoBadge variant="wave" />
             <Text variant="display" align="center">
@@ -139,7 +138,7 @@ const LoginScreen = () => {
               </Text>
             </Pressable>
           </View>
-        </GlassCard>
+        </View>
       </View>
     </Screen>
   );
@@ -151,10 +150,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: wp(12),
   },
+  // No panel — content sits straight on the ambient background.
   card: {
     paddingVertical: wp(7),
-    paddingHorizontal: wp(7),
-    borderRadius: radius.xxl,
   },
   header: {
     alignItems: 'center',

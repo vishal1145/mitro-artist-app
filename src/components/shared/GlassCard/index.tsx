@@ -40,9 +40,8 @@ export const GlassCard = memo(GlassCardComponent);
 
 const styles = StyleSheet.create({
   wrapper: {
+    // Borderless — the blur + tint alone separate the card from the backdrop.
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     overflow: 'hidden',
   },
   tintOverlay: {
