@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   View,
   type GestureResponderEvent,
+  type ViewStyle,
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, gradients, radius, spacing, HIT_TARGET } from '@theme';
+import { colors, gradientGlow, gradients, radius, spacing, HIT_TARGET } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
 import type { GradientButtonProps } from './types';
@@ -40,6 +41,11 @@ const GradientButtonComponent = ({
   const [gradientStart, gradientEnd] = gradients[gradient];
   const tint = colors[textColor];
 
+  const glowStyle = useMemo<ViewStyle>(
+    () => ({ shadowColor: gradientGlow[gradient] }),
+    [gradient],
+  );
+
   const handlePress = useCallback(
     (event: GestureResponderEvent) => {
       if (isInactive) {
@@ -60,6 +66,7 @@ const GradientButtonComponent = ({
       accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         styles.wrapper,
+        glowStyle,
         pressed && !isInactive ? styles.pressed : null,
         isInactive ? styles.inactive : null,
         style,
@@ -107,15 +114,14 @@ export const GradientButton = memo(GradientButtonComponent);
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: radius.md,
-    // Soft glow
-    shadowColor: colors.glow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
-    shadowRadius: wp(4),
+    // Soft glow — color comes from the dynamic `glowStyle` above.
+    shadowOffset: { width: 0, height: wp(2) }, // ~8
+    shadowOpacity: 1, // alpha is already baked into the rgba glow color
+    shadowRadius: wp(6), // ~24
     elevation: 12,
   },
   fill: {
-    minHeight: 56,
+    minHeight: HIT_TARGET + wp(5), // ~64
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

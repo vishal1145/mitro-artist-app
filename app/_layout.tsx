@@ -5,12 +5,16 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
-import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono';
+import {
+  JetBrainsMono_500Medium,
+  JetBrainsMono_600SemiBold,
+} from '@expo-google-fonts/jetbrains-mono';
 import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -31,6 +35,23 @@ import { colors } from '@theme';
 import { logger } from '@utils/logger';
 
 void SplashScreen.preventAutoHideAsync();
+
+/**
+ * Navigation theme. Without this React Navigation falls back to its light
+ * default, which flashes white behind every push/pop transition.
+ */
+const navigationTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: colors.background,
+    card: colors.surface,
+    text: colors.textPrimary,
+    border: colors.border,
+    primary: colors.primary,
+    notification: colors.error,
+  },
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,6 +100,7 @@ const RootLayout = () => {
     Inter_500Medium,
     Inter_600SemiBold,
     JetBrainsMono_500Medium,
+    JetBrainsMono_600SemiBold,
   });
 
   // Fonts are best-effort: if they fail we still render with system fonts.
@@ -124,20 +146,22 @@ const RootLayout = () => {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" backgroundColor={colors.background} />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: styles.stackContent,
-              animation: 'slide_from_right',
-            }}
-          >
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(app)" />
-            <Stack.Screen name="+not-found" options={{ animation: 'fade' }} />
-          </Stack>
-        </QueryClientProvider>
+        <ThemeProvider value={navigationTheme}>
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="light" backgroundColor={colors.background} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: styles.stackContent,
+                animation: 'slide_from_right',
+              }}
+            >
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(app)" />
+              <Stack.Screen name="+not-found" options={{ animation: 'fade' }} />
+            </Stack>
+          </QueryClientProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

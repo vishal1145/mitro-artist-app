@@ -9,7 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "backgroundColor": "#141122",
+    "icon": "./src/static/images/mitro-logo.jpeg",
     "splash": {
+      "image": "./src/static/images/mitro-logo.jpeg",
       "resizeMode": "contain",
       "backgroundColor": "#141122"
     },
@@ -23,7 +25,11 @@
     },
     "android": {
       "package": "com.mitro.artist",
-      "backgroundColor": "#141122"
+      "backgroundColor": "#141122",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/static/images/mitro-logo.jpeg",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -36,8 +42,10 @@
       [
         "expo-splash-screen",
         {
+          "image": "./src/static/images/mitro-logo.jpeg",
           "backgroundColor": "#141122",
-          "resizeMode": "contain"
+          "resizeMode": "contain",
+          "imageWidth": 180
         }
       ]
     ],

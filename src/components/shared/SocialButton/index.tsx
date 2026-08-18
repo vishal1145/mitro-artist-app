@@ -1,15 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { memo } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
+import { GoogleGlyph } from '@components/ui/GoogleGlyph';
 import { Text } from '@components/ui/Text';
-import { colors, radius, spacing, HIT_TARGET } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { colors, spacing, HIT_TARGET } from '@theme';
+import { rf } from '@utils/responsive';
 
 export type SocialProvider = 'google' | 'apple';
 
@@ -20,29 +16,28 @@ export interface SocialButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const CONFIG: Record<
-  SocialProvider,
-  { label: string; icon: keyof typeof Ionicons.glyphMap }
-> = {
-  google: { label: 'Google', icon: 'logo-google' },
-  apple: { label: 'Apple', icon: 'logo-apple' },
+const LABEL: Record<SocialProvider, string> = {
+  google: 'Google',
+  apple: 'Apple',
 };
 
-/** Outlined third-party auth button ("OR CONNECT" row). */
+/**
+ * "OR CONNECT" provider button — bordered pill, icon + label horizontal,
+ * centered. Intended to be used with `style={{ flex: 1 }}` so two buttons
+ * split the row evenly.
+ */
 const SocialButtonComponent = ({
   provider,
   onPress,
   disabled = false,
   style,
 }: SocialButtonProps) => {
-  const { label, icon } = CONFIG[provider];
-
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={`Continue with ${label}`}
+      accessibilityLabel={`Continue with ${LABEL[provider]}`}
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
@@ -51,14 +46,13 @@ const SocialButtonComponent = ({
         style,
       ]}
     >
-      <Ionicons
-        name={icon}
-        size={rf(20)}
-        color={colors.textPrimary}
-        style={styles.icon}
-      />
+      {provider === 'google' ? (
+        <GoogleGlyph size={rf(20)} />
+      ) : (
+        <Ionicons name="logo-apple" size={rf(20)} color={colors.textPrimary} />
+      )}
       <Text variant="body" color="textPrimary">
-        {label}
+        {LABEL[provider]}
       </Text>
     </Pressable>
   );
@@ -68,24 +62,17 @@ export const SocialButton = memo(SocialButtonComponent);
 
 const styles = StyleSheet.create({
   button: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: HIT_TARGET + wp(2),
-    borderRadius: radius.md,
-    borderWidth: wp(0.3),
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-  },
-  icon: {
-    marginRight: spacing.sm,
+    minHeight: HIT_TARGET, // 44 — plain touch target, no box
+    paddingHorizontal: spacing.xs,
+    gap: spacing.xs,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.7,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 });

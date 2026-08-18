@@ -1,4 +1,4 @@
-import { colors, gradients, palette } from './colors';
+import { colors, gradientGlow, gradients, palette } from './colors';
 import { HIT_TARGET, radius, spacing } from './spacing';
 import {
   fontFamily,
@@ -7,13 +7,14 @@ import {
   typography,
 } from './typography';
 
-export type { ColorToken, GradientToken } from './colors';
+export type { ColorToken, GradientToken, CtaGradientToken } from './colors';
 export type { SpacingToken, RadiusToken } from './spacing';
 export type { TypographyVariant } from './typography';
 
 export {
   colors,
   gradients,
+  gradientGlow,
   palette,
   spacing,
   radius,

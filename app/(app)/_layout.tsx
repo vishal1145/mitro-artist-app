@@ -25,9 +25,11 @@ const AppLayout = () => {
       screenOptions={{
         headerShown: false,
         contentStyle: styles.content,
+        animation: 'slide_from_right',
       }}
     >
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(modals)" options={{ animation: 'slide_from_bottom' }} />
     </Stack>
   );
 };

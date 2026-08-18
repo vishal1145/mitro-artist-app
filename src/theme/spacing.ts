@@ -14,6 +14,8 @@ export const spacing = {
   xl: wp(8), // ~32
   xxl: wp(12), // ~48
   xxxl: wp(16), // ~64
+  /** Gap above/below a primary CTA button (~40 on a 375-400pt screen). */
+  sectionGap: wp(10),
 } as const;
 
 /** Border radius scale (responsive). */
@@ -23,6 +25,8 @@ export const radius = {
   md: wp(3), // ~12
   lg: wp(4), // ~16
   xl: wp(6), // ~24
+  /** Large hero-card corner radius (~32 on a 375-400pt screen). */
+  xxl: wp(8),
   pill: wp(100),
   full: 9999,
 } as const;

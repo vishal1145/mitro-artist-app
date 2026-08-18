@@ -6,7 +6,7 @@ import {
 
 import { API_CONFIG, REGEX, SECURE_KEYS, TIMING } from '@constants';
 import { secureStorage } from '@services/storage';
-import type { ApiResponse, AuthTokens, RefreshTokenPayload } from '@types/api';
+import type { ApiResponse, AuthTokens, RefreshTokenPayload } from '@app-types/api';
 import { logger } from '@utils/logger';
 
 import { api, refreshClient } from './client';

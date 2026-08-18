@@ -5,15 +5,22 @@ import {
   StyleSheet,
   TextInput,
   View,
-  type NativeSyntheticEvent,
-  type TextInputFocusEventData,
+  type TextInputProps,
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, radius, spacing, HIT_TARGET } from '@theme';
+import { colors, fontFamily, radius, spacing, HIT_TARGET } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
 import type { InputProps } from './types';
+
+/**
+ * Event argument types are derived from TextInputProps rather than written out,
+ * so they track React Native's own signatures across versions (RN 0.81 swapped
+ * NativeSyntheticEvent<TextInputFocusEventData> for FocusEvent / BlurEvent).
+ */
+type FocusEventArg = Parameters<NonNullable<TextInputProps['onFocus']>>[0];
+type BlurEventArg = Parameters<NonNullable<TextInputProps['onBlur']>>[0];
 
 /**
  * Standardized, accessible text field. Meets the project Input contract:
@@ -44,7 +51,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   const [hidden, setHidden] = useState(isPassword);
 
   const handleFocus = useCallback(
-    (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    (event: FocusEventArg) => {
       setFocused(true);
       onFocus?.(event);
     },
@@ -52,7 +59,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   );
 
   const handleBlur = useCallback(
-    (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    (event: BlurEventArg) => {
       setFocused(false);
       onBlur?.(event);
     },
@@ -66,7 +73,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     <View style={[styles.container, containerStyle]}>
       {label ? (
         <View style={styles.labelRow}>
-          <Text variant="label" color="textSecondary" style={styles.label}>
+          <Text variant="label" color="fieldLabel">
             {label}
           </Text>
           {labelRight}
@@ -153,16 +160,13 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
-  },
-  label: {
-    letterSpacing: 1.2,
   },
   field: {
     flexDirection: 'row',
@@ -189,7 +193,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: colors.textPrimary,
-    fontSize: rf(15),
+    fontFamily: fontFamily.body,
+    fontSize: rf(14),
     paddingVertical: spacing.sm,
   },
   toggle: {

@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { SECURE_KEYS } from '@constants';
 import { authApi, registerAuthHandlers } from '@services/api';
 import { secureStorage } from '@services/storage';
-import type { AuthSession, AuthTokens, User } from '@types/api';
+import type { AuthSession, AuthTokens, User } from '@app-types/api';
 import { logger } from '@utils/logger';
 
 /**

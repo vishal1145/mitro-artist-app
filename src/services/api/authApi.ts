@@ -6,7 +6,7 @@ import type {
   RegisterPayload,
   Result,
   VerifyOtpPayload,
-} from '@types/api';
+} from '@app-types/api';
 import { getErrorMessage } from '@utils/errorHandler';
 
 import { api } from './client';

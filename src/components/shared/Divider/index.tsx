@@ -34,13 +34,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   line: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    height: 1,
+    backgroundColor: colors.divider,
   },
   flexLine: {
     flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    height: 1,
+    backgroundColor: colors.divider,
   },
   label: {
     marginHorizontal: spacing.md,

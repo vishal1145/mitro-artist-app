@@ -37,6 +37,16 @@ export const STORAGE_KEYS = {
   lastEmail: 'mitro.app.lastEmail',
 } as const;
 
+/**
+ * Hardcoded demo login. Temporary bypass until the real auth API is wired:
+ * entering these exact credentials on the login screen jumps straight to the
+ * dashboard. Remove this (and the bypass in useLogin) once the API is live.
+ */
+export const DEMO_AUTH = {
+  identifier: 'artist123',
+  password: 'golive123',
+} as const;
+
 /** Timing / behavior constants. */
 export const TIMING = {
   searchDebounceMs: 400,

@@ -1,6 +1,7 @@
 export {
   APP,
   API_CONFIG,
+  DEMO_AUTH,
   SECURE_KEYS,
   STORAGE_KEYS,
   TIMING,

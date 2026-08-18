@@ -21,6 +21,7 @@ export const fontFamily = {
   bodyMedium: 'Inter_500Medium',
   bodySemibold: 'Inter_600SemiBold',
   mono: 'JetBrainsMono_500Medium',
+  monoSemibold: 'JetBrainsMono_600SemiBold',
 } as const;
 
 export const fontWeight = {
@@ -31,14 +32,15 @@ export const fontWeight = {
 } as const satisfies Record<string, TextStyle['fontWeight']>;
 
 export const fontSize = {
-  xs: rf(12),
-  sm: rf(14),
-  md: rf(15),
-  lg: rf(16),
-  xl: rf(19),
-  xxl: rf(23),
-  xxxl: rf(30),
-  display: rf(38),
+  xs: rf(10),
+  sm: rf(12),
+  md: rf(13),
+  lg: rf(14),
+  xl: rf(16),
+  xxl: rf(19),
+  xxxl: rf(24),
+  display: rf(32),
+  subtitle: rf(14),
 } as const;
 
 export type TypographyVariant =
@@ -48,8 +50,10 @@ export type TypographyVariant =
   | 'h3'
   | 'body'
   | 'bodyLarge'
+  | 'subtitle'
   | 'caption'
   | 'label'
+  | 'legal'
   | 'link'
   | 'button';
 
@@ -57,7 +61,7 @@ export const typography: Record<TypographyVariant, TextStyle> = {
   display: {
     fontFamily: fontFamily.display,
     fontSize: fontSize.display,
-    lineHeight: rf(42),
+    lineHeight: rf(36),
     letterSpacing: -0.5,
   },
   h1: {
@@ -80,6 +84,12 @@ export const typography: Record<TypographyVariant, TextStyle> = {
     fontSize: fontSize.lg,
     lineHeight: rf(24),
   },
+  // Auth-screen subhead under the title (e.g. "Welcome back, creator.").
+  subtitle: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.subtitle,
+    lineHeight: rf(24),
+  },
   body: {
     fontFamily: fontFamily.body,
     fontSize: fontSize.md,
@@ -91,10 +101,19 @@ export const typography: Record<TypographyVariant, TextStyle> = {
     lineHeight: rf(20),
   },
   label: {
+    fontFamily: fontFamily.monoSemibold,
+    fontSize: fontSize.xs,
+    lineHeight: rf(15),
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  // Multi-line mono paragraphs (e.g. legal copy) — looser tracking and more
+  // line-height than `label` so wrapped text doesn't look cramped.
+  legal: {
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
-    lineHeight: rf(16),
-    letterSpacing: 1,
+    lineHeight: rf(20),
+    letterSpacing: 0.3,
   },
   link: {
     fontFamily: fontFamily.bodySemibold,

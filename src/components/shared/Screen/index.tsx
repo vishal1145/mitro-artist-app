@@ -21,6 +21,8 @@ export interface ScreenProps {
   edges?: readonly Edge[];
   contentContainerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
+  /** Decorative element rendered absolutely behind all content (e.g. a grid/glow backdrop). */
+  background?: ReactNode;
 }
 
 /**
@@ -34,11 +36,17 @@ const ScreenComponent = ({
   edges = ['top', 'bottom'],
   contentContainerStyle,
   style,
+  background,
 }: ScreenProps) => {
   const body = padded ? styles.padded : undefined;
 
   return (
     <SafeAreaView style={[styles.safe, style]} edges={edges}>
+      {background ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {background}
+        </View>
+      ) : null}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

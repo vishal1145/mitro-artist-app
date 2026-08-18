@@ -1,44 +1,38 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { memo, useMemo } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { colors, gradients, radius } from '@theme';
+import logo from '@static/images/mitro-logo.jpeg';
+import { colors, radius } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
 export interface LogoBadgeProps {
-  /** 'wave' = gradient square with an audio waveform (brand mark). */
+  /** 'wave' = the Mitro brand mark on a light rounded tile. */
   /** 'icon' = muted circle containing an Ionicon. */
   variant?: 'wave' | 'icon';
   icon?: keyof typeof Ionicons.glyphMap;
   size?: number;
+  /** Drop the tile background — use on light surfaces or splash screens. */
+  bare?: boolean;
 }
 
-// Relative bar heights (0..1) for the waveform mark.
-const BARS = [0.42, 0.72, 1, 0.56, 0.86, 0.34] as const;
-
-/** Brand logo badge used at the top of the auth screens. */
+/**
+ * Brand logo badge.
+ *
+ * The source artwork is a JPEG with a white background (no transparency), so
+ * it sits on a light tile rather than directly on the dark app surface.
+ */
 const LogoBadgeComponent = ({
   variant = 'wave',
   icon = 'megaphone-outline',
-  size = wp(19),
+  size = wp(16.7),
+  bare = false,
 }: LogoBadgeProps) => {
   const sizeStyle = useMemo<ViewStyle>(
-    () => ({ width: size, height: size }),
+    () => ({ width: size, height: size, borderRadius: size * 0.25 }),
     [size],
   );
-
-  const barStyles = useMemo<ViewStyle[]>(() => {
-    const barWidth = size * 0.07;
-    const maxBarHeight = size * 0.5;
-    return BARS.map((ratio) => ({
-      width: barWidth,
-      height: maxBarHeight * ratio,
-      marginHorizontal: barWidth * 0.35,
-    }));
-  }, [size]);
-
-  const [brandStart, brandEnd] = gradients.brand;
 
   if (variant === 'icon') {
     return (
@@ -53,35 +47,35 @@ const LogoBadgeComponent = ({
   }
 
   return (
-    <LinearGradient
-      colors={[brandStart, brandEnd]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.square, sizeStyle]}
+    <View
+      style={[styles.tile, sizeStyle, bare ? styles.bare : null]}
       accessibilityRole="image"
       accessibilityLabel="Mitro"
     >
-      <View style={styles.bars}>
-        {barStyles.map((barStyle, index) => (
-          <View key={index} style={[styles.bar, barStyle]} />
-        ))}
-      </View>
-    </LinearGradient>
+      <Image source={logo} style={styles.image} contentFit="contain" transition={150} />
+    </View>
   );
 };
 
 export const LogoBadge = memo(LogoBadgeComponent);
 
 const styles = StyleSheet.create({
-  square: {
-    borderRadius: radius.lg,
+  tile: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    // The artwork's own white backdrop — keeps the mark legible on dark UI.
+    backgroundColor: colors.white,
     shadowColor: colors.glow,
-    shadowOffset: { width: 0, height: rf(6) },
+    shadowOffset: { width: 0, height: rf(4) },
     shadowOpacity: 0.5,
-    shadowRadius: wp(4),
+    shadowRadius: wp(7.5),
     elevation: 10,
+  },
+  bare: {
+    backgroundColor: colors.transparent,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   circle: {
     borderRadius: radius.full,
@@ -89,12 +83,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bar: {
-    borderRadius: radius.sm,
-    backgroundColor: colors.background,
+  image: {
+    width: '100%',
+    height: '100%',
   },
 });

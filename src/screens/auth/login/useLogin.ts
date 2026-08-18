@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 
+import { DEMO_AUTH } from '@constants';
 import { authApi } from '@services/api';
 import { useAuthStore } from '@store';
-import type { SocialProviderId } from '@types/api';
+import type { AuthSession, SocialProviderId } from '@app-types/api';
 import { logger } from '@utils/logger';
 
 import { loginSchema, type LoginFormValues } from './schema';
@@ -16,6 +17,7 @@ export const useLogin = (): UseLoginResult => {
   const router = useRouter();
   const authenticate = useAuthStore((s) => s.authenticate);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [socialNotice, setSocialNotice] = useState<string | null>(null);
 
   const {
     control,
@@ -30,6 +32,35 @@ export const useLogin = (): UseLoginResult => {
   const onSubmit = useCallback<SubmitHandler<LoginFormValues>>(
     async (values) => {
       setSubmitError(null);
+
+      // --- Temporary demo bypass ------------------------------------------
+      // Until the real auth API is live, the hardcoded DEMO_AUTH credentials
+      // authenticate locally and jump straight to the dashboard.
+      const identifier = values.identifier.trim().toLowerCase();
+      if (
+        identifier === DEMO_AUTH.identifier &&
+        values.password === DEMO_AUTH.password
+      ) {
+        const demoSession: AuthSession = {
+          user: {
+            id: 'demo-user',
+            name: 'Alex Rivera',
+            email: DEMO_AUTH.identifier,
+            username: 'creator',
+            createdAt: new Date().toISOString(),
+          },
+          tokens: {
+            accessToken: 'demo-access-token',
+            refreshToken: 'demo-refresh-token',
+          },
+        };
+        logger.info('Demo login success');
+        await authenticate(demoSession);
+        router.replace('/(app)/(tabs)/home');
+        return;
+      }
+      // --------------------------------------------------------------------
+
       const result = await authApi.login({
         identifier: values.identifier,
         password: values.password,
@@ -48,9 +79,10 @@ export const useLogin = (): UseLoginResult => {
   );
 
   const onSocialLogin = useCallback((provider: SocialProviderId) => {
-    // OAuth is not wired yet — surface a friendly message until it is.
+    // OAuth is not wired yet — surface a friendly, separate notice near the
+    // social buttons rather than the form's submit-error slot.
     logger.info('Social login requested', { provider });
-    setSubmitError(
+    setSocialNotice(
       `${provider === 'google' ? 'Google' : 'Apple'} sign-in isn’t available yet.`,
     );
   }, []);
@@ -60,6 +92,7 @@ export const useLogin = (): UseLoginResult => {
     isValid,
     isSubmitting,
     submitError,
+    socialNotice,
     handleSubmit: handleSubmit(onSubmit),
     onSocialLogin,
     goToRegister: () => router.push('/(auth)/register'),

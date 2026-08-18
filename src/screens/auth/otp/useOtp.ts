@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TIMING } from '@constants';
 import { authApi } from '@services/api';
 import { useAuthStore } from '@store';
-import type { OtpVerifyParams } from '@types/navigation';
+import type { OtpVerifyParams } from '@app-types/navigation';
 import { logger } from '@utils/logger';
 import { LIMITS } from '@utils/validators';
 
@@ -27,7 +27,11 @@ export const useOtp = (): UseOtpResult => {
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
-  const [cooldownSec, setCooldownSec] = useState(TIMING.otpResendCooldownSec);
+  // Explicitly `number` — TIMING is `as const`, so inference would narrow this
+  // to the literal 60 and reject the countdown decrement.
+  const [cooldownSec, setCooldownSec] = useState<number>(
+    TIMING.otpResendCooldownSec,
+  );
   const submittedFor = useRef<string | null>(null);
 
   const locked = attempts >= TIMING.otpMaxAttempts;

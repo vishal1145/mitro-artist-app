@@ -6,17 +6,25 @@ import { rf } from '@utils/responsive';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-const icon =
-  (focused: IoniconName, unfocused: IoniconName) =>
-  ({ color, focused: isFocused, size }: {
-    color: string;
-    focused: boolean;
-    size: number;
-  }) => (
+interface TabIconProps {
+  color: string;
+  focused: boolean;
+  size: number;
+}
+
+/** Builds a tab-bar icon renderer that swaps between filled and outline. */
+const icon = (focused: IoniconName, unfocused: IoniconName) => {
+  const TabBarIcon = ({ color, focused: isFocused, size }: TabIconProps) => (
     <Ionicons name={isFocused ? focused : unfocused} size={size} color={color} />
   );
+  TabBarIcon.displayName = `TabBarIcon(${focused})`;
+  return TabBarIcon;
+};
 
-/** Authenticated bottom-tab navigator. Screens lazy-load by default. */
+/**
+ * Authenticated bottom-tab navigator.
+ * Each tab owns a nested Stack so per-tab history is preserved.
+ */
 const TabsLayout = () => {
   return (
     <Tabs
@@ -39,21 +47,35 @@ const TabsLayout = () => {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: icon('home', 'home-outline'),
+          tabBarIcon: icon('grid', 'grid-outline'),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="calls"
         options={{
-          title: 'Explore',
-          tabBarIcon: icon('compass', 'compass-outline'),
+          title: 'Calls',
+          tabBarIcon: icon('call', 'call-outline'),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="live"
         options={{
-          title: 'Profile',
-          tabBarIcon: icon('person', 'person-outline'),
+          title: 'Live',
+          tabBarIcon: icon('videocam', 'videocam-outline'),
+        }}
+      />
+      <Tabs.Screen
+        name="business"
+        options={{
+          title: 'Business',
+          tabBarIcon: icon('wallet', 'wallet-outline'),
+        }}
+      />
+      <Tabs.Screen
+        name="me"
+        options={{
+          title: 'Me',
+          tabBarIcon: icon('person-circle', 'person-circle-outline'),
         }}
       />
     </Tabs>

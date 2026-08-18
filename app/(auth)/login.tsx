@@ -1,9 +1,17 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Divider, FormInput, Screen, SocialButton } from '@components/shared';
-import { Card, GradientButton, LogoBadge, Text } from '@components/ui';
+import {
+  AuthBackground,
+  Divider,
+  FormInput,
+  GlassCard,
+  Screen,
+  SocialButton,
+} from '@components/shared';
+import { GradientButton, LogoBadge, Text } from '@components/ui';
 import { useLogin } from '@screens/auth/login/useLogin';
 import { radius, spacing } from '@theme';
+import { wp } from '@utils/responsive';
 
 /** Login screen — UI only. All behavior lives in useLogin(). */
 const LoginScreen = () => {
@@ -12,6 +20,7 @@ const LoginScreen = () => {
     isValid,
     isSubmitting,
     submitError,
+    socialNotice,
     handleSubmit,
     onSocialLogin,
     goToRegister,
@@ -19,132 +28,163 @@ const LoginScreen = () => {
   } = useLogin();
 
   return (
-    <Screen scrollable padded>
-      <Card style={styles.card}>
-        <View style={styles.header}>
-          <LogoBadge variant="wave" />
-          <Text variant="display" align="center">
-            Mitro
-          </Text>
-          <Text variant="body" color="textMuted" align="center">
-            Welcome back, creator.
-          </Text>
-        </View>
+    <Screen scrollable padded={false} background={<AuthBackground />}>
+      <View style={styles.screenPadding}>
+        <GlassCard style={styles.card}>
+          <View style={styles.header}>
+            <LogoBadge variant="wave" />
+            <Text variant="display" align="center">
+              Mitro
+            </Text>
+            <Text variant="subtitle" color="subtitle" align="center">
+              Welcome back, creator.
+            </Text>
+          </View>
 
-        <FormInput
-          control={control}
-          name="identifier"
-          label="EMAIL OR USERNAME"
-          placeholder="streamer@mitro.tv"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="username"
-          autoCorrect={false}
-          returnKeyType="next"
-          maxLength={255}
-          leftIcon="person-outline"
-        />
+          <FormInput
+            control={control}
+            name="identifier"
+            label="EMAIL OR USERNAME"
+            placeholder="streamer@mitro.tv"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="username"
+            autoCorrect={false}
+            returnKeyType="next"
+            maxLength={255}
+            leftIcon="person-outline"
+          />
 
-        <FormInput
-          control={control}
-          name="password"
-          label="PASSWORD"
-          labelRight={
-            <Pressable
-              onPress={goToForgotPassword}
-              hitSlop={spacing.sm}
-              accessibilityRole="button"
-              accessibilityLabel="Forgot password"
+          <FormInput
+            control={control}
+            name="password"
+            label="PASSWORD"
+            labelRight={
+              <Pressable
+                onPress={goToForgotPassword}
+                hitSlop={spacing.sm}
+                accessibilityRole="button"
+                accessibilityLabel="Forgot password"
+              >
+                <Text variant="label" color="primary">
+                  Forgot?
+                </Text>
+              </Pressable>
+            }
+            placeholder="Enter your password"
+            isPassword
+            autoCapitalize="none"
+            autoComplete="password"
+            returnKeyType="done"
+            maxLength={64}
+            leftIcon="lock-closed-outline"
+            onSubmitEditing={handleSubmit}
+          />
+
+          {submitError ? (
+            <Text variant="caption" color="error" style={styles.submitError}>
+              {submitError}
+            </Text>
+          ) : null}
+
+          <GradientButton
+            label="Go Live"
+            gradient="live"
+            textColor="ctaDark"
+            rightIcon="arrow-forward"
+            onPress={handleSubmit}
+            loading={isSubmitting}
+            disabled={!isValid}
+            style={styles.cta}
+          />
+
+          <View style={styles.dividerWrap}>
+            <Divider label="OR CONNECT" />
+          </View>
+
+          <View style={styles.social}>
+            <SocialButton
+              provider="google"
+              onPress={() => onSocialLogin('google')}
+            />
+            <SocialButton
+              provider="apple"
+              onPress={() => onSocialLogin('apple')}
+            />
+          </View>
+
+          {socialNotice ? (
+            <Text
+              variant="caption"
+              color="textMuted"
+              align="center"
+              style={styles.socialNotice}
             >
-              <Text variant="label" color="primary">
-                Forgot?
+              {socialNotice}
+            </Text>
+          ) : null}
+
+          <View style={styles.footer}>
+            <Text variant="body" color="textMuted">
+              Don’t have an account?{' '}
+            </Text>
+            <Pressable
+              onPress={goToRegister}
+              hitSlop={spacing.xs}
+              accessibilityRole="button"
+              accessibilityLabel="Sign up"
+            >
+              <Text variant="link" color="primary">
+                Sign Up
               </Text>
             </Pressable>
-          }
-          placeholder="Enter your password"
-          isPassword
-          autoCapitalize="none"
-          autoComplete="password"
-          returnKeyType="done"
-          maxLength={64}
-          leftIcon="lock-closed-outline"
-          onSubmitEditing={handleSubmit}
-        />
-
-        {submitError ? (
-          <Text variant="caption" color="error" style={styles.submitError}>
-            {submitError}
-          </Text>
-        ) : null}
-
-        <GradientButton
-          label="Go Live"
-          gradient="live"
-          rightIcon="arrow-forward"
-          onPress={handleSubmit}
-          loading={isSubmitting}
-          disabled={!isValid}
-          style={styles.cta}
-        />
-
-        <Divider label="OR CONNECT" />
-
-        <View style={styles.social}>
-          <SocialButton provider="google" onPress={() => onSocialLogin('google')} />
-          <View style={styles.socialGap} />
-          <SocialButton provider="apple" onPress={() => onSocialLogin('apple')} />
-        </View>
-
-        <View style={styles.footer}>
-          <Text variant="body" color="textMuted">
-            Don’t have an account?{' '}
-          </Text>
-          <Pressable
-            onPress={goToRegister}
-            hitSlop={spacing.xs}
-            accessibilityRole="button"
-            accessibilityLabel="Sign up"
-          >
-            <Text variant="link" color="primary">
-              Sign Up
-            </Text>
-          </Pressable>
-        </View>
-      </Card>
+          </View>
+        </GlassCard>
+      </View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
+  screenPadding: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: wp(12),
+  },
   card: {
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.xl,
+    paddingVertical: wp(7),
+    paddingHorizontal: wp(7),
+    borderRadius: radius.xxl,
   },
   header: {
     alignItems: 'center',
     gap: spacing.xs,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   submitError: {
     marginBottom: spacing.sm,
   },
   cta: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
+    marginTop: spacing.md,
+  },
+  dividerWrap: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
   },
   social: {
     flexDirection: 'row',
-    marginTop: spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xxl,
   },
-  socialGap: {
-    width: spacing.md,
+  socialNotice: {
+    marginTop: spacing.sm,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
 });
 

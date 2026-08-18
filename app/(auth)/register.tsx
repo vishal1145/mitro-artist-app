@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { FormInput, Screen } from '@components/shared';
-import { Card, GradientButton, LogoBadge, Text } from '@components/ui';
+import { FormInput, GlassCard, Screen } from '@components/shared';
+import { GradientButton, LogoBadge, Text } from '@components/ui';
 import { useRegister } from '@screens/auth/register/useRegister';
-import { radius, spacing } from '@theme';
+import { spacing } from '@theme';
 
 /** Register screen — UI only. Logic in useRegister(). */
 const RegisterScreen = () => {
@@ -28,7 +28,7 @@ const RegisterScreen = () => {
         </Text>
       </View>
 
-      <Card style={styles.card}>
+      <GlassCard style={styles.card}>
         <FormInput
           control={control}
           name="name"
@@ -75,13 +75,13 @@ const RegisterScreen = () => {
           onSubmitEditing={handleSubmit}
         />
 
-        <Text variant="label" color="textSecondary" align="center" style={styles.terms}>
+        <Text variant="legal" color="textSecondary" align="center" style={styles.terms}>
           By signing up, you agree to Mitro’s{' '}
-          <Text variant="label" color="primary">
+          <Text variant="legal" color="primary">
             Terms of Service
           </Text>{' '}
           and{' '}
-          <Text variant="label" color="primary">
+          <Text variant="legal" color="primary">
             Privacy Policy
           </Text>
           .
@@ -101,7 +101,7 @@ const RegisterScreen = () => {
           loading={isSubmitting}
           disabled={!isValid}
         />
-      </Card>
+      </GlassCard>
 
       <View style={styles.footer}>
         <Text variant="body" color="textMuted">
@@ -134,12 +134,11 @@ const styles = StyleSheet.create({
   card: {
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.xl,
   },
   terms: {
     marginTop: spacing.xs,
     marginBottom: spacing.lg,
-    lineHeight: spacing.lg,
+    paddingHorizontal: spacing.xs,
   },
   submitError: {
     marginBottom: spacing.sm,
