@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
+import { useTabBarSpace } from '@navigation/useTabBarSpace';
 import { colors, spacing } from '@theme';
 
 export interface ScreenProps {
@@ -23,6 +24,11 @@ export interface ScreenProps {
   style?: StyleProp<ViewStyle>;
   /** Decorative element rendered absolutely behind all content (e.g. a grid/glow backdrop). */
   background?: ReactNode;
+  /**
+   * Reserve room for the floating tab bar. Required on any scrollable screen
+   * inside the tabs, otherwise the last row is clipped behind the nav pill.
+   */
+  tabBarSpacing?: boolean;
 }
 
 /**
@@ -37,8 +43,11 @@ const ScreenComponent = ({
   contentContainerStyle,
   style,
   background,
+  tabBarSpacing = false,
 }: ScreenProps) => {
   const body = padded ? styles.padded : undefined;
+  const tabSpace = useTabBarSpace();
+  const tabPad = tabBarSpacing ? { paddingBottom: tabSpace } : undefined;
 
   return (
     <SafeAreaView style={[styles.safe, style]} edges={edges}>
@@ -58,6 +67,7 @@ const ScreenComponent = ({
               styles.scrollContent,
               body,
               contentContainerStyle,
+              tabPad,
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -65,7 +75,7 @@ const ScreenComponent = ({
             {children}
           </ScrollView>
         ) : (
-          <View style={[styles.flex, body, contentContainerStyle]}>
+          <View style={[styles.flex, body, contentContainerStyle, tabPad]}>
             {children}
           </View>
         )}

@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, radius, spacing, HIT_TARGET } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { colors, fontFamily, layout, radius, size, spacing, HIT_TARGET } from '@theme';
+import { rf } from '@utils/responsive';
 
 import type { InputProps } from './types';
 
@@ -35,6 +35,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     hint,
     isPassword = false,
     leftIcon,
+    prefix,
     disabled = false,
     showCounter = false,
     maxLength,
@@ -88,7 +89,14 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           disabled ? styles.fieldDisabled : null,
         ]}
       >
-        {leftIcon ? (
+        {prefix ? (
+          <View style={styles.prefix}>
+            <Text variant="bodyLg" color="textSecondary">
+              {prefix}
+            </Text>
+            <View style={styles.prefixRule} />
+          </View>
+        ) : leftIcon ? (
           <Ionicons
             name={leftIcon}
             size={rf(18)}
@@ -131,19 +139,20 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         ) : null}
       </View>
 
-      <View style={styles.footer}>
+      {/* Message row only occupies space when there is something to say. */}
+      <View style={[styles.footer, hasError || hint || showCounter ? styles.footerSpaced : null]}>
         <View style={styles.footerMessage}>
           {hasError ? (
             <Text
-              variant="caption"
               color="error"
+              style={styles.message}
               accessibilityLiveRegion="polite"
               accessibilityRole="alert"
             >
               {error}
             </Text>
           ) : hint ? (
-            <Text variant="caption" color="textMuted">
+            <Text color="textMuted" style={styles.message}>
               {hint}
             </Text>
           ) : null}
@@ -159,8 +168,9 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
 });
 
 const styles = StyleSheet.create({
+  // No bottom margin — callers space fields with an explicit gap.
   container: {
-    marginBottom: spacing.sm,
+    marginBottom: 0,
   },
   labelRow: {
     flexDirection: 'row',
@@ -168,15 +178,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
+  // Spec: height 56, radius 18, input fill, 1.5px border, pink on focus.
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: HIT_TARGET + wp(3),
-    borderRadius: radius.md,
-    borderWidth: wp(0.3),
-    borderColor: colors.inputBorder,
-    backgroundColor: colors.inputBackground,
-    paddingHorizontal: spacing.md,
+    height: size.input,
+    borderRadius: radius.input,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.input,
+    paddingHorizontal: layout.inputPadding,
   },
   fieldFocused: {
     borderColor: colors.inputBorderFocused,
@@ -189,6 +200,17 @@ const styles = StyleSheet.create({
   },
   leftIcon: {
     marginRight: spacing.xs,
+  },
+  prefix: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginRight: spacing.sm,
+  },
+  prefixRule: {
+    width: 1,
+    height: rf(20),
+    backgroundColor: colors.border,
   },
   input: {
     flex: 1,
@@ -206,8 +228,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.xxs,
-    minHeight: rf(16),
+  },
+  // 6pt gap between the field and its message.
+  footerSpaced: {
+    marginTop: 6,
+  },
+  message: {
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    lineHeight: 16,
   },
   footerMessage: {
     flex: 1,

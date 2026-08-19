@@ -23,8 +23,8 @@ export const useForgotPassword = (): UseForgotPasswordResult => {
     formState: { isValid, isSubmitting },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
-    mode: 'onBlur',
-    defaultValues: { email: '' },
+    mode: 'onChange',
+    defaultValues: { mobile: '' },
   });
 
   const onSubmit = useCallback<SubmitHandler<ForgotPasswordFormValues>>(
@@ -40,7 +40,7 @@ export const useForgotPassword = (): UseForgotPasswordResult => {
       logger.info('Password reset code requested');
       router.push({
         pathname: '/(auth)/otp-verify',
-        params: { email: values.email, origin: 'forgot-password' },
+        params: { mobile: values.mobile, origin: 'forgot-password' },
       });
     },
     [router],

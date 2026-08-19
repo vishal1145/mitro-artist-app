@@ -52,7 +52,7 @@ const BroadcastDetailScreen = () => {
   const { broadcastId } = useLocalSearchParams<{ broadcastId?: string }>();
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       <Header
         title="Broadcast Analytics"
         onBack={() => router.back()}

@@ -10,6 +10,8 @@ import {
   JetBrainsMono_600SemiBold,
 } from '@expo-google-fonts/jetbrains-mono';
 import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
@@ -93,6 +95,9 @@ const RootLayout = () => {
   const initialized = useRef(false);
 
   const [fontsLoaded, fontError] = useFonts({
+    // Plus Jakarta Sans is the whole type system now.
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,

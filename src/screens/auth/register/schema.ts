@@ -1,18 +1,18 @@
 import { z } from 'zod';
 
 import {
-  emailSchema,
-  nameSchema,
-  passwordSchema,
-  usernameSchema,
+  authPasswordSchema,
+  displayNameSchema,
+  mobileSchema,
+  stageNameSchema,
 } from '@utils/validators';
 
-/** Register form schema (name, username, email, password). */
+/** Register form: display name, stage name, mobile number, password. */
 export const registerSchema = z.object({
-  name: nameSchema,
-  username: usernameSchema,
-  email: emailSchema,
-  password: passwordSchema,
+  name: displayNameSchema,
+  username: stageNameSchema,
+  mobile: mobileSchema,
+  password: authPasswordSchema,
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

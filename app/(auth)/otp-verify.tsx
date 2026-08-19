@@ -16,7 +16,7 @@ const OtpVerifyScreen = () => {
     attemptsLeft,
     cooldownSec,
     canResend,
-    email,
+    mobile,
     resend,
     goBack,
   } = useOtp();
@@ -30,7 +30,7 @@ const OtpVerifyScreen = () => {
           Enter the 6-digit code we sent to{' '}
         </Text>
         <Text variant="link" color="textPrimary">
-          {email || 'your email'}
+          {mobile ? `+91 ${mobile}` : 'your mobile'}
         </Text>
       </View>
 

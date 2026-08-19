@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { emailSchema } from '@utils/validators';
+import { mobileSchema } from '@utils/validators';
 
-/** Forgot-password form schema. */
+/** Forgot-password form — mobile number, matching the rest of auth. */
 export const forgotPasswordSchema = z.object({
-  email: emailSchema,
+  mobile: mobileSchema,
 });
 
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;

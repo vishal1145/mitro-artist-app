@@ -40,7 +40,7 @@ const WithdrawScreen = () => {
   };
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       <Header title="Withdraw" onBack={() => router.back()} />
 
       {/* Available balance hero */}

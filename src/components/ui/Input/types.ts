@@ -17,6 +17,8 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   /** Renders a show/hide toggle and secures entry. */
   isPassword?: boolean;
   leftIcon?: keyof typeof Ionicons.glyphMap;
+  /** Static text before the field, separated by a rule (e.g. a "+91" dial code). */
+  prefix?: string;
   disabled?: boolean;
   /** Shows a live character counter (requires maxLength). */
   showCounter?: boolean;

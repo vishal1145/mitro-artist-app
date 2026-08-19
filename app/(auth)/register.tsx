@@ -1,153 +1,182 @@
+import { useWatch } from 'react-hook-form';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { FormInput, GlassCard, Screen } from '@components/shared';
-import { GradientButton, LogoBadge, Text } from '@components/ui';
+import {
+  AuthBackground,
+  AuthLegal,
+  AuthLogo,
+  FormInput,
+  PasswordStrengthMeter,
+  Screen,
+} from '@components/shared';
+import { GradientButton, Text } from '@components/ui';
 import { useRegister } from '@screens/auth/register/useRegister';
-import { spacing } from '@theme';
+import { layout } from '@theme';
+import { authPasswordStrength } from '@utils/validators';
 
 /** Register screen — UI only. Logic in useRegister(). */
 const RegisterScreen = () => {
-  const {
-    control,
-    isValid,
-    isSubmitting,
-    submitError,
-    handleSubmit,
-    goToLogin,
-  } = useRegister();
+  const { control, isValid, isSubmitting, submitError, handleSubmit, goToLogin } =
+    useRegister();
+
+  const password = useWatch({ control, name: 'password' }) ?? '';
 
   return (
-    <Screen scrollable padded>
-      <View style={styles.header}>
-        <LogoBadge variant="icon" icon="megaphone-outline" />
-        <Text variant="h2" align="center" style={styles.title}>
-          Start your creator journey
-        </Text>
-        <Text variant="body" color="textMuted" align="center">
-          Join Mitro and connect with your audience in real-time.
-        </Text>
-      </View>
-
-      <GlassCard style={styles.card}>
-        <FormInput
-          control={control}
-          name="name"
-          placeholder="Full Name"
-          autoCapitalize="words"
-          autoComplete="name"
-          returnKeyType="next"
-          maxLength={50}
-          leftIcon="person-outline"
-        />
-        <FormInput
-          control={control}
-          name="username"
-          placeholder="creatorname"
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="username-new"
-          returnKeyType="next"
-          maxLength={30}
-          leftIcon="at-outline"
-        />
-        <FormInput
-          control={control}
-          name="email"
-          placeholder="Email Address"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          autoCorrect={false}
-          returnKeyType="next"
-          maxLength={255}
-          leftIcon="mail-outline"
-        />
-        <FormInput
-          control={control}
-          name="password"
-          placeholder="Password"
-          isPassword
-          autoCapitalize="none"
-          autoComplete="password-new"
-          returnKeyType="done"
-          maxLength={64}
-          leftIcon="lock-closed-outline"
-          onSubmitEditing={handleSubmit}
-        />
-
-        <Text variant="legal" color="textSecondary" align="center" style={styles.terms}>
-          By signing up, you agree to Mitro’s{' '}
-          <Text variant="legal" color="primary">
-            Terms of Service
-          </Text>{' '}
-          and{' '}
-          <Text variant="legal" color="primary">
-            Privacy Policy
+    <Screen scrollable padded={false} background={<AuthBackground />}>
+      <View style={styles.body}>
+        <View style={styles.header}>
+          <AuthLogo />
+          <Text variant="h1" align="center" style={styles.title}>
+            Create Account
           </Text>
-          .
-        </Text>
+          <Text variant="body" color="textSecondary" align="center" style={styles.subtitle}>
+            Join Mitro and start earning from your live shows.
+          </Text>
+        </View>
+
+        <View style={styles.fields}>
+          <FormInput
+            control={control}
+            name="name"
+            placeholder="Enter your display name"
+            autoCapitalize="words"
+            autoComplete="name"
+            returnKeyType="next"
+            maxLength={24}
+            leftIcon="person-outline"
+          />
+
+          <FormInput
+            control={control}
+            name="username"
+            placeholder="Choose your stage name"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="username-new"
+            returnKeyType="next"
+            maxLength={20}
+            leftIcon="at-outline"
+            // Strip spaces and force lowercase as the user types.
+            transform={(v) => v.replace(/\s+/g, '').toLowerCase()}
+          />
+
+          <FormInput
+            control={control}
+            name="mobile"
+            prefix="+91"
+            placeholder="00000 00000"
+            keyboardType="number-pad"
+            autoComplete="tel"
+            returnKeyType="next"
+            maxLength={10}
+            transform={(v) => v.replace(/\D/g, '')}
+          />
+
+          <View>
+            <FormInput
+              control={control}
+              name="password"
+              placeholder="Enter your password"
+              isPassword
+              autoCapitalize="none"
+              autoComplete="password-new"
+              returnKeyType="done"
+              maxLength={64}
+              leftIcon="lock-closed-outline"
+              onSubmitEditing={handleSubmit}
+            />
+            {password.length ? (
+              <View style={styles.meter}>
+                <PasswordStrengthMeter score={authPasswordStrength(password)} />
+              </View>
+            ) : null}
+          </View>
+        </View>
 
         {submitError ? (
-          <Text variant="caption" color="error" style={styles.submitError}>
+          <Text variant="bodySm" color="error" align="center" style={styles.submitError}>
             {submitError}
           </Text>
         ) : null}
 
-        <GradientButton
-          label="Create Account"
-          gradient="primary"
-          rightIcon="arrow-forward"
-          onPress={handleSubmit}
-          loading={isSubmitting}
-          disabled={!isValid}
-        />
-      </GlassCard>
+        <View style={styles.cta}>
+          <GradientButton
+            label="Continue"
+            gradient="cta"
+            rightIcon="arrow-forward"
+            onPress={handleSubmit}
+            loading={isSubmitting}
+            disabled={!isValid}
+          />
+        </View>
 
-      <View style={styles.footer}>
-        <Text variant="body" color="textMuted">
-          Already have an account?{' '}
-        </Text>
-        <Pressable
-          onPress={goToLogin}
-          hitSlop={spacing.xs}
-          accessibilityRole="button"
-          accessibilityLabel="Log in"
-        >
-          <Text variant="link" color="primary">
-            Log In
+        <View style={styles.footer}>
+          <Text variant="body" color="textSecondary">
+            Already have an account?{' '}
           </Text>
-        </Pressable>
+          <Pressable
+            onPress={goToLogin}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Log in"
+          >
+            <Text variant="bodyLg" color="pink">
+              Login
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.legal}>
+          <AuthLegal />
+        </View>
       </View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
+  body: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: 24,
+  },
   header: {
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
   },
+  // logo -> heading 32
   title: {
-    marginTop: spacing.sm,
+    marginTop: 32,
   },
-  card: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
+  // heading -> subtitle 8
+  subtitle: {
+    marginTop: 8,
   },
-  terms: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs,
+  // subtitle -> first field 32, then 14 between fields
+  fields: {
+    gap: 14,
+    marginTop: 32,
+  },
+  meter: {
+    marginTop: 8,
   },
   submitError: {
-    marginBottom: spacing.sm,
+    marginTop: 12,
   },
+  // last field -> CTA 24
+  cta: {
+    marginTop: 24,
+  },
+  // CTA -> alt row 20
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: 20,
+  },
+  // alt row -> age note 32
+  legal: {
+    marginTop: 32,
   },
 });
 

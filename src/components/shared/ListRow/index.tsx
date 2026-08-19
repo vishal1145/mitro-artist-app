@@ -88,12 +88,17 @@ const ListRowComponent = ({
         ) : null}
       </View>
 
-      {right ??
-        (value ? (
-          <Text variant="link" color={valueColor}>
-            {value}
-          </Text>
-        ) : null)}
+      {/* Wrapper centres the trailing slot. Badge sets alignSelf:'flex-start',
+          which would otherwise pin it to the top of the row. */}
+      {right || value ? (
+        <View style={styles.rightSlot}>
+          {right ?? (
+            <Text variant="link" color={valueColor}>
+              {value}
+            </Text>
+          )}
+        </View>
+      ) : null}
 
       {showChevron ? (
         <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
@@ -143,6 +148,9 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     gap: spacing.xxs,
+  },
+  rightSlot: {
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.7,

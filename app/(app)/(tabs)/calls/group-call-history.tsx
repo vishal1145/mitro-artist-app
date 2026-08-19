@@ -1,182 +1,309 @@
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyState, Header, InfoCallout, ListRow, Screen, StatTile } from '@components/shared';
-import { Badge, Card, GradientButton, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import {
+  InsightLine,
+  PageHeader,
+  ProgressBar,
+  Screen,
+  SectionLabel,
+  TimelineRow,
+} from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
-
-interface Session {
+interface Upcoming {
   id: string;
+  /** Date heading this session sits under. */
+  group: string;
   title: string;
   when: string;
-  seats: string;
-  earned: string;
-  live?: boolean;
+  price: string;
+  filled: number;
+  total: number;
+  /** Startable now — otherwise the CTA is a disabled "Starts later". */
+  startable?: boolean;
 }
 
-const UPCOMING: Session[] = [
-  { id: 'gs_101', title: 'Mixing Masterclass: Vocals', when: 'Today · 7:00 PM', seats: '8 / 10 seats', earned: '4,000 tk', live: true },
-  { id: 'gs_102', title: 'Songwriting Q&A', when: 'Aug 21 · 6:30 PM', seats: '3 / 12 seats', earned: '1,500 tk' },
+const UPCOMING: Upcoming[] = [
+  {
+    id: 'gs_101',
+    group: 'Today',
+    title: 'Mixing Masterclass: Vocals',
+    when: 'Today · 7:00 PM',
+    price: '4,000 tk',
+    filled: 8,
+    total: 10,
+    startable: true,
+  },
+  {
+    id: 'gs_102',
+    group: 'Thu, Aug 21',
+    title: 'Songwriting Q&A',
+    when: 'Aug 21 · 6:30 PM',
+    price: '1,500 tk',
+    filled: 3,
+    total: 12,
+  },
 ];
 
-const PAST: Session[] = [
-  { id: 'gs_098', title: 'Beat Lab: Lo-fi Textures', when: 'Aug 14 · 45m', seats: '10 / 10 seats', earned: '5,000 tk' },
-  { id: 'gs_094', title: 'Live Feedback Round', when: 'Aug 09 · 60m', seats: '7 / 10 seats', earned: '3,500 tk' },
+const PAST = [
+  {
+    id: 'gs_098',
+    title: 'Late Night Q&A',
+    meta: 'Aug 12 · 10 seats sold',
+    earned: '+2,400 tk',
+    dot: colors.violet,
+  },
+  {
+    id: 'gs_094',
+    title: 'Beat-making Circle',
+    meta: 'Aug 5 · 7 seats',
+    earned: '+1,900 tk',
+    dot: colors.pink,
+  },
 ];
 
-/** Section heading with a leading icon. */
-const SectionTitle = ({ icon, children }: { icon: IoniconName; children: string }) => (
-  <View style={styles.sectionTitle}>
-    <Ionicons name={icon} size={rf(16)} color={colors.primary} />
-    <Text variant="h3">{children}</Text>
-  </View>
-);
-
-/**
- * Group sessions — upcoming scheduled calls to start, plus past session history.
- * NOTE: the Stitch export has no group-call screen, so this follows the app's
- * established patterns and the route table (start -> GroupCallRoom { sessionId }).
- */
-const GroupCallHistoryScreen = () => {
+/** Group sessions — lifetime earnings, what's scheduled, and what's finished. */
+const GroupSessionsScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      <Header title="Group Sessions" onBack={() => router.back()} />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <PageHeader
+        title="Group Sessions"
+        onBack={() => router.back()}
+        right={
+          <Pressable
+            onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
+            style={styles.newBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Schedule a new session"
+          >
+            <Text variant="bodySm" color="white" style={styles.newLabel}>
+              + New
+            </Text>
+          </Pressable>
+        }
+      />
 
-      <InfoCallout tone="neutral" icon="information-circle-outline">
-        <Text variant="caption" color="textSecondary">
-          Every{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            paid group session
-          </Text>{' '}
-          you&apos;ve scheduled. Start one when its time arrives — attendees join the room straight
-          away.
+      {/* Lifetime total */}
+      <View style={styles.hero}>
+        <Text style={styles.heroValue}>14.2k tk</Text>
+        <Text variant="bodySm" color="textMuted">
+          from 9 sessions
         </Text>
-      </InfoCallout>
-
-      {/* Stats */}
-      <View style={styles.grid}>
-        <StatTile icon="people-outline" label="SESSIONS" value="9" tint={colors.primary} />
-        <StatTile icon="sparkles-outline" label="TOTAL EARNED" value="14.2k" unit="tk" tint={colors.warning} />
       </View>
 
-      {/* Upcoming */}
-      <SectionTitle icon="calendar-outline">Upcoming</SectionTitle>
-      {UPCOMING.map((s) => (
-        <Card key={s.id} style={styles.sessionCard}>
+      <InsightLine
+        style={styles.insight}
+        lead="Sessions with a set date sell 3× more seats"
+        tail=" — your Today 7 PM class is nearly full."
+      />
+
+      <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
+        UPCOMING
+      </SectionLabel>
+
+      {UPCOMING.map((s, i) => (
+        <View key={s.id} style={[styles.session, i > 0 ? styles.sessionDivider : null]}>
+          <Text variant="bodySm" color="textPrimary" style={styles.groupLabel}>
+            {s.group}
+          </Text>
+
           <View style={styles.sessionHead}>
-            <View style={styles.sessionText}>
-              <Text variant="link" color="textPrimary" numberOfLines={1}>
-                {s.title}
-              </Text>
-              <Text variant="caption" color="textMuted">
-                {s.when} · {s.seats}
+            <Text variant="h3" style={styles.sessionTitle} numberOfLines={1}>
+              {s.title}
+            </Text>
+            <View style={styles.pricePill}>
+              <Text variant="bodySm" color="gold" style={styles.priceLabel}>
+                {s.price}
               </Text>
             </View>
-            <Badge label={s.earned} tone="success" />
           </View>
 
-          <GradientButton
-            label={s.live ? 'Start session' : 'Starts later'}
-            gradient="cta"
-            textColor="ctaDark"
-            leftIcon="videocam"
-            disabled={!s.live}
-            onPress={() =>
-              router.push({
-                pathname: '/(app)/(modals)/group-call-room',
-                params: { sessionId: s.id },
-              })
-            }
-          />
-        </Card>
+          <Text variant="bodySm" color="textMuted" style={styles.sessionWhen}>
+            {s.when}
+          </Text>
+
+          <View style={styles.seatRow}>
+            <ProgressBar value={s.filled / s.total} />
+            <Text variant="bodySm" color="textMuted">
+              {s.filled}/{s.total} seats
+            </Text>
+          </View>
+
+          {s.startable ? (
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/(app)/(modals)/group-call-room',
+                  params: { sessionId: s.id },
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Start ${s.title}`}
+              style={styles.cta}
+            >
+              <LinearGradient
+                colors={gradients.cta}
+                start={gradientDirection.horizontal.start}
+                end={gradientDirection.horizontal.end}
+                style={styles.ctaFill}
+              >
+                <Text style={styles.ctaLabel}>Start session</Text>
+              </LinearGradient>
+            </Pressable>
+          ) : (
+            <View style={[styles.cta, styles.ctaLater]}>
+              <Text variant="bodyLg" color="textMuted" style={styles.ctaLaterLabel}>
+                Starts later
+              </Text>
+            </View>
+          )}
+        </View>
       ))}
 
-      {/* Past */}
-      <SectionTitle icon="time-outline">Past sessions</SectionTitle>
-      <Card style={styles.pastCard}>
-        {PAST.map((s, i) => (
-          <ListRow
-            key={s.id}
-            icon="people-outline"
-            title={s.title}
-            subtitle={`${s.when} · ${s.seats}`}
-            right={
-              <Text variant="link" color="warning">
-                {s.earned}
-              </Text>
-            }
-            divider={i > 0}
-            onPress={() =>
-              router.push({
-                pathname: '/(app)/(tabs)/home/broadcast-detail',
-                params: { broadcastId: s.id },
-              })
-            }
-          />
-        ))}
-      </Card>
+      <SectionLabel divider style={styles.sectionLabel}>
+        PAST SESSIONS
+      </SectionLabel>
 
-      {PAST.length === 0 ? (
-        <Card>
-          <View style={styles.empty}>
-            <EmptyState
-              icon="people-outline"
-              title="No past sessions yet."
-              description="Scheduled group sessions will appear here once they finish."
-            />
-          </View>
-        </Card>
-      ) : null}
+      {PAST.map((p, i) => (
+        <TimelineRow
+          key={p.id}
+          title={p.title}
+          meta={p.meta}
+          value={p.earned}
+          dotColor={p.dot}
+          last={i === PAST.length - 1}
+          onPress={() =>
+            router.push({
+              pathname: '/(app)/(tabs)/home/broadcast-detail',
+              params: { broadcastId: p.id },
+            })
+          }
+        />
+      ))}
+
+      <Text variant="bodySm" color="textMuted" style={styles.footnote}>
+        Fans who join one session buy the next one 2× more often — schedule the follow-up while the
+        buzz is warm.
+      </Text>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: 24,
   },
-  bold: {
-    fontFamily: fontFamily.bodySemibold,
+
+  newBtn: {
+    backgroundColor: colors.pink,
+    borderRadius: radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  grid: {
+  newLabel: {
+    fontFamily: fontFamily.bold,
+  },
+
+  hero: {
     flexDirection: 'row',
-    gap: spacing.md,
+    alignItems: 'baseline',
+    gap: 10,
+    marginTop: 24,
   },
-  sectionTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+  heroValue: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(32),
+    lineHeight: rf(38),
+    color: colors.gold,
   },
-  sessionCard: {
-    gap: spacing.md,
+  insight: {
+    marginTop: 16,
+  },
+
+  sectionLabel: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+
+  session: {
+    paddingBottom: 4,
+  },
+  sessionDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 20,
+    marginTop: 20,
+  },
+  groupLabel: {
+    fontFamily: fontFamily.bold,
+    marginBottom: 12,
   },
   sessionHead: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+    alignItems: 'center',
+    gap: 12,
   },
-  sessionText: {
+  sessionTitle: {
     flex: 1,
-    gap: spacing.xxs,
   },
-  pastCard: {
-    paddingVertical: 0,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
+  pricePill: {
+    borderWidth: 1,
+    borderColor: colors.borderGold,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  empty: {
-    minHeight: wp(40),
-    paddingVertical: spacing.lg,
+  priceLabel: {
+    fontFamily: fontFamily.bold,
+  },
+  sessionWhen: {
+    marginTop: 4,
+  },
+  seatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 14,
+  },
+
+  cta: {
+    height: 48,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    marginTop: 16,
+  },
+  ctaFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15),
+    color: colors.white,
+  },
+  // Not yet startable — dashed outline reads as "waiting", not "broken".
+  ctaLater: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+  },
+  ctaLaterLabel: {
+    fontFamily: fontFamily.bold,
+  },
+
+  footnote: {
+    marginTop: 28,
   },
 });
 
-export default GroupCallHistoryScreen;
+export default GroupSessionsScreen;

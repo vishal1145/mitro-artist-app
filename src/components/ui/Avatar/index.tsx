@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useMemo, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, radius } from '@theme';
+import { colors, fontFamily, gradientDirection, gradients, radius, size as sizes } from '@theme';
 import { rf } from '@utils/responsive';
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -16,17 +17,17 @@ export interface AvatarProps {
   /** Remote or local image. Falls back to initials while loading / on error. */
   uri?: string;
   size?: AvatarSize;
-  /** Circle fill behind the initials. Defaults to the brand lavender. */
+  /** Solid fill that overrides the brand gradient. */
   color?: string;
   /** Rendered pinned to the bottom-right (e.g. a live dot or tier badge). */
   badge?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Design-spec diameters, run through rf() so they scale with the device. */
+/** Design-spec diameters. `md` matches the spec's 44pt avatar. */
 const SIZE: Record<AvatarSize, number> = {
   sm: rf(32),
-  md: rf(40),
+  md: sizes.avatar,
   lg: rf(48),
   xl: rf(120),
 };
@@ -69,29 +70,44 @@ const AvatarComponent = ({
       width: diameter,
       height: diameter,
       borderRadius: diameter / 2,
-      backgroundColor: uri ? colors.surfaceElevated : color,
     }),
-    [diameter, color, uri],
+    [diameter],
   );
 
   const label = initials ?? (name ? toInitials(name) : '');
+  /** A caller-supplied colour overrides the brand gradient. */
+  const solidFill = color ? { backgroundColor: color } : null;
 
   return (
     <View style={[styles.wrapper, style]}>
-      <View style={[styles.circle, circleStyle]}>
-        {uri ? (
+      {uri ? (
+        <View style={[styles.circle, circleStyle, styles.imageFill]}>
           <Image
             source={{ uri }}
             style={styles.image}
             contentFit="cover"
             accessibilityLabel={name}
           />
-        ) : (
-          <Text variant={TEXT_VARIANT[size]} color="white">
+        </View>
+      ) : solidFill ? (
+        <View style={[styles.circle, circleStyle, solidFill]}>
+          <Text variant={TEXT_VARIANT[size]} color="white" style={styles.initials}>
             {label}
           </Text>
-        )}
-      </View>
+        </View>
+      ) : (
+        // Spec: circular, 135deg purple -> pink, white initials weight 800.
+        <LinearGradient
+          colors={gradients.avatar}
+          start={gradientDirection.diagonal.start}
+          end={gradientDirection.diagonal.end}
+          style={[styles.circle, circleStyle]}
+        >
+          <Text variant={TEXT_VARIANT[size]} color="white" style={styles.initials}>
+            {label}
+          </Text>
+        </LinearGradient>
+      )}
 
       {badge ? <View style={styles.badge}>{badge}</View> : null}
     </View>
@@ -108,6 +124,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  imageFill: {
+    backgroundColor: colors.cardRaised,
+  },
+  initials: {
+    fontFamily: fontFamily.extrabold,
   },
   image: {
     width: '100%',

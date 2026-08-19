@@ -1,110 +1,139 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyState, Header, ListRow, Screen } from '@components/shared';
-import { Avatar, Badge, Card, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { InsightLine, PageHeader, Screen } from '@components/shared';
+import { Avatar, Text } from '@components/ui';
+import { colors, fontFamily, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
 interface Conversation {
   id: string;
-  initials: string;
   name: string;
-  preview: string;
-  time: string;
-  unread?: number;
+  initials: string;
   color: string;
-  tag?: string;
+  preview: string;
+  /** Fragment of the preview that carries the gift/highlight tint. */
+  previewHighlight?: string;
+  stamp: string;
+  unread?: number;
+  isNew?: boolean;
 }
 
 const CONVERSATIONS: Conversation[] = [
   {
-    id: 'RS',
-    initials: 'RS',
+    id: 'f_riya',
     name: 'Riya Sharma',
-    preview: 'For the pizza fund! 🍕 Can\'t wait for the Q&A.',
-    time: '11:30 AM',
+    initials: 'RS',
+    color: colors.pink,
+    preview: 'For the pizza fund! 🍕 ',
+    previewHighlight: "Can't wait for the Q…",
+    stamp: '11:30 AM',
     unread: 2,
-    color: colors.primaryDark,
-    tag: 'TOP SUPPORTER',
   },
   {
-    id: 'KM',
-    initials: 'KM',
+    id: 'f_kabir',
     name: 'Kabir Mehta',
-    preview: 'Are you doing another mixing session this week?',
-    time: 'Yesterday',
-    color: colors.primaryPressed,
+    initials: 'KM',
+    color: colors.cyan,
+    preview: 'Are you doing ',
+    previewHighlight: 'another mixing session this wee…',
+    stamp: 'Yesterday',
   },
   {
-    id: 'AR',
-    initials: 'AR',
+    id: 'f_ananya',
     name: 'Ananya Rao',
-    preview: 'Just followed — loved the last stream!',
-    time: 'Aug 16',
-    color: colors.warning,
-    tag: 'NEW',
+    initials: 'AR',
+    color: colors.gold,
+    preview: 'Just followed — ',
+    previewHighlight: 'loved the last stream!',
+    stamp: 'Aug 16',
+    isNew: true,
   },
 ];
 
-/** Direct-message inbox. Tapping a row opens the ChatThread modal. */
+/** Fan inbox — every conversation, newest first. */
 const MessagesScreen = () => {
   const router = useRouter();
-
-  const openThread = (c: Conversation) =>
-    router.push({
-      pathname: '/(app)/(modals)/chat-thread',
-      params: { followerId: c.id, name: c.name },
-    });
+  const unread = CONVERSATIONS.reduce((n, c) => n + (c.unread ?? 0), 0);
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      <Header title="Messages" onBack={() => router.back()} />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <PageHeader
+        title="Messages"
+        onBack={() => router.back()}
+        right={
+          unread ? (
+            <View style={styles.headBadge}>
+              <Text style={styles.headBadgeText}>{unread}</Text>
+            </View>
+          ) : undefined
+        }
+      />
 
-      {CONVERSATIONS.length ? (
-        <Card style={styles.list}>
-          {CONVERSATIONS.map((c, i) => (
-            <ListRow
-              key={c.id}
-              left={<Avatar initials={c.initials} name={c.name} size="lg" color={c.color} />}
-              title={c.name}
-              subtitle={c.preview}
-              divider={i > 0}
-              chevron={false}
-              onPress={() => openThread(c)}
-              right={
-                <View style={styles.meta}>
-                  <Text variant="caption" color="textMuted" style={styles.time}>
-                    {c.time}
+      <InsightLine
+        style={styles.insight}
+        lead="Replies go straight to the fan"
+        tail=" — keep them personal."
+      />
+
+      <View style={styles.list}>
+        {CONVERSATIONS.map((c, i) => (
+          <Pressable
+            key={c.id}
+            style={[styles.row, i === 0 ? null : styles.rowDivider]}
+            onPress={() =>
+              router.push({
+                pathname: '/(app)/(modals)/chat-thread',
+                params: { followerId: c.id, name: c.name },
+              })
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`Conversation with ${c.name}`}
+          >
+            <Avatar initials={c.initials} name={c.name} size="lg" color={c.color} />
+
+            <View style={styles.rowText}>
+              <Text variant="bodyLg" color="textPrimary" style={styles.name}>
+                {c.name}
+              </Text>
+              <Text variant="bodySm" color="textMuted" numberOfLines={1}>
+                {c.preview}
+                {c.previewHighlight ? (
+                  <Text variant="bodySm" color="textSecondary">
+                    {c.previewHighlight}
                   </Text>
-                  {c.unread ? (
-                    <View style={styles.unread}>
-                      <Text variant="label" color="ctaDark" style={styles.unreadText}>
-                        {c.unread}
-                      </Text>
-                    </View>
-                  ) : c.tag ? (
-                    <Badge label={c.tag} tone="neutral" />
-                  ) : null}
-                </View>
-              }
-            />
-          ))}
-        </Card>
-      ) : (
-        <Card>
-          <View style={styles.empty}>
-            <EmptyState
-              icon="chatbubbles-outline"
-              title="No messages yet."
-              description="When a fan messages you, the conversation shows up here."
-            />
-          </View>
-        </Card>
-      )}
+                ) : null}
+              </Text>
+            </View>
 
-      <Text variant="caption" color="textMuted" style={styles.note}>
-        Replies go straight to the fan — keep them personal.
+            <View style={styles.rowMeta}>
+              <Text variant="bodySm" color="textMuted">
+                {c.stamp}
+              </Text>
+
+              {c.unread ? (
+                <View style={styles.unread}>
+                  <Text style={styles.unreadText}>{c.unread}</Text>
+                </View>
+              ) : null}
+
+              {c.isNew ? (
+                <View style={styles.newPill}>
+                  <Text variant="label" color="cyan">
+                    NEW
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text variant="bodySm" color="textMuted" align="center" style={styles.footnote}>
+        A 20-second personal reply keeps a supporter for months — copy-paste blasts read cold.{' '}
+        <Text variant="bodySm" color="gold" style={styles.footLink}>
+          Messaging tips
+        </Text>
       </Text>
     </Screen>
   );
@@ -112,40 +141,84 @@ const MessagesScreen = () => {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
+    paddingHorizontal: layout.screenPadding,
   },
-  list: {
-    paddingVertical: 0,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
-  },
-  meta: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  time: {
-    fontSize: rf(10),
-  },
-  unread: {
-    minWidth: wp(5),
-    height: wp(5),
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
+
+  headBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.pink,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xxs,
+    paddingHorizontal: 7,
+  },
+  headBadgeText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(11),
+    color: colors.white,
+  },
+
+  insight: {
+    marginTop: 20,
+  },
+
+  list: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 16,
+  },
+  rowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  rowText: {
+    flex: 1,
+    gap: 3,
+  },
+  name: {
+    fontFamily: fontFamily.bold,
+  },
+  rowMeta: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  unread: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.pink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
   },
   unreadText: {
-    fontSize: rf(9),
-    fontFamily: fontFamily.bodySemibold,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10),
+    color: colors.white,
   },
-  empty: {
-    minHeight: wp(45),
-    paddingVertical: spacing.lg,
+  newPill: {
+    borderWidth: 1,
+    borderColor: colors.infoBorder,
+    backgroundColor: colors.infoSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
-  note: {
-    textAlign: 'center',
+
+  footnote: {
+    marginTop: 26,
+    lineHeight: rf(19),
+  },
+  footLink: {
+    fontFamily: fontFamily.bold,
   },
 });
 

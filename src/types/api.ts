@@ -54,17 +54,19 @@ export type SocialProviderId = 'google' | 'apple';
 
 export interface RegisterPayload {
   name: string;
+  /** Stage name / handle. */
   username: string;
-  email: string;
+  /** 10-digit national mobile number. */
+  mobile: string;
   password: string;
 }
 
 export interface ForgotPasswordPayload {
-  email: string;
+  mobile: string;
 }
 
 export interface VerifyOtpPayload {
-  email: string;
+  mobile: string;
   code: string;
 }
 

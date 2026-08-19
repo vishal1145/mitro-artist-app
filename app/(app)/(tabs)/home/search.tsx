@@ -54,7 +54,7 @@ const SearchScreen = () => {
   const show = (section: string) => filter === 'All' || filter === section;
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       {/* Search bar + cancel */}
       <View style={styles.searchRow}>
         <View style={styles.searchField}>

@@ -1,490 +1,537 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
-import { Header, InfoCallout, ListRow, Screen } from '@components/shared';
-import { Avatar, Card, GradientButton, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
-
-type IoniconName = keyof typeof Ionicons.glyphMap;
+import { PageHeader, RingAvatar, Screen, SectionLabel } from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
 interface Reward {
   id: string;
-  label: string;
-  price: string;
-  enabled: boolean;
+  title: string;
+  sub: string;
+  price: number;
+  on: boolean;
 }
 
 const INITIAL_REWARDS: Reward[] = [
-  { id: 'rw1', label: 'Say My Name', price: '20', enabled: true },
-  { id: 'rw2', label: 'Read My Message', price: '25', enabled: true },
-  { id: 'rw3', label: 'Shoutout on Stream', price: '50', enabled: false },
+  { id: 'r1', title: 'Say My Name', sub: 'Shoutout during your live show', price: 20, on: true },
+  { id: 'r2', title: 'Read My Message', sub: "Read the fan's note on stream", price: 25, on: true },
+  { id: 'r3', title: 'Dance Request', sub: 'Hidden from fans while off', price: 40, on: false },
 ];
 
-const INITIAL_ACTIVITIES = ['Dance for 10 Seconds', 'Free Shoutout', '10 Bonus Tokens'];
-
-/** Section heading with a leading tinted icon. */
-const SectionTitle = ({
-  icon,
-  tint,
-  children,
-}: {
-  icon: IoniconName;
-  tint: string;
-  children: string;
-}) => (
-  <View style={styles.sectionTitle}>
-    <Ionicons name={icon} size={rf(17)} color={tint} />
-    <Text variant="h3">{children}</Text>
-  </View>
-);
-
-/** Labelled text field with a leading icon. */
-const Field = ({
-  label,
-  icon,
-  value,
-  onChangeText,
-  placeholder,
-  multiline,
-}: {
-  label: string;
-  icon?: IoniconName;
-  value: string;
-  onChangeText: (v: string) => void;
-  placeholder?: string;
-  multiline?: boolean;
-}) => (
-  <View style={styles.field}>
-    <Text variant="label" color="textSecondary">
-      {label}
-    </Text>
-    <View style={[styles.inputRow, multiline ? styles.inputRowMultiline : null]}>
-      {icon ? <Ionicons name={icon} size={rf(15)} color={colors.textMuted} /> : null}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.inputPlaceholder}
-        style={[styles.input, multiline ? styles.inputMultiline : null]}
-        multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
-        textAlignVertical={multiline ? 'top' : 'center'}
-      />
-    </View>
-  </View>
-);
+const INITIAL_ACTIVITIES = [
+  'Dance for 10 Seconds',
+  'Free Shoutout',
+  '10 Bonus Tokens',
+  'Blow a Kiss',
+  'Better Luck Next Time',
+  'Song Request',
+];
 
 const SettingsScreen = () => {
   const router = useRouter();
 
-  const [search, setSearch] = useState('');
   const [displayName, setDisplayName] = useState('yash_7247');
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
   const [rewards, setRewards] = useState(INITIAL_REWARDS);
-  const [funWheelOn, setFunWheelOn] = useState(true);
+  const [wheelOn, setWheelOn] = useState(true);
   const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
 
   const toggleReward = (id: string) =>
-    setRewards((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)),
-    );
+    setRewards((prev) => prev.map((r) => (r.id === id ? { ...r, on: !r.on } : r)));
+
+  const removeActivity = (index: number) =>
+    setActivities((prev) => prev.filter((_, i) => i !== index));
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      <Header title="Settings" onBack={() => router.back()} />
-
-      {/* Search */}
-      <View style={styles.searchField}>
-        <Ionicons name="search" size={rf(17)} color={colors.textMuted} />
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search settings…"
-          placeholderTextColor={colors.inputPlaceholder}
-          style={styles.input}
+    <View style={styles.root}>
+      <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+        <PageHeader
+          title="Settings"
+          onBack={() => router.back()}
+          right={
+            <Pressable
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Search settings"
+            >
+              <Ionicons name="search" size={rf(17)} color={colors.textPrimary} />
+            </Pressable>
+          }
         />
-      </View>
 
-      {/* Profile & account */}
-      <Card style={styles.profileCard}>
-        <View style={styles.profileGlow} />
-        <View style={styles.profileTop}>
-          <Avatar initials="Y7" name="yash_7247" size="xl" style={styles.profileAvatar} />
-          <View style={styles.profileInfo}>
-            <Text variant="h3">@yash_7247</Text>
-            <View style={styles.verifiedPill}>
-              <Ionicons name="checkmark-circle" size={rf(13)} color={colors.success} />
-              <Text variant="label" color="success">
-                Verified Creator
+        {/* Identity */}
+        <SectionLabel style={styles.sectionLabel}>IDENTITY</SectionLabel>
+
+        <View style={styles.identity}>
+          <RingAvatar initials="Y7" size={62} ring={2} />
+          <View style={styles.identityText}>
+            <Text variant="bodyLg" color="textPrimary" style={styles.handle}>
+              @yash_7247
+            </Text>
+            <View style={styles.verified}>
+              <Ionicons name="checkmark-circle" size={rf(11)} color={colors.green} />
+              <Text variant="label" color="green">
+                VERIFIED CREATOR
               </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.accountRows}>
-          <View style={styles.accountRow}>
-            <ListRow
-              icon="phone-portrait-outline"
-              title="+91 98765 43210"
-              subtitle="Mobile Number"
-              chevron={false}
-              onPress={() =>
-                router.push({
-                  pathname: '/(app)/(modals)/verify-number',
-                  params: { phone: '+91 98765 43210', purpose: 'change_number' },
-                })
-              }
-              right={
-                <Text variant="label" color="primary">
-                  Edit
-                </Text>
-              }
-            />
-          </View>
-          <View style={styles.accountRow}>
-            <ListRow
-              icon="lock-closed-outline"
-              title="••••••••"
-              subtitle="Password"
-              chevron={false}
-              right={
-                <Text variant="label" color="primary">
-                  Change
-                </Text>
-              }
-            />
-          </View>
-        </View>
-      </Card>
-
-      {/* Public details */}
-      <SectionTitle icon="globe-outline" tint={colors.primary}>
-        Public Details
-      </SectionTitle>
-      <Card style={styles.section}>
-        <InfoCallout tone="success" icon="information-circle-outline">
-          <Text variant="caption" color="textSecondary">
-            <Text variant="caption" color="onSurface" style={styles.bold}>
-              This is what fans see
-            </Text>{' '}
-            on your creator card. Skills feed directly into search discovery.
+        <View style={styles.fieldRow}>
+          <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
+            MOBILE
           </Text>
-        </InfoCallout>
+          <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
+            +91 98765 43210
+          </Text>
+          <Text variant="label" color="pink" onPress={() => undefined}>
+            EDIT
+          </Text>
+        </View>
 
-        <Field label="Display Name" icon="person-outline" value={displayName} onChangeText={setDisplayName} />
-        <Field
-          label="City / Region"
-          icon="location-outline"
+        <View style={styles.fieldRow}>
+          <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
+            PASSWORD
+          </Text>
+          <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
+            ••••••••
+          </Text>
+          <Text variant="label" color="pink" onPress={() => undefined}>
+            CHANGE
+          </Text>
+        </View>
+
+        {/* Public details */}
+        <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
+          PUBLIC DETAILS
+        </SectionLabel>
+
+        <Text variant="bodySm" color="textMuted" align="center" style={styles.note}>
+          This is what fans see on your creator card — skills feed search discovery.
+        </Text>
+
+        <Text variant="label" color="textMuted" style={styles.inputLabel}>
+          DISPLAY NAME
+        </Text>
+        <TextInput
+          value={displayName}
+          onChangeText={setDisplayName}
+          style={styles.input}
+          accessibilityLabel="Display name"
+        />
+
+        <Text variant="label" color="textMuted" style={styles.inputLabel}>
+          CITY / REGION
+        </Text>
+        <TextInput
           value={city}
           onChangeText={setCity}
           placeholder="e.g. Mumbai, India"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+          accessibilityLabel="City or region"
         />
-        <Field
-          label="Bio"
+
+        <Text variant="label" color="textMuted" style={styles.inputLabel}>
+          BIO
+        </Text>
+        <TextInput
           value={bio}
           onChangeText={setBio}
-          placeholder="Tell your fans a bit about yourself…"
+          placeholder="Tell your fans a bit about yourself..."
+          placeholderTextColor={colors.textMuted}
+          style={[styles.input, styles.textarea]}
           multiline
+          accessibilityLabel="Bio"
         />
-      </Card>
 
-      {/* Reward menu */}
-      <SectionTitle icon="gift-outline" tint={colors.warning}>
-        Reward Menu
-      </SectionTitle>
-      <Card style={styles.section}>
-        <InfoCallout tone="info" icon="bulb-outline">
-          <Text variant="caption" color="textSecondary">
-            <Text variant="caption" color="onSurface" style={styles.bold}>
-              What this does:
-            </Text>{' '}
-            Fans pay coins to redeem perks during live sessions. Toggle to hide without deleting.
-          </Text>
-        </InfoCallout>
+        {/* Reward menu */}
+        <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
+          REWARD MENU
+        </SectionLabel>
 
-        <View style={styles.tableHead}>
-          <Text variant="label" color="textSecondary">
-            ACTIVITY
-          </Text>
-          <View style={styles.tableHeadRight}>
-            <Text variant="label" color="textSecondary">
-              PRICE
-            </Text>
-            <Text variant="label" color="textSecondary">
-              STATUS
-            </Text>
-          </View>
-        </View>
+        <Text variant="bodySm" color="textMuted" align="center" style={styles.note}>
+          Fans pay coins to redeem perks live. Toggle to hide without deleting.
+        </Text>
 
-        {rewards.map((r) => (
-          <View key={r.id} style={styles.rewardRow}>
-            <Text
-              variant="caption"
-              color={r.enabled ? 'textPrimary' : 'textMuted'}
-              style={styles.rewardLabel}
-              numberOfLines={1}
-            >
-              {r.label}
-            </Text>
-            <Text variant="label" color={r.enabled ? 'warning' : 'textMuted'}>
+        {rewards.map((r, i) => (
+          <View key={r.id} style={[styles.reward, i === 0 ? null : styles.rowDivider]}>
+            <View style={styles.rewardText}>
+              <Text variant="bodyLg" color="textPrimary" style={styles.rewardTitle}>
+                {r.title}
+              </Text>
+              <Text variant="bodySm" color="textMuted">
+                {r.sub}
+              </Text>
+            </View>
+
+            <Text variant="bodyLg" color="gold" style={styles.rewardPrice}>
               {r.price}
             </Text>
+
             <Switch
-              value={r.enabled}
+              value={r.on}
               onValueChange={() => toggleReward(r.id)}
-              trackColor={{ false: colors.surfaceElevated, true: colors.primary }}
+              trackColor={{ false: colors.cardRaised, true: colors.pink }}
               thumbColor={colors.white}
-              accessibilityLabel={r.label}
+              accessibilityLabel={`${r.title} reward`}
             />
           </View>
         ))}
 
-        <Pressable style={styles.dashedBtn} accessibilityRole="button" accessibilityLabel="Add reward">
-          <Ionicons name="add" size={rf(16)} color={colors.primary} />
-          <Text variant="label" color="primary">
-            Add Reward
+        <Pressable
+          style={styles.dashedBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Add a reward"
+        >
+          <Text variant="bodyLg" color="textMuted">
+            + Add reward
           </Text>
         </Pressable>
-      </Card>
 
-      {/* Fun wheel */}
-      <View style={styles.funWheelHead}>
-        <SectionTitle icon="disc-outline" tint={colors.success}>
-          Fun Wheel
-        </SectionTitle>
-        <Switch
-          value={funWheelOn}
-          onValueChange={setFunWheelOn}
-          trackColor={{ false: colors.surfaceElevated, true: colors.success }}
-          thumbColor={colors.white}
-          accessibilityLabel="Fun Wheel enabled"
-        />
-      </View>
-      <Card style={styles.section}>
-        <View style={styles.spinCard}>
-          <View style={styles.spinIcon}>
-            <Ionicons name="disc" size={rf(22)} color={colors.primary} />
-          </View>
-          <View>
-            <Text variant="link" color="textPrimary">
-              Spin &amp; Win
-            </Text>
-            <Text variant="caption" color="textSecondary">
-              25 coins per spin
-            </Text>
-          </View>
+        {/* Fun wheel */}
+        <View style={styles.wheelHead}>
+          <SectionLabel style={styles.wheelLabel} onHelp={() => undefined}>
+            FUN WHEEL
+          </SectionLabel>
+          <Switch
+            value={wheelOn}
+            onValueChange={setWheelOn}
+            trackColor={{ false: colors.cardRaised, true: colors.pink }}
+            thumbColor={colors.white}
+            accessibilityLabel="Fun wheel enabled"
+          />
         </View>
 
-        <Text variant="label" color="textSecondary">
-          ACTIVITIES (BETWEEN 6 AND 20)
-        </Text>
-        {activities.map((a) => (
-          <View key={a} style={styles.activityRow}>
-            <Text variant="caption" color="textPrimary" style={styles.rewardLabel}>
+        <View style={styles.wheelRow}>
+          <LinearGradient
+            colors={gradients.ring}
+            start={gradientDirection.diagonal.start}
+            end={gradientDirection.diagonal.end}
+            style={styles.wheelDisc}
+          />
+          <Text variant="bodyLg" color="textPrimary" style={styles.wheelText}>
+            Spin &amp; Win · 25 coins per spin
+          </Text>
+        </View>
+
+        <SectionLabel style={styles.sectionLabel}>
+          {`ACTIVITIES (${activities.length}–20)`}
+        </SectionLabel>
+
+        {activities.map((a, i) => (
+          <View key={a} style={[styles.activity, i === 0 ? null : styles.rowDivider]}>
+            <Text variant="bodySm" color="textMuted" style={styles.activityIndex}>
+              {i + 1}
+            </Text>
+            <Text variant="bodyLg" color="textPrimary" style={styles.activityTitle}>
               {a}
             </Text>
             <Pressable
-              onPress={() => setActivities((prev) => prev.filter((x) => x !== a))}
-              hitSlop={spacing.xs}
+              onPress={() => removeActivity(i)}
+              hitSlop={8}
+              style={styles.removeBtn}
               accessibilityRole="button"
               accessibilityLabel={`Remove ${a}`}
             >
-              <Ionicons name="close" size={rf(16)} color={colors.textMuted} />
+              <Ionicons name="close" size={rf(14)} color={colors.red} />
             </Pressable>
           </View>
         ))}
 
-        <Pressable style={styles.dashedBtn} accessibilityRole="button" accessibilityLabel="Add activities">
-          <Ionicons name="add" size={rf(16)} color={colors.success} />
-          <Text variant="label" color="success">
-            Add Activities
+        <Pressable
+          style={styles.dashedBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Add an activity"
+        >
+          <Text variant="bodyLg" color="textMuted">
+            + Add activity
           </Text>
         </Pressable>
-      </Card>
 
-      {/* KYC — a route, not an in-screen tab */}
-      <Card style={styles.kycCard}>
-        <ListRow
-          icon="shield-checkmark-outline"
-          iconTint={colors.warning}
-          title="KYC & Payouts"
-          subtitle="Setup bank and verify identity"
+        {/* KYC shortcut */}
+        <Pressable
+          style={styles.kycRow}
           onPress={() => router.push('/(app)/(tabs)/me/kyc-payouts')}
-        />
-      </Card>
+          accessibilityRole="button"
+          accessibilityLabel="KYC and payouts"
+        >
+          <View style={styles.kycIcon}>
+            <Ionicons name="shield-checkmark" size={rf(17)} color={colors.gold} />
+          </View>
+          <View style={styles.kycText}>
+            <Text variant="bodyLg" color="textPrimary" style={styles.rewardTitle}>
+              KYC &amp; Payouts
+            </Text>
+            <Text variant="bodySm" color="textMuted">
+              Needed before your first withdrawal
+            </Text>
+          </View>
+          <View style={styles.pill}>
+            <Text variant="label" color="gold">
+              REQUIRED
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+        </Pressable>
 
-      <GradientButton label="Save All Changes" gradient="forgot" textColor="ctaDark" onPress={() => router.back()} />
-    </Screen>
+        {/* `Screen`'s tab-bar padding is a fixed override, so the extra room the
+            sticky save button needs has to come from real content. */}
+        <View style={styles.saveSpacer} />
+      </Screen>
+
+      {/* Sticky save — the form is long, so the action follows the scroll. */}
+      <View style={styles.saveDock} pointerEvents="box-none">
+        <Pressable
+          style={styles.saveBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Save all changes"
+        >
+          <LinearGradient
+            colors={gradients.cta}
+            start={gradientDirection.horizontal.start}
+            end={gradientDirection.horizontal.end}
+            style={styles.saveFill}
+          >
+            <Text style={styles.saveLabel}>Save All Changes</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
+    paddingHorizontal: layout.screenPadding,
   },
-  bold: {
-    fontFamily: fontFamily.bodySemibold,
-  },
-  sectionTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  searchField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-  },
-  input: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontFamily: fontFamily.body,
-    fontSize: rf(14),
-    paddingVertical: spacing.sm,
-  },
-  inputMultiline: {
-    minHeight: wp(18),
+  // Save button height + breathing room, on top of the tab-bar allowance.
+  saveSpacer: {
+    height: 72,
   },
 
-  profileCard: {
-    gap: spacing.lg,
-    overflow: 'hidden',
-  },
-  profileGlow: {
-    position: 'absolute',
-    top: -wp(10),
-    right: -wp(10),
-    width: wp(32),
-    height: wp(32),
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-  },
-  profileTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  profileAvatar: {
-    borderWidth: 2,
-    borderColor: colors.surface,
-    borderRadius: radius.full,
-  },
-  profileInfo: {
-    flex: 1,
-    gap: spacing.xs,
-    alignItems: 'flex-start',
-  },
-  verifiedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.successChip,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    borderRadius: radius.pill,
-  },
-  accountRows: {
-    gap: spacing.sm,
-  },
-  accountRow: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-  },
-
-  field: {
-    gap: spacing.xs,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-  },
-  inputRowMultiline: {
-    alignItems: 'flex-start',
-    paddingVertical: spacing.xs,
-  },
-
-  tableHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
-  },
-  tableHeadRight: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-  },
-  rewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  rewardLabel: {
-    flex: 1,
-  },
-  dashedBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+  },
+
+  sectionLabel: {
+    marginTop: 26,
+    marginBottom: 14,
+  },
+
+  identity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  identityText: {
+    flex: 1,
+    gap: 6,
+  },
+  handle: {
+    fontFamily: fontFamily.bold,
+  },
+  verified: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    backgroundColor: colors.successChip,
+    borderWidth: 1,
+    borderColor: colors.successBorder,
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 16,
+  },
+  fieldRowLabel: {
+    width: 78,
+  },
+  fieldRowValue: {
+    flex: 1,
+    fontFamily: fontFamily.bold,
+  },
+
+  note: {
+    marginBottom: 18,
+    lineHeight: rf(19),
+  },
+  inputLabel: {
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.input,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: colors.textPrimary,
+    fontFamily: fontFamily.body,
+    fontSize: rf(13),
+    marginBottom: 18,
+  },
+  textarea: {
+    minHeight: 96,
+    textAlignVertical: 'top',
+  },
+
+  reward: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+  },
+  rowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  rewardText: {
+    flex: 1,
+    gap: 2,
+  },
+  rewardTitle: {
+    fontFamily: fontFamily.bold,
+  },
+  rewardPrice: {
+    fontFamily: fontFamily.extrabold,
+  },
+
+  dashedBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
+    borderRadius: radius.button,
+    paddingVertical: 16,
+    marginTop: 16,
   },
 
-  funWheelHead: {
+  wheelHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginTop: 26,
   },
-  spinCard: {
+  wheelLabel: {
+    flex: 1,
+  },
+  wheelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    padding: spacing.sm,
+    gap: 12,
+    marginTop: 16,
   },
-  spinIcon: {
-    width: wp(12),
-    height: wp(12),
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
+  wheelDisc: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+  },
+  wheelText: {
+    flex: 1,
+    fontFamily: fontFamily.bold,
+  },
+
+  activity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+  },
+  activityIndex: {
+    width: 14,
+    fontFamily: fontFamily.bold,
+  },
+  activityTitle: {
+    flex: 1,
+    fontFamily: fontFamily.bold,
+  },
+  removeBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.errorSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activityRow: {
+
+  kycRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: 14,
+    paddingVertical: 16,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  kycCard: {
-    paddingVertical: spacing.xs,
+  kycIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.goldSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kycText: {
+    flex: 1,
+    gap: 2,
+  },
+  pill: {
+    borderWidth: 1,
+    borderColor: colors.borderGold,
+    backgroundColor: colors.goldSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+
+  saveDock: {
+    position: 'absolute',
+    left: layout.screenPadding,
+    right: layout.screenPadding,
+    bottom: 108,
+  },
+  saveBtn: {
+    height: 54,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    shadowColor: colors.pink,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  saveFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15),
+    color: colors.white,
   },
 });
 

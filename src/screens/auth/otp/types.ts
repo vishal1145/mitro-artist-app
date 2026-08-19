@@ -7,7 +7,7 @@ export interface UseOtpResult {
   attemptsLeft: number;
   cooldownSec: number;
   canResend: boolean;
-  email: string;
+  mobile: string;
   resend: () => void;
   goBack: () => void;
 }

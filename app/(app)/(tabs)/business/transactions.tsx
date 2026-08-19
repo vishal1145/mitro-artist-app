@@ -39,7 +39,7 @@ const TransactionsScreen = () => {
   );
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       <Header title="Transaction History" onBack={() => router.back()} />
 
       <View style={styles.heading}>

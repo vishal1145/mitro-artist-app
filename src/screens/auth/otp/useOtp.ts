@@ -17,7 +17,7 @@ import type { UseOtpResult } from './types';
 export const useOtp = (): UseOtpResult => {
   const router = useRouter();
   const params = useLocalSearchParams<Partial<OtpVerifyParams>>();
-  const email = params.email ?? '';
+  const mobile = params.mobile ?? '';
   const origin: OtpVerifyParams['origin'] =
     params.origin === 'forgot-password' ? 'forgot-password' : 'register';
 
@@ -53,7 +53,7 @@ export const useOtp = (): UseOtpResult => {
       setSubmitting(true);
       setError(null);
 
-      const result = await authApi.verifyOtp({ email, code: value });
+      const result = await authApi.verifyOtp({ mobile, code: value });
       setSubmitting(false);
 
       if (!result.success) {
@@ -72,7 +72,7 @@ export const useOtp = (): UseOtpResult => {
         router.replace('/(auth)/login');
       }
     },
-    [authenticate, email, isSubmitting, locked, origin, router],
+    [authenticate, mobile, isSubmitting, locked, origin, router],
   );
 
   const setCode = useCallback((next: string) => {
@@ -92,14 +92,14 @@ export const useOtp = (): UseOtpResult => {
     if (cooldownSec > 0) {
       return;
     }
-    const result = await authApi.resendOtp({ email });
+    const result = await authApi.resendOtp({ mobile });
     if (result.success) {
       setCooldownSec(TIMING.otpResendCooldownSec);
       setError(null);
     } else {
       setError(result.error);
     }
-  }, [cooldownSec, email]);
+  }, [cooldownSec, mobile]);
 
   return {
     code,
@@ -110,7 +110,7 @@ export const useOtp = (): UseOtpResult => {
     attemptsLeft,
     cooldownSec,
     canResend: cooldownSec <= 0 && !locked,
-    email,
+    mobile,
     resend: () => void resend(),
     goBack: () => router.back(),
   };

@@ -11,13 +11,23 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, gradientGlow, gradients, radius, spacing, HIT_TARGET } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import {
+  colors,
+  gradientDirection,
+  gradientGlow,
+  gradients,
+  radius,
+  size,
+  spacing,
+  HIT_TARGET,
+} from '@theme';
+import { rf } from '@utils/responsive';
 
 import type { GradientButtonProps } from './types';
 
-const GRADIENT_START = { x: 0, y: 0 };
-const GRADIENT_END = { x: 1, y: 0 };
+// CTA gradient runs 90deg — left to right.
+const GRADIENT_START = gradientDirection.horizontal.start;
+const GRADIENT_END = gradientDirection.horizontal.end;
 
 /**
  * Primary call-to-action with a gradient fill and soft glow (matches the
@@ -112,17 +122,17 @@ const GradientButtonComponent = ({
 export const GradientButton = memo(GradientButtonComponent);
 
 const styles = StyleSheet.create({
+  // Spec: full width, height 56, radius 18, shadow 0 12px 30px pink/35.
   wrapper: {
-    borderRadius: radius.md,
-    // Soft glow — color comes from the dynamic `glowStyle` above.
-    shadowOffset: { width: 0, height: wp(2) }, // ~8
+    borderRadius: radius.button,
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 1, // alpha is already baked into the rgba glow color
-    shadowRadius: wp(6), // ~24
+    shadowRadius: 30,
     elevation: 12,
   },
   fill: {
-    minHeight: HIT_TARGET + wp(5), // ~64
-    borderRadius: radius.md,
+    height: size.cta,
+    borderRadius: radius.button,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',

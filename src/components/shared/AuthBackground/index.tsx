@@ -1,113 +1,56 @@
-import { memo, useMemo } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
-import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
+import { memo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
-import { colors } from '@theme';
-import { SCREEN, wp } from '@utils/responsive';
+import { authGlow } from '@theme';
+import { SCREEN } from '@utils/responsive';
 
 /**
- * Ambient backdrop for auth screens: a faint grid texture plus two soft
- * radial glows bleeding in from opposite corners. Purely decorative — sits
- * behind the scrollable content via `position: absolute`.
+ * Auth-screen backdrop: two soft radial glows over the flat screen colour.
+ *
+ * Content screens stay flat black — this belongs to auth screens only.
+ * Spec:
+ *   70% 45% at 12% 2%  rgba(255,63,173,0.16) -> transparent 55%
+ *   70% 45% at 88% 4%  rgba(107,45,244,0.20) -> transparent 55%
  */
-const GRID_SIZE = 40;
-
 const AuthBackgroundComponent = () => {
+  const { width, height } = SCREEN;
+
   return (
     <View style={styles.root} pointerEvents="none">
-      <Svg
-        width={SCREEN.width}
-        height={SCREEN.height}
-        style={StyleSheet.absoluteFill}
-      >
+      <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
         <Defs>
-          <Pattern
-            id="grid"
-            width={GRID_SIZE}
-            height={GRID_SIZE}
-            patternUnits="userSpaceOnUse"
-          >
-            <Path
-              d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`}
-              fill="none"
-              stroke={colors.primary}
-              strokeWidth={1}
-              opacity={0.04}
-            />
-          </Pattern>
+          {authGlow.orbs.map((orb, i) => (
+            <RadialGradient key={i} id={`glow${i}`} cx="50%" cy="50%" r="50%">
+              <Stop offset="0%" stopColor={orb.color} />
+              {/* Spec fades to transparent at 55%. */}
+              <Stop offset="55%" stopColor={orb.color} stopOpacity={0} />
+              <Stop offset="100%" stopColor={orb.color} stopOpacity={0} />
+            </RadialGradient>
+          ))}
         </Defs>
-        <Rect width="100%" height="100%" fill="url(#grid)" />
+
+        {authGlow.orbs.map((orb, i) => (
+          <Ellipse
+            key={i}
+            cx={(parseFloat(orb.cx) / 100) * width}
+            cy={(parseFloat(orb.cy) / 100) * height}
+            rx={(parseFloat(orb.rx) / 100) * width}
+            ry={(parseFloat(orb.ry) / 100) * height}
+            fill={`url(#glow${i})`}
+          />
+        ))}
       </Svg>
-
-      {/* Top-left glow (lavender), bottom-right glow (magenta, echoes the CTA glow). */}
-      <GlowOrb color={colors.primary} anchor="topLeft" />
-      <GlowOrb color={colors.accentPink} anchor="bottomRight" />
     </View>
   );
 };
 
-interface GlowOrbProps {
-  color: string;
-  anchor: 'topLeft' | 'bottomRight';
-}
-
-/** Approximates a soft radial glow with three concentric, low-opacity rings. */
-const GlowOrb = ({ color, anchor }: GlowOrbProps) => {
-  const positionStyle =
-    anchor === 'topLeft' ? styles.orbTopLeft : styles.orbBottomRight;
-  const tintStyle = useMemo<ViewStyle>(() => ({ backgroundColor: color }), [color]);
-
-  return (
-    <View style={[styles.orbWrapper, positionStyle]}>
-      <View style={[styles.ring, styles.ringOuter, tintStyle]} />
-      <View style={[styles.ring, styles.ringMid, tintStyle]} />
-      <View style={[styles.ring, styles.ringInner, tintStyle]} />
-    </View>
-  );
-};
-
-const ORB_SIZE = wp(90);
+export const AuthBackground = memo(AuthBackgroundComponent);
 
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
+    backgroundColor: authGlow.base,
     overflow: 'hidden',
   },
-  orbWrapper: {
-    position: 'absolute',
-    width: ORB_SIZE,
-    height: ORB_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orbTopLeft: {
-    top: -ORB_SIZE * 0.4,
-    left: -ORB_SIZE * 0.4,
-  },
-  orbBottomRight: {
-    bottom: -ORB_SIZE * 0.4,
-    right: -ORB_SIZE * 0.4,
-  },
-  ring: {
-    position: 'absolute',
-    borderRadius: ORB_SIZE,
-  },
-  ringOuter: {
-    width: ORB_SIZE,
-    height: ORB_SIZE,
-    opacity: 0.05,
-  },
-  ringMid: {
-    width: ORB_SIZE * 0.66,
-    height: ORB_SIZE * 0.66,
-    opacity: 0.08,
-  },
-  ringInner: {
-    width: ORB_SIZE * 0.33,
-    height: ORB_SIZE * 0.33,
-    opacity: 0.12,
-  },
 });
-
-export const AuthBackground = memo(AuthBackgroundComponent);

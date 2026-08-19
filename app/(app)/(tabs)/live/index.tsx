@@ -1,90 +1,134 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
-import { Screen, ToggleRow } from '@components/shared';
-import { Card, GradientButton, LogoBadge, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { EarningsBar, Screen, SectionLabel } from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const CATEGORIES: { key: string; icon: IoniconName }[] = [
-  { key: 'Gaming', icon: 'game-controller-outline' },
+  { key: 'Gaming', icon: 'game-controller' },
   { key: 'Music', icon: 'musical-note' },
-  { key: 'Talk', icon: 'chatbubble-outline' },
+  { key: 'Talk', icon: 'chatbubble' },
 ];
 
 const CHECKS = ['camera detected', 'mic detected', 'connection looks good'];
 
-/** Live tab — Go Live setup screen. */
+const PREVIEW_CONTROLS: { icon: IoniconName; label: string }[] = [
+  { icon: 'camera-reverse-outline', label: 'Flip camera' },
+  { icon: 'mic-outline', label: 'Audio settings' },
+  { icon: 'sunny-outline', label: 'Lighting' },
+];
+
+interface Reward {
+  id: string;
+  title: string;
+  sub: string;
+  coins: number;
+  on: boolean;
+}
+
+const INITIAL_REWARDS: Reward[] = [
+  { id: 'r1', title: 'Say My Name', sub: 'Give a live shoutout on stream', coins: 50, on: true },
+  { id: 'r2', title: 'Read My Message', sub: "Read a fan's message out loud", coins: 100, on: false },
+];
+
+/** Live tab — the pre-flight check before opening the doors. */
 const GoLiveScreen = () => {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Gaming');
-  const [description, setDescription] = useState('');
+
+  const [title, setTitle] = useState('Late night vibes & requests 🎶');
+  const [category, setCategory] = useState('Music');
+  const [description, setDescription] = useState(
+    'Taking song requests, testing a new hook, and reading your messages between tracks.',
+  );
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
-  const [sayMyName, setSayMyName] = useState(true);
-  const [readMyMessage, setReadMyMessage] = useState(false);
+  const [rewards, setRewards] = useState(INITIAL_REWARDS);
+
+  const toggleReward = (id: string) =>
+    setRewards((prev) => prev.map((r) => (r.id === id ? { ...r, on: !r.on } : r)));
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      {/* App bar */}
-      <View style={styles.appBar}>
-        <View style={styles.appBarLeft}>
-          <LogoBadge variant="wave" size={wp(8)} />
-          <Text variant="h3" style={styles.appBarTitle}>
-            Go Live
-          </Text>
-        </View>
-        <View style={styles.appBarRight}>
-          <Ionicons name="notifications-outline" size={rf(22)} color={colors.textSecondary} />
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={rf(18)} color={colors.onPrimaryContrast} />
-          </View>
-        </View>
-      </View>
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <EarningsBar
+        brand
+        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+        unread
+      />
+
+      <Text variant="h1" style={styles.title}>
+        Go Live
+      </Text>
+      <Text variant="body" color="textSecondary" style={styles.subtitle}>
+        Set the stage before you open the doors.
+      </Text>
 
       {/* Preview */}
       <View style={styles.preview}>
         <View style={styles.previewTop}>
           <View style={styles.previewTag}>
-            <View style={styles.liveDot} />
-            <Text variant="label" color="textSecondary">
+            <View style={styles.previewDot} />
+            <Text variant="label" color="pink">
               PREVIEW
             </Text>
           </View>
-          <View style={styles.previewTag}>
-            <Ionicons name="cellular" size={rf(13)} color={colors.textSecondary} />
-            <Text variant="caption" color="textSecondary">
+
+          <View style={styles.qualityTag}>
+            <Text variant="label" color="cyan">
               1080p
             </Text>
           </View>
         </View>
 
-        <Text variant="caption" color="textMuted" align="center" style={styles.previewHint}>
-          The moment you hit Go Live, everyone on Mitro can find and join this exact view — check your framing and lighting now.
+        <Text variant="bodySm" color="textSecondary" align="center" style={styles.previewHint}>
+          The moment you hit Go Live, everyone on Mitro can find this exact view — check your
+          framing and lighting.
         </Text>
 
         <View style={styles.notVisible}>
-          <Ionicons name="eye-off-outline" size={rf(13)} color={colors.textMuted} />
-          <Text variant="caption" color="textMuted">
+          <Ionicons name="close-circle-outline" size={rf(13)} color={colors.textMuted} />
+          <Text variant="bodySm" color="textMuted">
             You&apos;re not visible to anyone yet.
           </Text>
         </View>
 
-        <View style={styles.toggleRow}>
-          <Pressable style={styles.toggleBtn} onPress={() => setCameraOn((v) => !v)} accessibilityRole="button">
-            <Ionicons name={cameraOn ? 'videocam-outline' : 'videocam-off-outline'} size={rf(15)} color={colors.textPrimary} />
-            <Text variant="caption" color="textPrimary">
+        <View style={styles.deviceRow}>
+          <Pressable
+            style={[styles.devicePill, cameraOn ? styles.devicePillOn : null]}
+            onPress={() => setCameraOn((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: cameraOn }}
+            accessibilityLabel={cameraOn ? 'Turn camera off' : 'Turn camera on'}
+          >
+            <Ionicons
+              name={cameraOn ? 'videocam' : 'videocam-off'}
+              size={rf(14)}
+              color={cameraOn ? colors.green : colors.textMuted}
+            />
+            <Text variant="bodySm" color={cameraOn ? 'green' : 'textMuted'} style={styles.deviceLabel}>
               {cameraOn ? 'Camera on' : 'Camera off'}
             </Text>
           </Pressable>
-          <Pressable style={styles.toggleBtn} onPress={() => setMicOn((v) => !v)} accessibilityRole="button">
-            <Ionicons name={micOn ? 'mic-outline' : 'mic-off-outline'} size={rf(15)} color={colors.textPrimary} />
-            <Text variant="caption" color="textPrimary">
+
+          <Pressable
+            style={[styles.devicePill, micOn ? styles.devicePillOn : null]}
+            onPress={() => setMicOn((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: micOn }}
+            accessibilityLabel={micOn ? 'Mute microphone' : 'Unmute microphone'}
+          >
+            <Ionicons
+              name={micOn ? 'mic' : 'mic-off'}
+              size={rf(14)}
+              color={micOn ? colors.green : colors.textMuted}
+            />
+            <Text variant="bodySm" color={micOn ? 'green' : 'textMuted'} style={styles.deviceLabel}>
               {micOn ? 'Mic on' : 'Mic off'}
             </Text>
           </Pressable>
@@ -93,105 +137,127 @@ const GoLiveScreen = () => {
         <View style={styles.checks}>
           {CHECKS.map((c) => (
             <View key={c} style={styles.check}>
-              <Ionicons name="checkmark-circle" size={rf(12)} color={colors.success} />
-              <Text variant="caption" color="textMuted" style={styles.checkLabel}>
+              <Ionicons name="checkmark" size={rf(12)} color={colors.green} />
+              <Text variant="bodySm" color="green" style={styles.checkLabel}>
                 {c}
               </Text>
             </View>
           ))}
         </View>
 
-        {/* Floating controls */}
+        {/* Capture controls, stacked down the right edge of the frame */}
         <View style={styles.floating}>
-          {(['camera-reverse', 'mic', 'sparkles'] as IoniconName[]).map((icon) => (
-            <Pressable key={icon} style={styles.floatBtn} accessibilityRole="button" accessibilityLabel={icon}>
-              <Ionicons name={icon} size={rf(18)} color={colors.textPrimary} />
+          {PREVIEW_CONTROLS.map((c) => (
+            <Pressable
+              key={c.label}
+              style={styles.floatBtn}
+              accessibilityRole="button"
+              accessibilityLabel={c.label}
+            >
+              <Ionicons name={c.icon} size={rf(16)} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>
       </View>
 
-      {/* Stream setup */}
-      <Card style={styles.section}>
-        <Text variant="label" color="textMuted">
-          STREAM TITLE
-        </Text>
-        <View style={styles.inputRow}>
-          <Ionicons name="create-outline" size={rf(16)} color={colors.textMuted} />
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter an engaging title…"
-            placeholderTextColor={colors.inputPlaceholder}
-            style={styles.input}
-            maxLength={80}
-          />
-        </View>
+      {/* Stream title */}
+      <SectionLabel style={styles.sectionLabel}>STREAM TITLE</SectionLabel>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Enter an engaging title…"
+        placeholderTextColor={colors.textMuted}
+        style={styles.titleInput}
+        maxLength={80}
+        accessibilityLabel="Stream title"
+      />
 
-        <Text variant="label" color="textMuted">
-          CATEGORY
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
-          {CATEGORIES.map((cat) => {
-            const active = cat.key === category;
-            return (
-              <Pressable
-                key={cat.key}
-                onPress={() => setCategory(cat.key)}
-                style={[styles.catPill, active ? styles.catPillActive : styles.catPillIdle]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
+      {/* Category */}
+      <SectionLabel divider style={styles.sectionLabel}>
+        CATEGORY
+      </SectionLabel>
+      <View style={styles.catRow}>
+        {CATEGORIES.map((cat) => {
+          const active = cat.key === category;
+
+          return (
+            <Pressable
+              key={cat.key}
+              onPress={() => setCategory(cat.key)}
+              style={[styles.catPill, active ? styles.catPillActive : null]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={cat.key}
+            >
+              <Ionicons
+                name={cat.icon}
+                size={rf(14)}
+                color={active ? colors.pink : colors.textSecondary}
+              />
+              <Text
+                variant="bodyLg"
+                color={active ? 'pink' : 'textSecondary'}
+                style={styles.catLabel}
               >
-                <Ionicons name={cat.icon} size={rf(15)} color={active ? colors.ctaDark : colors.textSecondary} />
-                <Text variant="body" color={active ? 'ctaDark' : 'textSecondary'}>
-                  {cat.key}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                {cat.key}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
-        <Text variant="label" color="textMuted">
-          DESCRIPTION
-        </Text>
-        <View style={styles.textareaWrap}>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Tell viewers what you're doing today…"
-            placeholderTextColor={colors.inputPlaceholder}
-            style={styles.textarea}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            maxLength={300}
-          />
-        </View>
-      </Card>
+      {/* Description */}
+      <SectionLabel divider style={styles.sectionLabel}>
+        DESCRIPTION
+      </SectionLabel>
+      <TextInput
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Tell viewers what you're doing today…"
+        placeholderTextColor={colors.textMuted}
+        style={styles.textarea}
+        multiline
+        textAlignVertical="top"
+        maxLength={300}
+        accessibilityLabel="Stream description"
+      />
 
       {/* Reward menu */}
-      <Card style={styles.section}>
-        <View style={styles.rewardHeader}>
-          <View style={styles.rewardIcon}>
-            <Ionicons name="star" size={rf(16)} color={colors.warning} />
-          </View>
-          <View>
-            <Text variant="h3">Reward Menu</Text>
-            <Text variant="caption" color="warning">
-              Boost viewer engagement
+      <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
+        REWARD MENU
+      </SectionLabel>
+      <Text variant="bodySm" color="textMuted" style={styles.rewardNote}>
+        Rewards boost engagement — fans pay to interact.
+      </Text>
+
+      {rewards.map((r, i) => (
+        <View key={r.id} style={[styles.reward, i === 0 ? null : styles.rewardDivider]}>
+          <View style={styles.rewardText}>
+            <Text variant="bodyLg" color="textPrimary" style={styles.rewardTitle}>
+              {r.title}
+            </Text>
+            <Text variant="bodySm" color="textMuted">
+              {r.sub}
             </Text>
           </View>
+
+          <Text variant="bodyLg" color="gold" style={styles.rewardCoins}>
+            {r.coins} coins
+          </Text>
+
+          <Switch
+            value={r.on}
+            onValueChange={() => toggleReward(r.id)}
+            trackColor={{ false: colors.cardRaised, true: colors.green }}
+            thumbColor={colors.white}
+            accessibilityLabel={`${r.title} reward`}
+          />
         </View>
+      ))}
 
-        <RewardRow icon="megaphone-outline" name="Say My Name" coins="50" value={sayMyName} onValueChange={setSayMyName} />
-        <RewardRow icon="chatbox-ellipses-outline" name="Read My Message" coins="100" value={readMyMessage} onValueChange={setReadMyMessage} />
-      </Card>
-
-      <GradientButton
-        label="START LIVE BROADCAST"
-        gradient="primary"
-        textColor="ctaDark"
-        leftIcon="radio"
+      {/* Go */}
+      <Pressable
+        style={styles.cta}
         // push, not replace — replacing across navigator groups (tab stack ->
         // modal group) does not reliably mount the modal. The room itself has
         // no back affordance and exits via replace, so setup is never revisited.
@@ -201,78 +267,46 @@ const GoLiveScreen = () => {
             params: { sessionConfig: JSON.stringify({ title, category, description }) },
           })
         }
-      />
+        accessibilityRole="button"
+        accessibilityLabel="Start live broadcast"
+      >
+        <LinearGradient
+          colors={gradients.cta}
+          start={gradientDirection.horizontal.start}
+          end={gradientDirection.horizontal.end}
+          style={styles.ctaFill}
+        >
+          <Ionicons name="radio" size={rf(17)} color={colors.white} />
+          <Text style={styles.ctaLabel}>START LIVE BROADCAST</Text>
+        </LinearGradient>
+      </Pressable>
 
-      <Text variant="caption" color="textMuted" align="center">
+      <Text variant="bodySm" color="textMuted" align="center" style={styles.legal}>
         By going live, you agree to our Community Guidelines.
       </Text>
     </Screen>
   );
 };
 
-const RewardRow = ({
-  icon,
-  name,
-  coins,
-  value,
-  onValueChange,
-}: {
-  icon: IoniconName;
-  name: string;
-  coins: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-}) => (
-  <ToggleRow
-    icon={icon}
-    label={name}
-    description={`◎ ${coins} coins`}
-    value={value}
-    onValueChange={onValueChange}
-    style={styles.rewardRow}
-  />
-);
-
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
   },
-  appBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  title: {
+    marginTop: 24,
   },
-  appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  appBarTitle: {
-    fontSize: rf(17),
-  },
-  appBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  avatar: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  subtitle: {
+    marginTop: 8,
   },
 
-  // Preview
   preview: {
-    backgroundColor: colors.background,
-    borderRadius: radius.xl,
+    backgroundColor: colors.card,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: 18,
+    gap: 16,
+    marginTop: 22,
   },
   previewTop: {
     flexDirection: 'row',
@@ -282,152 +316,188 @@ const styles = StyleSheet.create({
   previewTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
+    backgroundColor: colors.pinkSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  liveDot: {
-    width: wp(2),
-    height: wp(2),
-    borderRadius: radius.full,
-    backgroundColor: colors.error,
+  previewDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.pink,
+  },
+  qualityTag: {
+    borderWidth: 1,
+    borderColor: colors.infoBorder,
+    backgroundColor: colors.infoSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   previewHint: {
-    maxWidth: '80%',
-    alignSelf: 'center',
+    // Keeps the copy clear of the control stack on the right.
+    paddingHorizontal: 34,
+    marginTop: 12,
+    lineHeight: rf(19),
   },
   notVisible: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.chipSurface,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    gap: 6,
   },
-  toggleRow: {
+  deviceRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: 12,
   },
-  toggleBtn: {
+  devicePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surface,
+    gap: 7,
+    backgroundColor: colors.cardRaised,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+  },
+  devicePillOn: {
+    backgroundColor: colors.successChip,
+    borderColor: colors.successBorder,
+  },
+  deviceLabel: {
+    fontFamily: fontFamily.bold,
   },
   checks: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: 12,
   },
   check: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xxs,
+    gap: 4,
   },
   checkLabel: {
-    fontSize: rf(10),
+    fontFamily: fontFamily.bold,
   },
   floating: {
     position: 'absolute',
-    right: spacing.sm,
-    bottom: spacing.md,
-    gap: spacing.sm,
+    right: 14,
+    top: 58,
+    gap: 10,
   },
   floatBtn: {
-    width: wp(11),
-    height: wp(11),
-    borderRadius: radius.full,
-    backgroundColor: colors.glassSurface,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.cardRaised,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // Sections
-  section: {
-    gap: spacing.sm,
+  sectionLabel: {
+    marginTop: 26,
+    marginBottom: 14,
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.inputBackground,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    flex: 1,
+
+  titleInput: {
     color: colors.textPrimary,
-    fontFamily: fontFamily.body,
-    fontSize: rf(15),
-    paddingVertical: spacing.sm,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(17),
+    padding: 0,
   },
+
   catRow: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xxs,
-    marginBottom: spacing.xs,
+    flexDirection: 'row',
+    gap: 10,
   },
   catPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-  },
-  catPillActive: {
-    backgroundColor: colors.primary,
-  },
-  catPillIdle: {
-    backgroundColor: colors.surface,
+    gap: 8,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
   },
-  textareaWrap: {
-    backgroundColor: colors.inputBackground,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  catPillActive: {
+    backgroundColor: colors.pinkSoft,
+    borderColor: colors.borderHot,
   },
-  textarea: {
-    color: colors.textPrimary,
-    fontFamily: fontFamily.body,
-    fontSize: rf(15),
-    minHeight: wp(20),
+  catLabel: {
+    fontFamily: fontFamily.bold,
   },
 
-  // Reward menu
-  rewardHeader: {
+  textarea: {
+    color: colors.textSecondary,
+    fontFamily: fontFamily.body,
+    fontSize: rf(13),
+    lineHeight: rf(20),
+    minHeight: 70,
+    padding: 0,
+  },
+
+  rewardNote: {
+    marginTop: -4,
+    marginBottom: 8,
+  },
+  reward: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+    gap: 14,
+    paddingVertical: 16,
   },
-  rewardIcon: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: radius.full,
-    backgroundColor: colors.warningChip,
+  rewardDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  rewardText: {
+    flex: 1,
+    gap: 2,
+  },
+  rewardTitle: {
+    fontFamily: fontFamily.bold,
+  },
+  rewardCoins: {
+    fontFamily: fontFamily.extrabold,
+  },
+
+  cta: {
+    height: 58,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    marginTop: 26,
+    shadowColor: colors.pink,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  ctaFill: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
   },
-  rewardRow: {
-    backgroundColor: colors.inputBackground,
-    borderRadius: radius.md,
-    padding: spacing.md,
+  ctaLabel: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(14),
+    letterSpacing: 0.8,
+    color: colors.white,
+  },
+
+  legal: {
+    marginTop: 16,
   },
 });
 

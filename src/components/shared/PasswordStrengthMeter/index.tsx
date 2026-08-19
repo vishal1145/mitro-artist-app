@@ -1,49 +1,36 @@
 import { memo, useMemo } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { Text } from '@components/ui/Text';
-import { colors, radius, spacing } from '@theme';
-import { hp } from '@utils/responsive';
+import { colors, radius } from '@theme';
 
 export interface PasswordStrengthMeterProps {
-  /** Score 0..4 from passwordStrength(). */
+  /** Score 0..3 from authPasswordStrength(). */
   score: number;
 }
 
-const LABELS = ['Too weak', 'Weak', 'Fair', 'Good', 'Strong'] as const;
-const BAR_COLORS = [
-  colors.error,
-  colors.error,
-  colors.warning,
-  colors.info,
-  colors.success,
-] as const;
+/** Segment tint per score: weak / medium / strong. */
+const TINT = [colors.red, colors.red, colors.gold, colors.green] as const;
 
-/** Visual password strength indicator (4 segments). */
-const PasswordStrengthMeterComponent = ({
-  score,
-}: PasswordStrengthMeterProps) => {
-  const clamped = Math.max(0, Math.min(score, 4));
-  const tint = BAR_COLORS[clamped];
+/**
+ * Three-segment password strength bar.
+ * Scoring: 8+ characters, contains a number, contains a symbol.
+ */
+const PasswordStrengthMeterComponent = ({ score }: PasswordStrengthMeterProps) => {
+  const clamped = Math.max(0, Math.min(score, 3));
 
   const barStyles = useMemo<ViewStyle[]>(
     () =>
-      [0, 1, 2, 3].map((index) => ({
-        backgroundColor: index < clamped ? tint : colors.border,
+      [0, 1, 2].map((index) => ({
+        backgroundColor: index < clamped ? TINT[clamped] : colors.border,
       })),
-    [clamped, tint],
+    [clamped],
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.bars}>
-        {barStyles.map((barStyle, index) => (
-          <View key={index} style={[styles.bar, barStyle]} />
-        ))}
-      </View>
-      <Text variant="caption" color="textMuted">
-        {LABELS[clamped]}
-      </Text>
+    <View style={styles.bars} accessibilityRole="progressbar">
+      {barStyles.map((barStyle, index) => (
+        <View key={index} style={[styles.bar, barStyle]} />
+      ))}
     </View>
   );
 };
@@ -51,17 +38,13 @@ const PasswordStrengthMeterComponent = ({
 export const PasswordStrengthMeter = memo(PasswordStrengthMeterComponent);
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-    gap: spacing.xxs,
-  },
   bars: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: 4,
   },
   bar: {
     flex: 1,
-    height: hp(0.6),
+    height: 4,
     borderRadius: radius.sm,
   },
 });

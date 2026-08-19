@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
@@ -13,74 +14,50 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
-type Message =
-  | { id: string; kind: 'text'; mine: boolean; body: string; time: string; read?: boolean }
-  | { id: string; kind: 'tip'; from: string; coins: string; note: string }
-  | { id: string; kind: 'day'; label: string };
+type Bubble =
+  | { id: string; kind: 'in' | 'out'; text: string; at: string }
+  | { id: string; kind: 'gift'; amount: string; note: string; at: string };
 
-const INITIAL: Message[] = [
-  { id: 'd1', kind: 'day', label: 'Yesterday' },
+const THREAD: Bubble[] = [
   {
     id: 'm1',
-    kind: 'text',
-    mine: false,
-    body: 'Hey! Loved the stream last night, your energy was insane! 🔥 Have you thought about doing a dedicated Q&A session?',
-    time: '10:42 AM',
+    kind: 'in',
+    text: 'Hey! Loved the stream last night, your energy was insane! 🔥 Have you thought about doing a dedicated Q&A session?',
+    at: '10:42 AM',
   },
   {
     id: 'm2',
-    kind: 'text',
-    mine: true,
-    body: 'Thank you Riya! Honestly, I was so nervous but chat kept me going. A Q&A is a great idea, maybe this weekend?',
-    time: '11:15 AM',
+    kind: 'out',
+    text: 'Thank you Riya! Honestly, I was so nervous but chat kept me going. A Q&A is a great idea, maybe this weekend?',
+    at: '11:15 AM',
   },
   {
     id: 'm3',
-    kind: 'tip',
-    from: 'Riya',
-    coins: '250',
+    kind: 'gift',
+    amount: '250 coins',
     note: "For the pizza fund! 🍕 Can't wait for the Q&A.",
+    at: '11:20 AM',
   },
   {
     id: 'm4',
-    kind: 'text',
-    mine: true,
-    body: "You're the best! Pizza stream confirmed for Saturday. I'll make sure to shout you out. 🍕✨",
-    time: '11:30 AM',
-    read: true,
+    kind: 'out',
+    text: "You're the best! Pizza stream confirmed for Saturday. I'll make sure to shout you out 🎉",
+    at: '11:30 AM',
   },
 ];
 
+/** 1:1 conversation with a fan, including coin gifts sent inside the thread. */
 const ChatThreadScreen = () => {
   const router = useRouter();
   const { name } = useLocalSearchParams<{ followerId?: string; name?: string }>();
-  const fanName = name ?? 'Riya Sharma';
+  const fan = name ?? 'Riya Sharma';
+  const firstName = fan.split(' ')[0];
 
-  const [messages, setMessages] = useState<Message[]>(INITIAL);
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<ScrollView>(null);
-
-  const send = () => {
-    const body = draft.trim();
-    if (!body) {
-      return;
-    }
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `m${prev.length + 1}`,
-        kind: 'text',
-        mine: true,
-        body,
-        time: 'Now',
-      },
-    ]);
-    setDraft('');
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
-  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -88,147 +65,129 @@ const ChatThreadScreen = () => {
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
-          hitSlop={spacing.sm}
+          style={styles.iconBtn}
+          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={rf(22)} color={colors.textPrimary} />
+          <Ionicons name="chevron-back" size={rf(20)} color={colors.textPrimary} />
         </Pressable>
 
-        <Avatar initials="RS" name={fanName} size="md" style={styles.headerAvatar} />
+        <Avatar initials="RS" name={fan} size="md" color={colors.pink} />
 
         <View style={styles.headerText}>
-          <Text variant="link" color="textPrimary" numberOfLines={1}>
-            {fanName}
+          <Text variant="bodyLg" color="textPrimary" style={styles.headerName} numberOfLines={1}>
+            {fan}
           </Text>
           <View style={styles.headerMeta}>
-            <Ionicons name="star" size={rf(11)} color={colors.warning} />
-            <Text variant="caption" color="textMuted" numberOfLines={1}>
+            <Ionicons name="star" size={rf(11)} color={colors.gold} />
+            <Text variant="bodySm" color="textMuted">
               Top Supporter · 12,450 coins
             </Text>
           </View>
         </View>
 
         <Pressable
-          style={styles.callBtn}
+          style={styles.iconBtn}
+          onPress={() =>
+            router.push({
+              pathname: '/(app)/(modals)/private-call-room',
+              params: { callId: 'call_demo', fan },
+            })
+          }
           accessibilityRole="button"
-          accessibilityLabel={`Start a call with ${fanName}`}
+          accessibilityLabel={`Start a video call with ${firstName}`}
         >
-          <Ionicons name="videocam" size={rf(18)} color={colors.primary} />
+          <Ionicons name="videocam" size={rf(18)} color={colors.cyan} />
         </Pressable>
       </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
       >
         <ScrollView
           ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={styles.thread}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
         >
-          {/* Coaching note */}
-          <View style={styles.note}>
-            <View style={styles.noteAccent} />
-            <View style={styles.noteBody}>
-              <Ionicons name="information-circle-outline" size={rf(16)} color={colors.primary} />
-              <Text variant="caption" color="textSecondary" style={styles.noteText}>
-                Keep it personal! {fanName.split(' ')[0]} has been engaging a lot lately. A genuine
-                response goes a long way compared to a copy-pasted blast.
-              </Text>
-            </View>
-          </View>
-
-          {messages.map((m) => {
-            if (m.kind === 'day') {
+          {THREAD.map((b) => {
+            if (b.kind === 'gift') {
               return (
-                <View key={m.id} style={styles.dayRow}>
-                  <Text variant="label" color="textMuted" style={styles.dayPill}>
-                    {m.label}
-                  </Text>
-                </View>
-              );
-            }
-
-            if (m.kind === 'tip') {
-              return (
-                <View key={m.id} style={styles.tipWrap}>
-                  <View style={styles.tipCard}>
-                    <View style={styles.tipHead}>
-                      <View style={styles.tipIcon}>
-                        <Ionicons name="gift" size={rf(16)} color={colors.warning} />
-                      </View>
-                      <Text variant="link" color="warning">
-                        {m.from} sent {m.coins} coins
-                      </Text>
+                <View key={b.id} style={styles.gift}>
+                  <View style={styles.giftHead}>
+                    <View style={styles.giftIcon}>
+                      <Ionicons name="gift" size={rf(14)} color={colors.gold} />
                     </View>
-                    <Text variant="caption" color="textSecondary" style={styles.tipNote}>
-                      &quot;{m.note}&quot;
+                    <Text variant="bodyLg" color="gold" style={styles.giftTitle}>
+                      {firstName} sent {b.amount}
                     </Text>
                   </View>
+                  <Text variant="bodySm" color="textSecondary" style={styles.giftNote}>
+                    &quot;{b.note}&quot;
+                  </Text>
                 </View>
               );
             }
 
+            const out = b.kind === 'out';
+
             return (
-              <View
-                key={m.id}
-                style={[styles.bubbleRow, m.mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}
-              >
-                <View style={[styles.bubble, m.mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-                  <Text variant="body" color={m.mine ? 'ctaDark' : 'textPrimary'}>
-                    {m.body}
+              <View key={b.id} style={out ? styles.outWrap : styles.inWrap}>
+                <View style={[styles.bubble, out ? styles.bubbleOut : styles.bubbleIn]}>
+                  <Text
+                    variant="body"
+                    color={out ? 'screen' : 'textPrimary'}
+                    style={styles.bubbleText}
+                  >
+                    {b.text}
                   </Text>
                 </View>
-                <View style={styles.stamp}>
-                  <Text variant="caption" color="textMuted" style={styles.stampText}>
-                    {m.time}
-                  </Text>
-                  {m.mine && m.read ? (
-                    <Ionicons name="checkmark-done" size={rf(12)} color={colors.primary} />
-                  ) : null}
-                </View>
+                <Text variant="bodySm" color="textMuted" style={styles.stamp}>
+                  {b.at}
+                </Text>
               </View>
             );
           })}
         </ScrollView>
 
-        {/* Composer — pinned above the keyboard */}
+        {/* Composer */}
         <View style={styles.composer}>
-          <View style={styles.inputWrap}>
-            <Pressable
-              hitSlop={spacing.xs}
-              accessibilityRole="button"
-              accessibilityLabel="Attach a file"
-            >
-              <Ionicons name="attach" size={rf(20)} color={colors.textSecondary} />
-            </Pressable>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={`Message ${fanName.split(' ')[0]}…`}
-              placeholderTextColor={colors.inputPlaceholder}
-              style={styles.input}
-              multiline
-              accessibilityLabel="Message text"
-            />
-          </View>
+          <Pressable
+            style={styles.attachBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Attach a file"
+          >
+            <Ionicons name="attach" size={rf(18)} color={colors.textMuted} />
+          </Pressable>
+
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={`Message ${firstName}...`}
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            multiline
+            accessibilityLabel="Message"
+          />
 
           <Pressable
-            style={[styles.sendBtn, !draft.trim() ? styles.sendBtnIdle : null]}
-            onPress={send}
+            onPress={() => setDraft('')}
             disabled={!draft.trim()}
+            style={styles.sendBtn}
             accessibilityRole="button"
             accessibilityLabel="Send message"
           >
-            <Ionicons
-              name="send"
-              size={rf(18)}
-              color={draft.trim() ? colors.ctaDark : colors.textMuted}
-            />
+            <LinearGradient
+              colors={gradients.cta}
+              start={gradientDirection.diagonal.start}
+              end={gradientDirection.diagonal.end}
+              style={styles.sendFill}
+            >
+              <Ionicons name="send" size={rf(17)} color={colors.white} />
+            </LinearGradient>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -239,7 +198,7 @@ const ChatThreadScreen = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.screen,
   },
   flex: {
     flex: 1,
@@ -248,176 +207,145 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
+    gap: 12,
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerAvatar: {
-    marginLeft: spacing.xxs,
-  },
   headerText: {
     flex: 1,
-    gap: spacing.xxs,
+    gap: 2,
+  },
+  headerName: {
+    fontFamily: fontFamily.bold,
   },
   headerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xxs,
+    gap: 5,
   },
-  callBtn: {
-    width: wp(10),
-    height: wp(10),
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   thread: {
-    padding: spacing.md,
-    gap: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: 18,
+    gap: 18,
   },
-
-  note: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    overflow: 'hidden',
+  inWrap: {
+    alignSelf: 'flex-start',
+    maxWidth: '82%',
   },
-  noteAccent: {
-    width: wp(1),
-    backgroundColor: colors.primary,
-  },
-  noteBody: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  noteText: {
-    flex: 1,
-  },
-
-  dayRow: {
-    alignItems: 'center',
-  },
-  dayPill: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    overflow: 'hidden',
-  },
-
-  bubbleRow: {
-    gap: spacing.xxs,
-    maxWidth: '85%',
-  },
-  bubbleRowMine: {
+  outWrap: {
     alignSelf: 'flex-end',
+    maxWidth: '82%',
     alignItems: 'flex-end',
   },
-  bubbleRowTheirs: {
-    alignSelf: 'flex-start',
-    alignItems: 'flex-start',
-  },
   bubble: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-  bubbleMine: {
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: radius.sm,
-  },
-  bubbleTheirs: {
-    backgroundColor: colors.surface,
+  bubbleIn: {
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderBottomLeftRadius: radius.sm,
+    borderBottomLeftRadius: 6,
+  },
+  // Outgoing is a light bubble with dark text — the inverse of incoming.
+  bubbleOut: {
+    backgroundColor: colors.textPrimary,
+    borderBottomRightRadius: 6,
+  },
+  bubbleText: {
+    lineHeight: rf(20),
   },
   stamp: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.xs,
-  },
-  stampText: {
-    fontSize: rf(10),
+    marginTop: 6,
   },
 
-  tipWrap: {
-    alignItems: 'center',
-  },
-  tipCard: {
-    width: '90%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+  gift: {
+    alignSelf: 'stretch',
+    backgroundColor: colors.goldSoft,
     borderWidth: 1,
-    borderColor: colors.warningBorder,
-    padding: spacing.md,
-    gap: spacing.xs,
+    borderColor: colors.borderGold,
+    borderRadius: radius.card,
+    padding: 14,
+    gap: 8,
   },
-  tipHead: {
+  giftHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 10,
   },
-  tipIcon: {
-    width: wp(8),
-    height: wp(8),
-    borderRadius: radius.full,
-    backgroundColor: colors.warningChip,
+  giftIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: colors.goldSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tipNote: {
+  giftTitle: {
+    fontFamily: fontFamily.bold,
+  },
+  giftNote: {
     fontStyle: 'italic',
-    paddingLeft: wp(11),
+    lineHeight: rf(19),
   },
 
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    gap: 10,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
-  inputWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.xl,
+  attachBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-  },
-  input: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontFamily: fontFamily.body,
-    fontSize: rf(14),
-    paddingVertical: spacing.sm,
-    maxHeight: wp(28),
-  },
-  sendBtn: {
-    width: wp(12),
-    height: wp(12),
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnIdle: {
-    backgroundColor: colors.surfaceElevated,
+  input: {
+    flex: 1,
+    maxHeight: 110,
+    minHeight: 44,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 12,
+    color: colors.textPrimary,
+    fontFamily: fontFamily.body,
+    fontSize: rf(13),
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  sendFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

@@ -67,6 +67,51 @@ export const phoneSchema = z
   .trim()
   .regex(PHONE_E164_REGEX, 'Enter a valid phone number with country code.');
 
+/* -------------------------------------------------------------------------- */
+/*  Auth field rules (Mitro user-app parity)                                  */
+/* -------------------------------------------------------------------------- */
+
+const MOBILE_REGEX = /^\d{10}$/;
+const STAGE_NAME_REGEX = /^[a-z0-9_]+$/;
+
+/** 10-digit national mobile number (dial code is shown as a static prefix). */
+export const mobileSchema = z
+  .string()
+  .trim()
+  .regex(MOBILE_REGEX, 'Enter a valid 10-digit mobile number');
+
+/** Sign-in / sign-up password — length only; complexity is advisory. */
+export const authPasswordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters');
+
+/** Public display name. */
+export const displayNameSchema = z
+  .string()
+  .trim()
+  .min(3, 'Display name must be 3-24 characters')
+  .max(24, 'Display name must be 3-24 characters');
+
+/** Handle: lowercase letters, numbers and underscores only. */
+export const stageNameSchema = z
+  .string()
+  .trim()
+  .min(3, 'Letters, numbers and underscores only')
+  .max(20, 'Letters, numbers and underscores only')
+  .regex(STAGE_NAME_REGEX, 'Letters, numbers and underscores only');
+
+/**
+ * Password strength 0..3 for the sign-up meter:
+ * 8+ characters, contains a number, contains a symbol.
+ */
+export const authPasswordStrength = (value: string): number => {
+  let score = 0;
+  if (value.length >= 8) score += 1;
+  if (PASSWORD_DIGIT.test(value)) score += 1;
+  if (PASSWORD_SPECIAL.test(value)) score += 1;
+  return score;
+};
+
 export const searchSchema = z
   .string()
   .trim()

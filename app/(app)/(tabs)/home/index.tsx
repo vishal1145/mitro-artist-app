@@ -1,114 +1,94 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AuthBackground, Screen } from '@components/shared';
-import { Badge, Card, LogoBadge, Text } from '@components/ui';
-import { colors, fontFamily, gradients, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { EarningsBar, Screen } from '@components/shared';
+import { Card, Text } from '@components/ui';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 /* -------------------------------------------------------------------------- */
-/*  Data (static demo content — mirrors the reference design)                 */
+/*  Data                                                                      */
 /* -------------------------------------------------------------------------- */
 
 const STATS = [
-  { icon: 'cash-outline' as IoniconName, label: 'PENDING', value: '674', unit: 'tk', unitColor: 'textMuted' as const, tint: colors.warning },
-  { icon: 'people-outline' as IoniconName, label: 'FOLLOWERS', value: '48.2', unit: 'K', unitColor: 'success' as const, tint: colors.success },
+  { value: '674 tk', label: 'Pending', color: 'gold' as const },
+  { value: '48.2K', label: 'Followers', color: 'pink' as const },
+  { value: '12', label: 'Shows', color: 'cyan' as const },
+];
+
+/** Bar heights as a fraction of the chart area; Sunday is the best day. */
+const CHART = [
+  { day: 'Mon', value: 0.42 },
+  { day: 'Tue', value: 0.3 },
+  { day: 'Wed', value: 0.55 },
+  { day: 'Thu', value: 0.34 },
+  { day: 'Fri', value: 0.7 },
+  { day: 'Sat', value: 0.85 },
+  { day: 'Sun', value: 1 },
 ];
 
 const BROADCASTS = [
-  { id: 'bc_001', title: 'Midnight Synthwave', duration: '45m', views: '1.2K', likes: '342', earned: '+ 150 tk', date: 'Yesterday', gradient: gradients.cta, icon: 'musical-notes' as IoniconName },
-  { id: 'bc_002', title: 'Acoustic Chill Session', duration: '1h 20m', views: '890', likes: '210', earned: '+ 85 tk', date: 'Oct 24', gradient: gradients.primary, icon: 'musical-note' as IoniconName },
-  { id: 'bc_003', title: 'Weekly Q&A #12', duration: '30m', views: '2.1K', likes: '560', earned: '+ 320 tk', date: 'Oct 20', gradient: gradients.brand, icon: 'chatbubbles-outline' as IoniconName },
+  {
+    id: 'bc_001',
+    title: 'Midnight Synth Session',
+    meta: 'Aug 17 · 12m · 342 viewers',
+    earned: '+145 tk',
+    dot: colors.green,
+  },
+  {
+    id: 'bc_002',
+    title: 'Acoustic Chill Session',
+    meta: 'Aug 14 · 1h 20m · 890 viewers',
+    earned: '+85 tk',
+    dot: colors.gold,
+  },
+  {
+    id: 'bc_003',
+    title: 'Weekly Q&A #12',
+    meta: 'Aug 10 · 30m · 2.1K viewers',
+    earned: '+320 tk',
+    dot: colors.green,
+  },
 ];
 
 type AlertRoute =
-  | '/(app)/(tabs)/home/notifications'
-  | '/(app)/(tabs)/home/reward-fulfillment';
+  | '/(app)/(tabs)/home/reward-fulfillment'
+  | '/(app)/(tabs)/home/notifications';
 
 const ALERTS: {
+  id: string;
   icon: IoniconName;
-  highlight: boolean;
-  lead: string;
+  tint: string;
+  fill: string;
+  title: string;
   body: string;
-  time: string;
+  unread?: boolean;
   route: AlertRoute;
 }[] = [
   {
+    id: 'a1',
     icon: 'gift',
-    highlight: true,
-    lead: 'Rewards:',
-    body: ' 3 fan rewards are waiting on delivery — 1 is due today.',
-    time: '10 minutes ago',
+    tint: colors.pink,
+    fill: colors.pinkSoft,
+    title: 'Rewards',
+    body: '3 fan rewards waiting on delivery — 1 due today · 10 min ago',
+    unread: true,
     route: '/(app)/(tabs)/home/reward-fulfillment',
   },
   {
+    id: 'a2',
     icon: 'sparkles',
-    highlight: false,
-    lead: 'System:',
-    body: " You've reached a new milestone! 48K followers unlocked.",
-    time: '2 hours ago',
-    route: '/(app)/(tabs)/home/notifications',
-  },
-  {
-    icon: 'megaphone-outline',
-    highlight: false,
-    lead: '',
-    body: 'Your upcoming scheduled session "Tech Talk Tuesdays" is in 24 hours.',
-    time: 'Yesterday',
+    tint: colors.violet,
+    fill: colors.violetSoft,
+    title: 'System',
+    body: 'New milestone! 48K followers unlocked · 2h ago',
     route: '/(app)/(tabs)/home/notifications',
   },
 ];
-
-/* -------------------------------------------------------------------------- */
-/*  Small building blocks                                                     */
-/* -------------------------------------------------------------------------- */
-
-const IconChip = ({ icon, tint, round = false }: { icon: IoniconName; tint?: string; round?: boolean }) => (
-  <View style={[styles.chip, round ? styles.chipRound : null]}>
-    <Ionicons name={icon} size={rf(18)} color={tint ?? colors.textSecondary} />
-  </View>
-);
-
-const SectionTitle = ({ icon, children }: { icon?: IoniconName; children: ReactNode }) => (
-  <View style={styles.sectionTitleRow}>
-    {icon ? <Ionicons name={icon} size={rf(18)} color={colors.primary} style={styles.sectionTitleIcon} /> : null}
-    <Text variant="h3" style={styles.sectionTitle}>
-      {children}
-    </Text>
-  </View>
-);
-
-/** Decorative faux "mini dashboard" used behind the analytics/audience cards. */
-const PreviewPanel = ({ height, overlay }: { height: number; overlay?: ReactNode }) => (
-  <View style={[styles.preview, { height }]}>
-    <View style={styles.previewSidebar}>
-      <View style={styles.previewDot} />
-      {[0.9, 0.6, 0.75, 0.5, 0.65].map((w, i) => (
-        <View key={i} style={[styles.previewLine, { width: `${w * 100}%` }]} />
-      ))}
-    </View>
-    <View style={styles.previewMain}>
-      <View style={styles.previewPillRow}>
-        <View style={styles.previewPill} />
-        <View style={styles.previewPill} />
-      </View>
-      <View style={styles.previewChart}>
-        {[0.4, 0.7, 0.5, 0.85, 0.6, 0.95, 0.55].map((h, i) => (
-          <View key={i} style={[styles.previewBar, { height: `${h * 100}%` }]} />
-        ))}
-      </View>
-      {[0.8, 0.65, 0.7].map((w, i) => (
-        <View key={i} style={[styles.previewRow, { width: `${w * 100}%` }]} />
-      ))}
-    </View>
-    {overlay ? <View style={styles.previewOverlay}>{overlay}</View> : null}
-  </View>
-);
 
 /* -------------------------------------------------------------------------- */
 /*  Screen                                                                    */
@@ -118,218 +98,222 @@ const HomeScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen scrollable background={<AuthBackground />} contentContainerStyle={styles.content}>
-      {/* App bar */}
-      <View style={styles.appBar}>
-        <View style={styles.appBarLeft}>
-          <LogoBadge variant="wave" size={wp(8)} />
-          <Text variant="h3" style={styles.appBarTitle}>
-            Dashboard
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <EarningsBar
+        brand
+        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+        unread
+      />
+
+      {/* Heading */}
+      <Text variant="h1" style={styles.title}>
+        Creator Hub
+      </Text>
+      <Text variant="body" color="textSecondary" style={styles.subtitle}>
+        Manage streams, sessions, earnings, and your audience.
+      </Text>
+
+      {/* Prime-time tip */}
+      <View style={styles.tip}>
+        <Text variant="bodySm" color="textSecondary" style={styles.tipText}>
+          <Text style={styles.tipStrong}>Prime time for your audience is ~9 PM</Text> — schedule
+          tonight&apos;s session now.
+        </Text>
+        <Pressable
+          style={styles.helpChip}
+          accessibilityRole="button"
+          accessibilityLabel="Why this time?"
+        >
+          <Text style={styles.helpMark} color="textMuted">
+            ?
           </Text>
-        </View>
-        <View style={styles.appBarRight}>
-          <Pressable onPress={() => router.push('/(app)/(tabs)/home/notifications')} hitSlop={spacing.xs} accessibilityRole="button" accessibilityLabel="Notifications">
-            <Ionicons name="notifications-outline" size={rf(22)} color={colors.textSecondary} />
-          </Pressable>
-          <Pressable style={styles.avatar} onPress={() => router.push('/(app)/(tabs)/me')} accessibilityRole="button" accessibilityLabel="Profile">
-            <Ionicons name="person" size={rf(18)} color={colors.onPrimaryContrast} />
-          </Pressable>
-        </View>
+        </Pressable>
       </View>
 
-      {/* Search — opens the dedicated Search screen */}
-      <Pressable
-        style={styles.searchBar}
-        onPress={() => router.push('/(app)/(tabs)/home/search')}
-        accessibilityRole="search"
-        accessibilityLabel="Search sessions, followers and transactions"
-      >
-        <Ionicons name="search" size={rf(17)} color={colors.textMuted} />
-        <Text variant="body" color="inputPlaceholder">
-          Search sessions, followers, transactions
-        </Text>
-      </Pressable>
+      {/* Primary actions */}
+      <View style={styles.actions}>
+        <Pressable
+          style={styles.actionBtn}
+          onPress={() => router.push('/(app)/(tabs)/live')}
+          accessibilityRole="button"
+          accessibilityLabel="Start Live"
+        >
+          <LinearGradient
+            colors={gradients.cta}
+            start={gradientDirection.horizontal.start}
+            end={gradientDirection.horizontal.end}
+            style={styles.actionFill}
+          >
+            <Ionicons name="videocam" size={rf(16)} color={colors.white} />
+            <Text style={styles.actionLabel}>Start Live</Text>
+          </LinearGradient>
+        </Pressable>
 
-      {/* Hero */}
-      <View style={styles.hero}>
-        <Text variant="h1" style={styles.heroTitle}>
-          Creator Hub
-        </Text>
-        <Text variant="body" color="textSecondary" style={styles.heroSubtitle}>
-          Manage streams, sessions, earnings, and your audience.
-        </Text>
-        <View style={styles.heroButtons}>
-          <Pressable style={styles.heroButton} onPress={() => router.push('/(app)/(tabs)/live')} accessibilityRole="button" accessibilityLabel="Start Live">
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.heroButtonFill}
-            >
-              <Ionicons name="videocam" size={rf(18)} color={colors.ctaDark} />
-              <Text variant="link" color="ctaDark">
-                Start Live
-              </Text>
-            </LinearGradient>
-          </Pressable>
-          <Pressable style={[styles.heroButton, styles.heroButtonSurface]} onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')} accessibilityRole="button" accessibilityLabel="Schedule">
-            <Ionicons name="calendar-outline" size={rf(18)} color={colors.textPrimary} />
-            <Text variant="link" color="textPrimary">
-              Schedule
-            </Text>
-          </Pressable>
-        </View>
+        <Pressable
+          style={[styles.actionBtn, styles.actionOutline]}
+          onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
+          accessibilityRole="button"
+          accessibilityLabel="Schedule a session"
+        >
+          <Ionicons name="calendar-outline" size={rf(16)} color={colors.textPrimary} />
+          <Text style={styles.actionLabel}>Schedule</Text>
+        </Pressable>
       </View>
 
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        {STATS.map((stat) => (
+      {/* Inline stats */}
+      <View style={styles.stats}>
+        {STATS.map((s) => (
           <Pressable
-            key={stat.label}
-            style={styles.statCard}
+            key={s.label}
+            style={styles.stat}
             onPress={() =>
               router.push(
-                stat.label === 'PENDING'
+                s.label === 'Pending'
                   ? '/(app)/(tabs)/business'
-                  : '/(app)/(tabs)/me/followers',
+                  : s.label === 'Followers'
+                    ? '/(app)/(tabs)/me/followers'
+                    : '/(app)/(tabs)/calls/broadcast-history',
               )
             }
             accessibilityRole="button"
-            accessibilityLabel={stat.label}
+            accessibilityLabel={`${s.value} ${s.label}`}
           >
-            <Card style={styles.statCardInner}>
-              <View style={styles.statTop}>
-                <IconChip icon={stat.icon} tint={stat.tint} />
-                <Text variant="label" color="textMuted">
-                  {stat.label}
-                </Text>
-              </View>
-              <View style={styles.statValueRow}>
-                <Text variant="h1" style={styles.statValue}>
-                  {stat.value}
-                </Text>
-                <Text variant="caption" color={stat.unitColor} style={styles.statUnit}>
-                  {stat.unit}
-                </Text>
-              </View>
-            </Card>
+            <Text variant="h2" color={s.color} style={styles.statValue}>
+              {s.value}
+            </Text>
+            <Text variant="bodySm" color="textMuted">
+              {s.label}
+            </Text>
           </Pressable>
         ))}
       </View>
 
-      {/* Analytics Overview */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <SectionTitle>Analytics Overview</SectionTitle>
-          <Pressable onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')} hitSlop={spacing.xs} accessibilityRole="button" accessibilityLabel="Analytics details">
-            <Text variant="label" color="primary">
+      {/* Analytics */}
+      <Card style={styles.analytics}>
+        <View style={styles.analyticsHead}>
+          <Text variant="h3">Analytics Overview</Text>
+          <Pressable
+            onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Analytics details"
+          >
+            <Text variant="bodyLg" color="pink">
               Details
             </Text>
           </Pressable>
         </View>
-        <PreviewPanel height={wp(46)} />
-      </View>
 
-      {/* Recent Broadcasts */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <SectionTitle icon="time-outline">Recent Broadcasts</SectionTitle>
-          <Badge label="5 Shows" tone="neutral" />
+        <View style={styles.chart}>
+          {CHART.map((bar) => (
+            <View key={bar.day} style={styles.barCol}>
+              <View style={styles.barTrack}>
+                <LinearGradient
+                  colors={gradients.cta}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                  style={[styles.bar, { height: `${bar.value * 100}%` }]}
+                />
+              </View>
+              <Text variant="bodySm" color="textMuted" style={styles.barLabel}>
+                {bar.day}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        {BROADCASTS.map((show) => (
-          <Card
-            key={show.id}
-            style={styles.broadcast}
-            onPress={() =>
-              router.push({
-                pathname: '/(app)/(tabs)/home/broadcast-detail',
-                params: { broadcastId: show.id },
-              })
-            }
-          >
-            <View style={styles.thumb}>
-              <LinearGradient colors={show.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.thumbFill}>
-                <Ionicons name={show.icon} size={rf(20)} color={colors.textPrimary} />
-              </LinearGradient>
-              <View style={styles.durationChip}>
-                <Text variant="caption" color="white" style={styles.durationText}>
-                  {show.duration}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.broadcastBody}>
-              <Text variant="link" color="textPrimary" numberOfLines={1}>
-                {show.title}
-              </Text>
-              <View style={styles.broadcastStats}>
-                <Ionicons name="eye-outline" size={rf(14)} color={colors.textMuted} />
-                <Text variant="caption" color="textMuted" style={styles.broadcastStat}>
-                  {show.views}
-                </Text>
-                <Ionicons name="heart-outline" size={rf(14)} color={colors.textMuted} style={styles.broadcastStatIcon} />
-                <Text variant="caption" color="textMuted" style={styles.broadcastStat}>
-                  {show.likes}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.broadcastMeta}>
-              <Badge label={show.earned} tone="success" />
-              <Text variant="caption" color="textMuted" style={styles.broadcastDate}>
-                {show.date}
-              </Text>
-            </View>
-          </Card>
-        ))}
-      </View>
-
-      {/* Audience map */}
-      <PreviewPanel
-        height={wp(38)}
-        overlay={
-          <View style={styles.audienceOverlay}>
-            <View style={styles.audienceScrim} />
-            <View style={styles.audienceLabel}>
-              <IconChip icon="globe-outline" tint={colors.primary} round />
-              <Text variant="label" color="onSurface">
-                Audience Map Unlocked
-              </Text>
-            </View>
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.pink }]} />
+            <Text variant="bodySm" color="textMuted">
+              Best day
+            </Text>
           </View>
-        }
-      />
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.violet }]} />
+            <Text variant="bodySm" color="textMuted">
+              tokens/day
+            </Text>
+          </View>
+          <Text variant="bodySm" color="textMuted" style={styles.legendSummary}>
+            This week: <Text style={styles.legendStrong}>312 tk</Text> up 18%
+          </Text>
+        </View>
+      </Card>
+
+      {/* Recent broadcasts */}
+      <Text variant="label" color="textMuted" style={styles.sectionLabel}>
+        Recent Broadcasts
+      </Text>
+      <View style={styles.broadcasts}>
+        {BROADCASTS.map((b, i) => {
+          const last = i === BROADCASTS.length - 1;
+
+          return (
+            <Pressable
+              key={b.id}
+              style={[styles.broadcastRow, last ? styles.broadcastRowLast : null]}
+              onPress={() =>
+                router.push({
+                  pathname: '/(app)/(tabs)/home/broadcast-detail',
+                  params: { broadcastId: b.id },
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={b.title}
+            >
+              {/* Timeline rail — runs from this dot down to the next one. */}
+              {last ? null : <View style={styles.timeline} />}
+              <View style={styles.gutter}>
+                <View style={[styles.statusDot, { backgroundColor: b.dot }]} />
+              </View>
+              <View style={styles.broadcastText}>
+                <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>
+                  {b.title}
+                </Text>
+                <View style={styles.broadcastMeta}>
+                  <Text variant="bodySm" color="textMuted" style={styles.broadcastMetaText}>
+                    {b.meta}
+                  </Text>
+                  <Text variant="bodySm" color="green" style={styles.broadcastEarned}>
+                    {b.earned}
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {/* Alerts */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <SectionTitle icon="notifications-outline">Alerts</SectionTitle>
-          <View style={styles.alertDot} />
-        </View>
-
-        {ALERTS.map((alert, i) => (
-          <Card
-            key={i}
-            style={[styles.alert, alert.highlight ? styles.alertHighlight : null]}
-            onPress={() => router.push(alert.route)}
-            accessibilityLabel={alert.lead ? `${alert.lead}${alert.body}` : alert.body}
+      <Text variant="label" color="textMuted" style={[styles.sectionLabel, styles.sectionRule]}>
+        Alerts
+      </Text>
+      <View style={styles.alerts}>
+        {ALERTS.map((a) => (
+          <Pressable
+            key={a.id}
+            style={styles.alertRow}
+            onPress={() => router.push(a.route)}
+            accessibilityRole="button"
+            accessibilityLabel={`${a.title}. ${a.body}`}
           >
-            <IconChip icon={alert.icon} tint={alert.highlight ? colors.primary : colors.textSecondary} round />
-            <View style={styles.alertBody}>
-              <Text variant="body" color="textSecondary">
-                {alert.lead ? (
-                  <Text variant="body" color="primary" style={styles.alertLead}>
-                    {alert.lead}
-                  </Text>
-                ) : null}
-                {alert.body}
+            <View style={[styles.alertIcon, { backgroundColor: a.fill }]}>
+              <Ionicons name={a.icon} size={rf(16)} color={a.tint} />
+            </View>
+
+            <View style={styles.alertText}>
+              <Text variant="bodyLg" color="textPrimary">
+                {a.title}
               </Text>
-              <Text variant="caption" color="textMuted" style={styles.alertTime}>
-                {alert.time}
+              <Text variant="bodySm" color="textMuted">
+                {a.body}
               </Text>
             </View>
-          </Card>
+
+            {a.unread ? <View style={styles.alertUnread} /> : null}
+            <Ionicons name="chevron-forward" size={rf(15)} color={colors.textMuted} />
+          </Pressable>
         ))}
       </View>
     </Screen>
@@ -342,311 +326,243 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.xl,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: 24,
   },
 
-  // App bar
-  appBar: {
+  // Heading
+  title: {
+    marginTop: 24,
+    marginBottom: 6,
+  },
+  subtitle: {
+    marginBottom: 20,
+  },
+
+  // Tip
+  tip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 20,
   },
-  appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  tipText: {
+    flex: 1,
   },
-  appBarTitle: {
-    fontFamily: fontFamily.heading,
-    fontSize: rf(17),
+  tipStrong: {
+    fontFamily: fontFamily.bold,
+    color: colors.textPrimary,
   },
-  appBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  avatar: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
+  helpChip: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.cardRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Search
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  helpMark: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(11),
   },
 
-  // Hero
-  hero: {
-    gap: spacing.xs,
-  },
-  heroTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: rf(26),
-  },
-  heroSubtitle: {
-    maxWidth: '92%',
-  },
-  heroButtons: {
+  // Actions
+  actions: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+    gap: 12,
+    marginBottom: 24,
   },
-  heroButton: {
+  actionBtn: {
     flex: 1,
-    height: wp(13),
-    borderRadius: radius.lg,
+    height: 52,
+    borderRadius: radius.pill,
     overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  heroButtonFill: {
+  actionFill: {
     flex: 1,
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: 8,
   },
-  heroButtonSurface: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surfaceElevated,
+  actionOutline: {
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  actionLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(14),
+    color: colors.white,
   },
 
   // Stats
-  statsRow: {
+  stats: {
     flexDirection: 'row',
-    gap: spacing.md,
+    marginBottom: 24,
   },
-  statCard: {
+  stat: {
     flex: 1,
-  },
-  statCardInner: {
-    gap: spacing.sm,
-  },
-  statTop: {
-    flexDirection: 'row',
+    gap: 2,
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  statValueRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.xxs,
   },
   statValue: {
-    fontFamily: fontFamily.display,
-    fontSize: rf(23),
-  },
-  statUnit: {
-    marginBottom: rf(4),
+    fontFamily: fontFamily.extrabold,
   },
 
-  // Icon chip
-  chip: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: radius.md,
-    backgroundColor: colors.iconChip,
-    alignItems: 'center',
-    justifyContent: 'center',
+  // Analytics
+  analytics: {
+    gap: 16,
+    marginBottom: 24,
   },
-  chipRound: {
-    borderRadius: radius.full,
-  },
-
-  // Section
-  section: {
-    gap: spacing.md,
-  },
-  sectionHeader: {
+  analyticsHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  sectionTitleIcon: {
-    marginRight: spacing.xxs,
-  },
-  sectionTitle: {
-    fontFamily: fontFamily.heading,
-    fontSize: rf(17),
-  },
-
-  // Preview panel (faux dashboard)
-  preview: {
-    flexDirection: 'row',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.inputBackground,
-    overflow: 'hidden',
-  },
-  previewSidebar: {
-    width: '22%',
-    backgroundColor: colors.background,
-    padding: spacing.sm,
-    gap: spacing.xs,
-  },
-  previewDot: {
-    width: wp(4),
-    height: wp(4),
-    borderRadius: radius.full,
-    backgroundColor: colors.primaryDark,
-    marginBottom: spacing.xs,
-  },
-  previewLine: {
-    height: rf(4),
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceElevated,
-  },
-  previewMain: {
-    flex: 1,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  previewPillRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  previewPill: {
-    flex: 1,
-    height: wp(7),
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceRaised,
-  },
-  previewChart: {
-    flex: 1,
+  chart: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
+    gap: 8,
+    height: 130,
   },
-  previewBar: {
+  barCol: {
     flex: 1,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    gap: 8,
   },
-  previewRow: {
-    height: rf(5),
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceElevated,
-  },
-  previewOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-
-  // Audience map
-  audienceOverlay: {
+  barTrack: {
     flex: 1,
+    alignSelf: 'stretch',
     justifyContent: 'flex-end',
   },
-  audienceScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.scrim,
+  bar: {
+    width: '100%',
+    borderRadius: 8,
   },
-  audienceLabel: {
+  barLabel: {
+    fontSize: rf(11),
+  },
+  legend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendSummary: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  legendStrong: {
+    fontFamily: fontFamily.bold,
+    color: colors.textPrimary,
   },
 
-  // Broadcast card
-  broadcast: {
+  // Sections
+  sectionLabel: {
+    marginBottom: 12,
+  },
+  // Separates Alerts from the broadcast timeline above it.
+  sectionRule: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 20,
+  },
+
+  // Broadcasts — a timeline: fixed dot gutter on the left, rail linking the dots.
+  broadcasts: {
+    marginBottom: 24,
+  },
+  broadcastRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    alignItems: 'flex-start',
+    gap: 12,
+    // Row owns the gap so the rail can run through it to the next dot.
+    paddingBottom: 16,
   },
-  thumb: {
-    width: wp(19),
-    height: wp(17),
-    borderRadius: radius.md,
-    overflow: 'hidden',
+  broadcastRowLast: {
+    paddingBottom: 0,
   },
-  thumbFill: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  durationChip: {
+  // Centred under the dot (gutter 8 wide -> 3.5 for a 1.5pt rail).
+  timeline: {
     position: 'absolute',
-    left: spacing.xxs,
-    bottom: spacing.xxs,
-    borderRadius: radius.sm,
-    backgroundColor: colors.chipSurfaceStrong,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: rf(1),
+    left: 3.5,
+    top: 16,
+    bottom: -6,
+    width: 1.5,
+    backgroundColor: colors.cardRaised,
   },
-  durationText: {
-    fontSize: rf(10),
-  },
-  broadcastBody: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  broadcastStats: {
-    flexDirection: 'row',
+  gutter: {
+    width: 8,
     alignItems: 'center',
+    paddingTop: 6,
   },
-  broadcastStat: {
-    marginLeft: spacing.xxs,
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  broadcastStatIcon: {
-    marginLeft: spacing.sm,
+  broadcastText: {
+    flex: 1,
+    gap: 3,
   },
   broadcastMeta: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  broadcastDate: {
-    marginTop: spacing.xxs,
+  // Meta takes the slack so every "+xxx tk" lands on the right edge, forming a
+  // clean column instead of trailing its own meta line with dead space after.
+  broadcastMetaText: {
+    flex: 1,
+  },
+  broadcastEarned: {
+    fontFamily: fontFamily.bold,
   },
 
   // Alerts
-  alertDot: {
-    width: wp(2),
-    height: wp(2),
-    borderRadius: radius.full,
-    backgroundColor: colors.error,
+  alerts: {
+    gap: 12,
   },
-  alert: {
+  alertRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.card,
+    borderRadius: radius.card,
+    padding: 14,
   },
-  alertHighlight: {
-    borderLeftWidth: wp(0.8),
-    borderLeftColor: colors.primary,
-    backgroundColor: colors.surfaceRaised,
+  alertIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  alertBody: {
+  alertText: {
     flex: 1,
-    gap: spacing.xxs,
+    gap: 2,
   },
-  alertLead: {
-    fontFamily: fontFamily.bodySemibold,
-  },
-  alertTime: {
-    marginTop: spacing.xxs,
+  alertUnread: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.pink,
   },
 });
 

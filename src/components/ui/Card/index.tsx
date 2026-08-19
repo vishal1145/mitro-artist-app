@@ -7,8 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius, spacing } from '@theme';
-import { wp } from '@utils/responsive';
+import { colors, layout, radius } from '@theme';
 
 export interface CardProps {
   children: ReactNode;
@@ -56,15 +55,16 @@ const CardComponent = ({
 export const Card = memo(CardComponent);
 
 const styles = StyleSheet.create({
+  // Spec: card fill, 1px border, radius 20, padding 18.
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: wp(0.25),
+    backgroundColor: colors.card,
+    borderRadius: radius.card,
+    padding: layout.cardPadding,
+    borderWidth: 1,
     borderColor: colors.border,
   },
   elevated: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.cardRaised,
   },
   pressed: {
     opacity: 0.9,

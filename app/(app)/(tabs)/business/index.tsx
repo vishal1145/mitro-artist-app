@@ -3,269 +3,356 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { InfoCallout, Screen, StatTile } from '@components/shared';
-import { Card, GradientButton, LogoBadge, Text } from '@components/ui';
-import { colors, fontFamily, gradients, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { EarningsBar, Screen, SectionLabel, TimelineRow } from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
-/** Business tab — Earnings Dashboard. */
+/** Where the tokens came from. Values are absolute, shares are derived. */
+const SOURCES = [
+  { label: 'Highlighted msgs', value: 420, color: colors.pink },
+  { label: 'Rewards', value: 380, color: colors.gold },
+  { label: 'Reactions', value: 260, color: colors.cyan },
+  { label: 'Fun wheel', value: 180, color: colors.violet },
+];
+
+const TREND = [
+  { day: 'Mon', value: 40 },
+  { day: 'Tue', value: 85 },
+  { day: 'Wed', value: 120 },
+  { day: 'Thu', value: 95 },
+  { day: 'Fri', value: 210 },
+  { day: 'Sat', value: 145 },
+  { day: 'Sun', value: 320 },
+];
+
+const PAYOUTS = [
+  {
+    id: 'po_1',
+    title: 'Rs 9,200 sent to bank',
+    meta: '5d ago · HDFC ···4821',
+    dot: colors.green,
+  },
+  {
+    id: 'po_2',
+    title: 'Payout window closed',
+    meta: 'Aug 12 · balances locked for review',
+    dot: colors.textMuted,
+  },
+];
+
+const PEAK = Math.max(...TREND.map((t) => t.value));
+
+/** Business tab root — lifetime earnings, their sources, trend and payouts. */
 const EarningsScreen = () => {
   const router = useRouter();
-  const goToLedger = () => router.push('/(app)/(tabs)/business/transactions');
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      {/* App bar */}
-      <View style={styles.appBar}>
-        <View style={styles.appBarLeft}>
-          <LogoBadge variant="wave" size={wp(8)} />
-          <Text variant="h3" style={styles.appBarTitle}>
-            Earnings
-          </Text>
-        </View>
-        <View style={styles.appBarRight}>
-          <Ionicons name="notifications-outline" size={rf(22)} color={colors.textSecondary} />
-          <Pressable style={styles.walletBtn} onPress={goToLedger} accessibilityRole="button" accessibilityLabel="Open ledger">
-            <Ionicons name="wallet-outline" size={rf(18)} color={colors.primary} />
-          </Pressable>
-        </View>
-      </View>
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <EarningsBar
+        brand
+        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+        unread
+      />
 
-      <View style={styles.heading}>
-        <Text variant="h2">Earnings Dashboard</Text>
-        <Text variant="caption" color="textSecondary">
-          Real token earnings from highlighted messages, reactions, rewards, and the fun wheel across your broadcasts.
-        </Text>
-      </View>
-
-      <InfoCallout tone="success" icon="information-circle-outline" linkLabel="Learn how earnings are calculated" onLinkPress={goToLedger}>
-        <Text variant="caption" color="textSecondary">
-          This dashboard tallies every token earned from{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            private shows, group calls, reactions, tips, and the fun wheel
-          </Text>
-          . The trend chart plots tokens earned per day.{' '}
-        </Text>
-      </InfoCallout>
-
-      <InfoCallout tone="warning">
-        <Text variant="caption" color="textSecondary">
-          All earnings below are shown in tokens and currently sit as{' '}
-          <Text variant="caption" color="warning" style={styles.bold}>
-            pending
-          </Text>
-          . Withdrawals aren&apos;t available until setup is finalized.
-        </Text>
-      </InfoCallout>
+      <Text variant="h1" style={styles.title}>
+        Earnings
+      </Text>
 
       {/* All-time hero */}
-      <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-        <View style={styles.heroPill}>
-          <Ionicons name="sparkles" size={rf(12)} color={colors.primary} />
-          <Text variant="label" color="primary">
-            ALL-TIME
-          </Text>
+      <LinearGradient
+        colors={gradients.cta}
+        start={gradientDirection.diagonal.start}
+        end={gradientDirection.diagonal.end}
+        style={styles.hero}
+      >
+        <Pressable
+          style={styles.heroChip}
+          onPress={() => router.push('/(app)/(tabs)/business/transactions')}
+          accessibilityRole="button"
+          accessibilityLabel="Transaction history"
+        >
+          <Ionicons name="receipt-outline" size={rf(17)} color={colors.screen} />
+        </Pressable>
+
+        <Text style={styles.heroLabel}>ALL-TIME EARNED</Text>
+
+        <View style={styles.heroValueRow}>
+          <Text style={styles.heroValue}>1,240</Text>
+          <Text style={styles.heroUnit}>tokens</Text>
         </View>
-        <Text variant="display" align="center" style={styles.heroValue}>
-          0 tokens
-        </Text>
-        <Text variant="caption" color="textSecondary" align="center">
-          0 paid interactions across all your broadcasts.
-        </Text>
-        <View style={styles.heroChips}>
-          <View style={styles.heroChip}>
-            <Ionicons name="time-outline" size={rf(13)} color={colors.textSecondary} />
-            <Text variant="label" color="textSecondary">
-              0 pending
-            </Text>
+
+        <View style={styles.heroPills}>
+          <View style={styles.heroPill}>
+            <Text style={styles.heroPillText}>674 PENDING</Text>
           </View>
-          <View style={styles.heroChip}>
-            <Ionicons name="wallet-outline" size={rf(13)} color={colors.textSecondary} />
-            <Text variant="label" color="textSecondary">
-              0 available
-            </Text>
+          <View style={styles.heroPill}>
+            <Text style={styles.heroPillText}>0 AVAILABLE</Text>
           </View>
         </View>
       </LinearGradient>
 
-      {/* Stat grid 2x2 */}
-      <View style={styles.grid}>
-        <StatTile icon="cash-outline" label="Total Tokens" value="0" tint={colors.primary} sub="0 txns" />
-        <StatTile icon="gift-outline" label="Pending" value="0" tint={colors.warning} badge={{ label: 'Awaiting payout', tone: 'warning' }} />
-      </View>
-      <View style={styles.grid}>
-        <StatTile icon="wallet-outline" label="Available" value="0" tint={colors.success} badge={{ label: 'Ready', tone: 'success' }} />
-        <StatTile icon="checkmark-done-outline" label="Paid Out" value="0" tint={colors.primary} sub="Lifetime" />
-      </View>
-
-      <GradientButton
-        label="Withdraw Tokens"
-        gradient="primary"
-        textColor="ctaDark"
-        leftIcon="cash-outline"
-        onPress={() =>
-          router.push({
-            pathname: '/(app)/(tabs)/business/withdraw',
-            params: { availableTk: '0' },
-          })
-        }
-      />
-
-      <InfoCallout
-        tone="neutral"
-        icon="card-outline"
-        linkLabel="Complete KYC verification"
-        onLinkPress={() => router.push('/(app)/(tabs)/me/kyc-payouts')}
-      >
-        <Text variant="caption" color="textSecondary">
-          Tokens move from{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            Pending
-          </Text>{' '}
-          to{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            Available
-          </Text>{' '}
-          once a payout window closes. You&apos;ll need to complete{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            KYC verification
-          </Text>{' '}
-          before any payout can be sent to your bank account.
+      <Text variant="bodySm" color="gold" align="center" style={styles.kycNote}>
+        Earnings sit as pending until a payout window closes — and withdrawals need KYC first.{' '}
+        <Text
+          variant="bodySm"
+          color="white"
+          style={styles.kycLink}
+          onPress={() => router.push('/(app)/(tabs)/me/kyc-payouts')}
+        >
+          Complete KYC
         </Text>
-      </InfoCallout>
+      </Text>
 
-      {/* Trend */}
-      <Card style={styles.trend}>
-        <View style={styles.trendHeader}>
-          <View>
-            <Text variant="h3">Earnings Trend</Text>
-            <Text variant="caption" color="textMuted">
-              Last 7 days (tokens earned per day)
+      {/* Nothing is withdrawable until KYC clears, so the CTA stays inert. */}
+      <View style={styles.withdraw}>
+        <LinearGradient
+          colors={gradients.ctaMuted}
+          start={gradientDirection.horizontal.start}
+          end={gradientDirection.horizontal.end}
+          style={styles.withdrawFill}
+        >
+          <Text style={styles.withdrawLabel}>Withdraw Tokens</Text>
+        </LinearGradient>
+      </View>
+
+      <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
+        WHERE IT CAME FROM
+      </SectionLabel>
+
+      {/* Single stacked bar — each segment is that source's share of the total */}
+      <View style={styles.stack}>
+        {SOURCES.map((s) => (
+          <View
+            key={s.label}
+            style={[styles.stackSeg, { flex: s.value, backgroundColor: s.color }]}
+          />
+        ))}
+      </View>
+
+      <View style={styles.legend}>
+        {SOURCES.map((s) => (
+          <View key={s.label} style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: s.color }]} />
+            <Text variant="bodySm" color="textSecondary" style={styles.legendLabel}>
+              {s.label}
+            </Text>
+            <Text variant="bodySm" color="textPrimary" style={styles.legendValue}>
+              {s.value}
             </Text>
           </View>
-          <View style={styles.chip}>
-            <Ionicons name="bar-chart-outline" size={rf(16)} color={colors.textSecondary} />
-          </View>
-        </View>
+        ))}
+      </View>
 
-        <View style={styles.chart}>
-          <LinearGradient colors={[colors.primary, colors.success]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.chartLine} />
-          <Text variant="caption" color="textMuted" align="center" style={styles.chartLabel}>
-            Mon
-          </Text>
-        </View>
+      <SectionLabel style={styles.sectionLabel}>EARNINGS TREND — LAST 7 DAYS</SectionLabel>
 
-        <Text variant="caption" color="textMuted" align="center">
-          No paid interactions yet. Once viewers react, tip, or spin the fun wheel during your broadcasts, they&apos;ll show up here.
-        </Text>
-      </Card>
+      <View style={styles.chart}>
+        {TREND.map((t) => {
+          const best = t.value === PEAK;
+
+          return (
+            <View key={t.day} style={styles.barCol}>
+              <Text
+                variant="bodySm"
+                color={best ? 'pink' : 'textMuted'}
+                style={styles.barValue}
+              >
+                {t.value}
+              </Text>
+              <View style={styles.barTrack}>
+                <LinearGradient
+                  colors={gradients.cta}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                  style={[styles.bar, { height: `${(t.value / PEAK) * 100}%` }]}
+                />
+              </View>
+              <Text variant="bodySm" color={best ? 'textPrimary' : 'textMuted'}>
+                {t.day}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <Text variant="bodySm" color="textMuted" align="center" style={styles.trendNote}>
+        Saturday shows earn most — your fans are night owls.
+      </Text>
+
+      <SectionLabel style={styles.sectionLabel}>RECENT PAYOUTS</SectionLabel>
+
+      {PAYOUTS.map((p, i) => (
+        <TimelineRow
+          key={p.id}
+          title={p.title}
+          meta={p.meta}
+          dotColor={p.dot}
+          last={i === PAYOUTS.length - 1}
+          onPress={() => router.push('/(app)/(tabs)/business/transactions')}
+        />
+      ))}
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
   },
-  appBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  title: {
+    marginTop: 20,
   },
-  appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  appBarTitle: {
-    fontSize: rf(17),
-  },
-  appBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  walletBtn: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heading: {
-    gap: spacing.xs,
-  },
-  bold: {
-    fontFamily: fontFamily.bodySemibold,
-  },
+
   hero: {
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.primaryBorder,
-  },
-  heroPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    borderRadius: radius.pill,
-    marginBottom: spacing.xs,
-  },
-  heroValue: {
-    fontSize: rf(34),
-  },
-  heroChips: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
+    borderRadius: radius.card,
+    padding: 22,
+    marginTop: 16,
   },
   heroChip: {
-    flexDirection: 'row',
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors.gold,
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
+  },
+  heroLabel: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10),
+    letterSpacing: 1.1,
+    color: colors.white,
+  },
+  heroValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginTop: 10,
+  },
+  heroValue: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(38),
+    lineHeight: rf(44),
+    color: colors.white,
+  },
+  heroUnit: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15),
+    color: colors.white,
+  },
+  heroPills: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 18,
+  },
+  heroPill: {
     backgroundColor: colors.chipSurface,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
     borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
-  grid: {
-    flexDirection: 'row',
-    gap: spacing.md,
+  heroPillText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10),
+    letterSpacing: 0.8,
+    color: colors.white,
   },
-  trend: {
-    gap: spacing.md,
+
+  kycNote: {
+    marginTop: 18,
+    lineHeight: rf(19),
   },
-  trendHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  kycLink: {
+    fontFamily: fontFamily.bold,
+    textDecorationLine: 'underline',
   },
-  chip: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: radius.md,
-    backgroundColor: colors.iconChip,
+
+  withdraw: {
+    height: 56,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    marginTop: 18,
+  },
+  withdrawFill: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  withdrawLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15),
+    color: colors.textMuted,
+  },
+
+  sectionLabel: {
+    marginTop: 24,
+    marginBottom: 14,
+  },
+
+  stack: {
+    flexDirection: 'row',
+    height: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
+    gap: 2,
+  },
+  stackSeg: {
+    height: '100%',
+  },
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 14,
+    rowGap: 10,
+  },
+  legendItem: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingRight: 12,
+  },
+  legendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    flex: 1,
+  },
+  legendValue: {
+    fontFamily: fontFamily.bold,
+  },
+
   chart: {
-    height: wp(28),
-    justifyContent: 'center',
-    gap: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    height: 170,
   },
-  chartLine: {
-    height: rf(3),
-    borderRadius: radius.full,
+  barCol: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
   },
-  chartLabel: {
-    marginTop: spacing.sm,
+  barValue: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(10),
+  },
+  barTrack: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'flex-end',
+  },
+  bar: {
+    width: '100%',
+    borderRadius: 8,
+  },
+  trendNote: {
+    marginTop: 14,
+    fontStyle: 'italic',
   },
 });
 

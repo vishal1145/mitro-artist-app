@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomSheet, ListRow, ToggleRow } from '@components/shared';
+import { BottomSheet, ConfirmDialog, ListRow, ToggleRow } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
 import { colors, gradients, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
@@ -56,6 +56,7 @@ const LiveBroadcastRoomScreen = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [beautyOn, setBeautyOn] = useState(false);
   const [chatOn, setChatOn] = useState(true);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
   const chatRef = useRef<ScrollView>(null);
 
   const title = (() => {
@@ -72,23 +73,12 @@ const LiveBroadcastRoomScreen = () => {
   }, []);
 
   /** Ending is destructive — confirm, then replace so back can't return here. */
-  const confirmEnd = () => {
-    Alert.alert(
-      'End broadcast?',
-      'Your stream will end for everyone watching. You can review the summary afterwards.',
-      [
-        { text: 'Keep streaming', style: 'cancel' },
-        {
-          text: 'End broadcast',
-          style: 'destructive',
-          onPress: () =>
-            router.replace({
-              pathname: '/(app)/(modals)/broadcast-summary',
-              params: { broadcastId: 'bc_live' },
-            }),
-        },
-      ],
-    );
+  const endBroadcast = () => {
+    setConfirmingEnd(false);
+    router.replace({
+      pathname: '/(app)/(modals)/broadcast-summary',
+      params: { broadcastId: 'bc_live' },
+    });
   };
 
   return (
@@ -106,7 +96,7 @@ const LiveBroadcastRoomScreen = () => {
         <View style={styles.topLeft}>
           <View style={styles.livePill}>
             <View style={styles.liveDot} />
-            <Text variant="label" color="successBg">
+            <Text variant="label" color="onSuccess">
               LIVE
             </Text>
           </View>
@@ -255,11 +245,11 @@ const LiveBroadcastRoomScreen = () => {
 
             <Pressable
               style={styles.endBtn}
-              onPress={confirmEnd}
+              onPress={() => setConfirmingEnd(true)}
               accessibilityRole="button"
               accessibilityLabel="End broadcast"
             >
-              <Ionicons name="close" size={rf(26)} color={colors.errorBg} />
+              <Ionicons name="close" size={rf(26)} color={colors.onError} />
             </Pressable>
 
             <Pressable
@@ -333,6 +323,17 @@ const LiveBroadcastRoomScreen = () => {
           />
         </View>
       </BottomSheet>
+
+      <ConfirmDialog
+        visible={confirmingEnd}
+        icon="stop-circle-outline"
+        title="End broadcast?"
+        message="Your stream will end for everyone watching. You can review the summary afterwards."
+        confirmLabel="End broadcast"
+        cancelLabel="Keep streaming"
+        onConfirm={endBroadcast}
+        onCancel={() => setConfirmingEnd(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     width: wp(2),
     height: wp(2),
     borderRadius: radius.full,
-    backgroundColor: colors.successBg,
+    backgroundColor: colors.onSuccess,
   },
   topRight: {
     flexDirection: 'row',

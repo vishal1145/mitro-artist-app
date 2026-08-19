@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ConfirmDialog } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
 import { colors, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
@@ -35,6 +36,7 @@ const PrivateCallRoomScreen = () => {
   const [elapsed, setElapsed] = useState(4 * 60 + 32);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
@@ -59,15 +61,14 @@ const PrivateCallRoomScreen = () => {
     : 5 + Math.ceil((elapsed - PREPAID_SEC) / 60);
   const earned = billedMinutes * rate;
 
-  const confirmEnd = () => {
-    Alert.alert('End call?', `The call with ${fanName} will end for both of you.`, [
-      { text: 'Keep talking', style: 'cancel' },
-      {
-        text: 'End call',
-        style: 'destructive',
-        onPress: () => router.replace('/(app)/(tabs)/calls/private-calls'),
-      },
-    ]);
+  /** Dismiss the modal stack so nothing is left pushed on the Calls tab. */
+  const endCall = () => {
+    setConfirmingEnd(false);
+    if (router.canDismiss()) {
+      router.dismissAll();
+    } else {
+      router.replace('/(app)/(tabs)/calls');
+    }
   };
 
   return (
@@ -173,11 +174,11 @@ const PrivateCallRoomScreen = () => {
 
         <Pressable
           style={styles.endBtn}
-          onPress={confirmEnd}
+          onPress={() => setConfirmingEnd(true)}
           accessibilityRole="button"
           accessibilityLabel={`End call ${callId ?? ''}`}
         >
-          <Ionicons name="call" size={rf(26)} color={colors.errorBg} />
+          <Ionicons name="call" size={rf(26)} color={colors.onError} style={styles.endIcon} />
         </Pressable>
 
         <Pressable style={styles.ctrlBtn} accessibilityRole="button" accessibilityLabel="Flip camera">
@@ -189,6 +190,17 @@ const PrivateCallRoomScreen = () => {
           <View style={styles.badgeDot} />
         </Pressable>
       </View>
+
+      <ConfirmDialog
+        visible={confirmingEnd}
+        icon="call-outline"
+        title="End call?"
+        message={`The call with ${fanName} will end for both of you.`}
+        confirmLabel="End call"
+        cancelLabel="Keep talking"
+        onConfirm={endCall}
+        onCancel={() => setConfirmingEnd(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -331,6 +343,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Hang-up is the phone glyph rotated 135deg.
+  endIcon: {
+    transform: [{ rotate: '135deg' }],
   },
   badgeDot: {
     position: 'absolute',

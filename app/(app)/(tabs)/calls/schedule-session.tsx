@@ -62,7 +62,7 @@ const ScheduleSessionScreen = () => {
   }, [seats, price]);
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       <Header title="Broadcast Session" onBack={() => router.back()} />
 
       <SectionLabel>SESSION DETAILS</SectionLabel>

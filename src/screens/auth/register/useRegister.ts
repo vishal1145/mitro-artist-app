@@ -20,8 +20,8 @@ export const useRegister = (): UseRegisterResult => {
     formState: { isValid, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    mode: 'onBlur',
-    defaultValues: { name: '', username: '', email: '', password: '' },
+    mode: 'onChange',
+    defaultValues: { name: '', username: '', mobile: '', password: '' },
   });
 
   const onSubmit = useCallback<SubmitHandler<RegisterFormValues>>(
@@ -37,7 +37,7 @@ export const useRegister = (): UseRegisterResult => {
       logger.info('Register success — verification required');
       router.push({
         pathname: '/(auth)/otp-verify',
-        params: { email: values.email, origin: 'register' },
+        params: { mobile: values.mobile, origin: 'register' },
       });
     },
     [router],

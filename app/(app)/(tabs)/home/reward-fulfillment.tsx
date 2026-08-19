@@ -98,7 +98,7 @@ const RewardFulfillmentScreen = () => {
   }, [tab, delivered]);
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       <Header title="Reward Deliveries" onBack={() => router.back()} />
 
       {/* Urgency banner */}
@@ -216,8 +216,8 @@ const RewardFulfillmentScreen = () => {
                   accessibilityRole="button"
                   accessibilityLabel={`Mark ${r.title} delivered`}
                 >
-                  <Ionicons name="checkmark-circle" size={rf(15)} color={colors.successBg} />
-                  <Text variant="caption" color="successBg" style={styles.actionPrimaryText}>
+                  <Ionicons name="checkmark-circle" size={rf(15)} color={colors.onSuccess} />
+                  <Text variant="caption" color="onSuccess" style={styles.actionPrimaryText}>
                     Mark delivered
                   </Text>
                 </Pressable>

@@ -1,242 +1,347 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ListRow, Screen } from '@components/shared';
-import { Avatar, Badge, Button, Card, LogoBadge, Text } from '@components/ui';
-import { useAuthStore } from '@store';
-import { colors, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import {
+  ConfirmDialog,
+  EarningsBar,
+  InsightLine,
+  RingAvatar,
+  Screen,
+  SectionLabel,
+} from '@components/shared';
+import { Text } from '@components/ui';
+import { useAuthStore } from '@store/authStore';
+import { colors, fontFamily, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
+
+import type { ColorToken } from '@theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
+
 type Href =
-  | '/(app)/(tabs)/me/followers'
   | '/(app)/(tabs)/me/messages'
+  | '/(app)/(tabs)/me/followers'
   | '/(app)/(tabs)/me/settings'
   | '/(app)/(tabs)/me/kyc-payouts'
-  | '/(app)/(tabs)/business/transactions'
-  | '/(app)/(tabs)/calls/broadcast-history'
   | '/(app)/(tabs)/home/reward-fulfillment'
-  | '/(app)/(tabs)/home/notifications';
+  | '/(app)/(tabs)/business/transactions';
 
-const STATS = [
-  { label: 'Followers', value: '48.2K' },
-  { label: 'Earned', value: '1.2k tk' },
-  { label: 'Shows', value: '12' },
-];
-
-interface MenuItem {
+interface Row {
   icon: IoniconName;
-  label: string;
-  route?: Href;
-  badge?: string;
+  tint: string;
+  fill: string;
+  title: string;
+  sub: string;
+  route: Href;
+  /** Pink count bubble. */
+  badge?: number;
+  /** Gold status pill, e.g. REQUIRED. */
+  pill?: string;
 }
 
-const MENU: { section: string; items: MenuItem[] }[] = [
+const ACCOUNT: Row[] = [
   {
-    section: 'ACCOUNT',
-    items: [
-      {
-        icon: 'chatbubbles-outline',
-        label: 'Messages',
-        route: '/(app)/(tabs)/me/messages',
-        badge: '2',
-      },
-      { icon: 'people-outline', label: 'Followers', route: '/(app)/(tabs)/me/followers' },
-      { icon: 'settings-outline', label: 'Settings', route: '/(app)/(tabs)/me/settings' },
-      {
-        icon: 'shield-checkmark-outline',
-        label: 'KYC & Payouts',
-        route: '/(app)/(tabs)/me/kyc-payouts',
-        badge: 'Required',
-      },
-    ],
+    icon: 'chatbubble-ellipses',
+    tint: colors.pink,
+    fill: colors.pinkSoft,
+    title: 'Messages',
+    sub: 'Riya sent 250 coins with a note',
+    route: '/(app)/(tabs)/me/messages',
+    badge: 2,
   },
   {
-    section: 'ACTIVITY',
-    items: [
-      {
-        icon: 'gift-outline',
-        label: 'Reward Deliveries',
-        route: '/(app)/(tabs)/home/reward-fulfillment',
-        badge: '3',
-      },
-      {
-        icon: 'receipt-outline',
-        label: 'Transaction History',
-        route: '/(app)/(tabs)/business/transactions',
-      },
-      {
-        icon: 'radio-outline',
-        label: 'Broadcast History',
-        route: '/(app)/(tabs)/calls/broadcast-history',
-      },
-      {
-        icon: 'notifications-outline',
-        label: 'Notifications',
-        route: '/(app)/(tabs)/home/notifications',
-      },
-    ],
+    icon: 'people',
+    tint: colors.violet,
+    fill: colors.violetSoft,
+    title: 'Followers',
+    sub: '128 top supporters to thank',
+    route: '/(app)/(tabs)/me/followers',
+  },
+  {
+    icon: 'settings',
+    tint: colors.cyan,
+    fill: colors.cyanSoft,
+    title: 'Settings',
+    sub: 'Profile, reward menu, fun wheel',
+    route: '/(app)/(tabs)/me/settings',
+  },
+  {
+    icon: 'shield-checkmark',
+    tint: colors.gold,
+    fill: colors.goldSoft,
+    title: 'KYC & Payouts',
+    sub: 'Needed before your first withdrawal',
+    route: '/(app)/(tabs)/me/kyc-payouts',
+    pill: 'REQUIRED',
   },
 ];
 
+const ACTIVITY: Row[] = [
+  {
+    icon: 'gift',
+    tint: colors.pink,
+    fill: colors.pinkSoft,
+    title: 'Reward Deliveries',
+    sub: 'Fans notice when a shoutout never arrives',
+    route: '/(app)/(tabs)/home/reward-fulfillment',
+    badge: 3,
+  },
+  {
+    icon: 'file-tray-full',
+    tint: colors.green,
+    fill: colors.successChip,
+    title: 'Transaction History',
+    sub: 'Every token in and out',
+    route: '/(app)/(tabs)/business/transactions',
+  },
+];
+
+const STATS: { value: string; label: string; color: ColorToken }[] = [
+  { value: '48.2K', label: 'Followers', color: 'pink' },
+  { value: '1.2k tk', label: 'Earned', color: 'gold' },
+  { value: '12', label: 'Shows', color: 'cyan' },
+];
+
+/** Me tab root — creator identity, headline numbers, and account navigation. */
 const MeScreen = () => {
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
-  const handleLogout = useCallback(() => {
-    void logout();
-  }, [logout]);
+  const handleLogout = () => {
+    setConfirmingLogout(false);
+    void logout().then(() => router.replace('/(auth)/login'));
+  };
 
-  const name = user?.name ?? 'Creator';
-  const username = user?.username ? `@${user.username}` : 'Signed in';
-  const initials = name
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-  return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      {/* App bar */}
-      <View style={styles.appBar}>
-        <View style={styles.appBarLeft}>
-          <LogoBadge variant="wave" size={wp(8)} />
-          <Text variant="h3" style={styles.appBarTitle}>
-            Me
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => router.push('/(app)/(tabs)/me/settings')}
-          hitSlop={spacing.sm}
-          accessibilityRole="button"
-          accessibilityLabel="Settings"
-        >
-          <Ionicons name="settings-outline" size={rf(22)} color={colors.textSecondary} />
-        </Pressable>
+  const renderRow = (row: Row, last: boolean) => (
+    <Pressable
+      key={row.title}
+      style={[styles.row, last ? null : styles.rowDivider]}
+      onPress={() => router.push(row.route)}
+      accessibilityRole="button"
+      accessibilityLabel={row.title}
+      accessibilityHint={row.sub}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: row.fill }]}>
+        <Ionicons name={row.icon} size={rf(17)} color={row.tint} />
       </View>
 
-      {/* Profile header */}
-      <Card style={styles.profileCard}>
-        <View style={styles.profileTop}>
-          <Avatar initials={initials} name={name} size="lg" />
-          <View style={styles.profileInfo}>
-            <Text variant="h2" numberOfLines={1}>
-              {name}
-            </Text>
-            <Text variant="caption" color="textMuted">
-              {username}
-            </Text>
-            <View style={styles.ratingRow}>
-              <Ionicons name="star" size={rf(13)} color={colors.warning} />
-              <Text variant="caption" color="textSecondary">
-                4.9 Creator Rating
-              </Text>
-            </View>
-          </View>
-        </View>
+      <View style={styles.rowText}>
+        <Text variant="bodyLg" color="textPrimary" style={styles.rowTitle}>
+          {row.title}
+        </Text>
+        <Text variant="bodySm" color="textMuted" numberOfLines={1}>
+          {row.sub}
+        </Text>
+      </View>
 
-        <View style={styles.statsRow}>
-          {STATS.map((stat) => (
-            <View key={stat.label} style={styles.stat}>
-              <Text variant="h3">{stat.value}</Text>
-              <Text variant="caption" color="textMuted">
-                {stat.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-
-      {/* Menu */}
-      {MENU.map((group) => (
-        <View key={group.section} style={styles.group}>
-          <Text variant="label" color="textMuted">
-            {group.section}
+      {row.pill ? (
+        <View style={styles.pill}>
+          <Text variant="label" color="gold">
+            {row.pill}
           </Text>
-          <Card style={styles.menuCard}>
-            {group.items.map((item, i) => (
-              <ListRow
-                key={item.label}
-                icon={item.icon}
-                title={item.label}
-                right={item.badge ? <Badge label={item.badge} tone="warning" /> : undefined}
-                chevron
-                divider={i > 0}
-                onPress={item.route ? () => router.push(item.route as Href) : undefined}
-                style={styles.menuRow}
-              />
-            ))}
-          </Card>
         </View>
-      ))}
+      ) : null}
 
-      <Button label="Log out" variant="danger" leftIcon="log-out-outline" onPress={handleLogout} />
+      {row.badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{row.badge}</Text>
+        </View>
+      ) : null}
+
+      <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+    </Pressable>
+  );
+
+  return (
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <EarningsBar
+        brand
+        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+        unread
+      />
+
+      {/* Identity */}
+      <View style={styles.identity}>
+        <RingAvatar initials="Y7" badge="READY" />
+
+        <Text variant="h2" style={styles.handle}>
+          @yash_7247
+        </Text>
+        <Text variant="bodySm" color="textMuted">
+          Verified creator · Music &amp; Talk
+        </Text>
+
+        <View style={styles.rating}>
+          <Ionicons name="star" size={rf(12)} color={colors.gold} />
+          <Ionicons name="star" size={rf(12)} color={colors.gold} />
+          <Ionicons name="star" size={rf(12)} color={colors.gold} />
+          <Ionicons name="star" size={rf(12)} color={colors.gold} />
+          <Ionicons name="star" size={rf(12)} color={colors.gold} />
+          <Text variant="bodySm" color="textPrimary" style={styles.ratingText}>
+            4.9 creator rating
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.stats}>
+        {STATS.map((s) => (
+          <View key={s.label} style={styles.stat}>
+            <Text variant="h2" color={s.color} style={styles.statValue}>
+              {s.value}
+            </Text>
+            <Text variant="bodySm" color="textMuted">
+              {s.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <InsightLine
+        style={styles.insight}
+        lead="940 new followers this week."
+        tail=" Your last Q&A pulled 2.1K viewers — fans respond when you go live around 9 PM. Finish KYC to unlock withdrawals."
+      />
+
+      <SectionLabel style={styles.sectionLabel}>ACCOUNT</SectionLabel>
+      {ACCOUNT.map((row, i) => renderRow(row, i === ACCOUNT.length - 1))}
+
+      <SectionLabel style={styles.sectionLabel}>ACTIVITY</SectionLabel>
+      {ACTIVITY.map((row, i) => renderRow(row, i === ACTIVITY.length - 1))}
+
+      <Pressable
+        style={styles.logout}
+        onPress={() => setConfirmingLogout(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Log out"
+      >
+        <Ionicons name="log-out-outline" size={rf(17)} color={colors.red} />
+        <Text variant="bodyLg" color="red" style={styles.logoutLabel}>
+          Log out
+        </Text>
+      </Pressable>
+
+      <ConfirmDialog
+        visible={confirmingLogout}
+        icon="log-out-outline"
+        title="Log out?"
+        message="You'll need to sign in again to go live."
+        confirmLabel="Log out"
+        onConfirm={handleLogout}
+        onCancel={() => setConfirmingLogout(false)}
+      />
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
-  },
-  appBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  appBarTitle: {
-    fontSize: rf(17),
+    paddingHorizontal: layout.screenPadding,
   },
 
-  profileCard: {
-    gap: spacing.lg,
+  identity: {
+    alignItems: 'center',
+    marginTop: 28,
   },
-  profileTop: {
+  handle: {
+    marginTop: 24,
+  },
+  rating: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: 3,
+    marginTop: 10,
   },
-  profileInfo: {
-    flex: 1,
-    gap: spacing.xxs,
+  ratingText: {
+    fontFamily: fontFamily.bold,
+    marginLeft: 6,
   },
-  ratingRow: {
+
+  stats: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xxs,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
+    marginTop: 22,
   },
   stat: {
     flex: 1,
     alignItems: 'center',
-    gap: spacing.xxs,
+    gap: 2,
+  },
+  statValue: {
+    fontFamily: fontFamily.extrabold,
   },
 
-  group: {
-    gap: spacing.sm,
+  insight: {
+    marginTop: 22,
   },
-  menuCard: {
-    padding: 0,
-    overflow: 'hidden',
+
+  sectionLabel: {
+    marginTop: 26,
+    marginBottom: 4,
   },
-  menuRow: {
-    paddingHorizontal: spacing.md,
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 16,
+  },
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  rowIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowText: {
+    flex: 1,
+    gap: 2,
+  },
+  rowTitle: {
+    fontFamily: fontFamily.bold,
+  },
+  pill: {
+    borderWidth: 1,
+    borderColor: colors.borderGold,
+    backgroundColor: colors.goldSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  badge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.pink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 7,
+  },
+  badgeText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(11),
+    color: colors.white,
+  },
+
+  logout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.errorBorder,
+    backgroundColor: colors.errorSoft,
+    borderRadius: radius.pill,
+    paddingVertical: 16,
+    marginTop: 28,
+  },
+  logoutLabel: {
+    fontFamily: fontFamily.bold,
   },
 });
 

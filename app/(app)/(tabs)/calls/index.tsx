@@ -1,119 +1,344 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ListRow, Screen } from '@components/shared';
-import { Card, LogoBadge, Text } from '@components/ui';
-import { colors, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import {
+  EarningsBar,
+  InsightLine,
+  ProgressBar,
+  Screen,
+  SectionLabel,
+} from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
-type Href = '/(app)/(tabs)/calls/group-call-history' | '/(app)/(tabs)/calls/private-calls' | '/(app)/(tabs)/calls/broadcast-history';
 
-const ENTRIES: { icon: IoniconName; title: string; sub: string; route: Href; tint: string }[] = [
+type Href =
+  | '/(app)/(tabs)/calls/group-call-history'
+  | '/(app)/(tabs)/calls/private-calls'
+  | '/(app)/(tabs)/calls/broadcast-history';
+
+interface Entry {
+  icon: IoniconName;
+  tint: string;
+  fill: string;
+  title: string;
+  route: Href;
+  /** Sub-line split so the highlighted fragment can carry its own colour. */
+  sub: { lead: string; strong?: string; strongColor?: 'pink' | 'cyan'; tail?: string };
+}
+
+const ENTRIES: Entry[] = [
   {
-    icon: 'people-outline',
-    title: 'Group Call',
-    sub: 'Scheduled paid sessions with your fans',
+    icon: 'people',
+    tint: colors.pink,
+    fill: colors.pinkSoft,
+    title: 'Group Sessions',
     route: '/(app)/(tabs)/calls/group-call-history',
-    tint: colors.primary,
+    sub: { lead: 'Scheduled paid sessions · 9 hosted, 14.2k tk earned' },
   },
   {
-    icon: 'call-outline',
+    icon: 'call',
+    tint: colors.violet,
+    fill: colors.violetSoft,
     title: 'Private Calls',
-    sub: '1:1 call requests and availability',
     route: '/(app)/(tabs)/calls/private-calls',
-    tint: colors.success,
+    sub: { lead: '1:1 requests & availability · currently ', strong: 'OFF', strongColor: 'pink' },
   },
   {
-    icon: 'radio-outline',
+    icon: 'videocam',
+    tint: colors.cyan,
+    fill: colors.cyanSoft,
     title: 'Broadcasts',
-    sub: 'Every solo broadcast you have hosted',
     route: '/(app)/(tabs)/calls/broadcast-history',
-    tint: colors.warning,
+    sub: {
+      lead: 'Every solo broadcast · 12 shows, ',
+      strong: '845',
+      strongColor: 'cyan',
+      tail: ' unique viewers',
+    },
   },
 ];
 
-/** Calls tab root — hub linking to the three history/management areas. */
+/** Next scheduled session, surfaced so the artist can start it in one tap. */
+const UP_NEXT = {
+  id: 'gs_101',
+  title: 'Mixing Masterclass: Vocals',
+  when: 'Today 7:00 PM',
+  seats: '8/10 seats',
+  price: '4,000 tk',
+  filled: 8,
+  total: 10,
+};
+
+/** Calls tab root — the hub for sessions, private calls and broadcasts. */
 const CallsHubScreen = () => {
   const router = useRouter();
+  const seatsLeft = UP_NEXT.total - UP_NEXT.filled;
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      <View style={styles.appBar}>
-        <View style={styles.appBarLeft}>
-          <LogoBadge variant="wave" size={wp(8)} />
-          <Text variant="h3" style={styles.appBarTitle}>
-            Calls
-          </Text>
-        </View>
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <EarningsBar
+        brand
+        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+        unread
+      />
+
+      {/* Title + schedule CTA */}
+      <View style={styles.titleRow}>
+        <Text variant="h1" style={styles.title}>
+          Sessions &amp; Calls
+        </Text>
+
         <Pressable
-          style={styles.scheduleBtn}
           onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
           accessibilityRole="button"
-          accessibilityLabel="Schedule session"
+          accessibilityLabel="Schedule a session"
+          style={styles.scheduleBtn}
         >
-          <Ionicons name="add" size={rf(16)} color={colors.ctaDark} />
-          <Text variant="label" color="ctaDark">
-            SCHEDULE
-          </Text>
+          <LinearGradient
+            colors={gradients.cta}
+            start={gradientDirection.horizontal.start}
+            end={gradientDirection.horizontal.end}
+            style={styles.scheduleFill}
+          >
+            <Ionicons name="add" size={rf(15)} color={colors.white} />
+            <Text style={styles.scheduleLabel}>SCHEDULE</Text>
+          </LinearGradient>
         </Pressable>
       </View>
 
-      <View style={styles.heading}>
-        <Text variant="h2">Sessions &amp; Calls</Text>
-        <Text variant="caption" color="textSecondary">
-          Manage scheduled group sessions, private call requests, and review your past broadcasts.
-        </Text>
+      <Text variant="body" color="textSecondary" style={styles.subtitle}>
+        Manage scheduled group sessions, private call requests, and past broadcasts.
+      </Text>
+
+      <InsightLine
+        style={styles.insight}
+        lead="Your Mixing Masterclass starts today at 7 PM"
+        tail=" — 8 of 10 seats sold. Two more seats means another 800 tk before you even go live."
+      />
+
+      {/* Areas */}
+      <View style={styles.entries}>
+        {ENTRIES.map((entry) => (
+          <Pressable
+            key={entry.title}
+            style={styles.entry}
+            onPress={() => router.push(entry.route)}
+            accessibilityRole="button"
+            accessibilityLabel={entry.title}
+          >
+            <View style={[styles.entryIcon, { backgroundColor: entry.fill }]}>
+              <Ionicons name={entry.icon} size={rf(18)} color={entry.tint} />
+            </View>
+
+            <View style={styles.entryText}>
+              <Text variant="h3">{entry.title}</Text>
+              <Text variant="bodySm" color="textMuted">
+                {entry.sub.lead}
+                {entry.sub.strong ? (
+                  <Text
+                    variant="bodySm"
+                    color={entry.sub.strongColor ?? 'pink'}
+                    style={styles.strong}
+                  >
+                    {entry.sub.strong}
+                  </Text>
+                ) : null}
+                {entry.sub.tail}
+              </Text>
+            </View>
+
+            <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+          </Pressable>
+        ))}
       </View>
 
-      {ENTRIES.map((entry) => (
-        <Card key={entry.title} style={styles.row}>
-          <ListRow
-            icon={entry.icon}
-            iconTint={entry.tint}
-            title={entry.title}
-            subtitle={entry.sub}
-            onPress={() => router.push(entry.route)}
-          />
-        </Card>
-      ))}
+      <SectionLabel divider style={styles.sectionLabel}>
+        UP NEXT
+      </SectionLabel>
+
+      {/* Next session — highlighted so the primary action is unmissable */}
+      <View style={styles.upNext}>
+        <View style={styles.startsRow}>
+          <View style={styles.startsDot} />
+          <Text variant="label" color="pink">
+            STARTS TODAY
+          </Text>
+        </View>
+
+        <Text variant="h3" style={styles.upNextTitle}>
+          {UP_NEXT.title}
+        </Text>
+
+        <Text variant="bodySm" color="textMuted" style={styles.upNextMeta}>
+          {UP_NEXT.when} · {UP_NEXT.seats} ·{' '}
+          <Text variant="bodySm" color="gold" style={styles.strong}>
+            {UP_NEXT.price}
+          </Text>
+        </Text>
+
+        <View style={styles.seatRow}>
+          <ProgressBar value={UP_NEXT.filled / UP_NEXT.total} />
+          <Text variant="bodySm" color="textMuted">
+            {seatsLeft} seats left
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/(app)/(modals)/group-call-room',
+              params: { sessionId: UP_NEXT.id },
+            })
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`Start ${UP_NEXT.title}`}
+          style={styles.startBtn}
+        >
+          <LinearGradient
+            colors={gradients.cta}
+            start={gradientDirection.horizontal.start}
+            end={gradientDirection.horizontal.end}
+            style={styles.startFill}
+          >
+            <Ionicons name="play" size={rf(15)} color={colors.white} />
+            <Text style={styles.startLabel}>Start session</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: 24,
   },
-  appBar: {
+
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 24,
   },
-  appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  appBarTitle: {
-    fontSize: rf(17),
+  title: {
+    flex: 1,
   },
   scheduleBtn: {
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  scheduleFill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.primary,
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  scheduleLabel: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(11),
+    letterSpacing: 0.8,
+    color: colors.white,
+  },
+  subtitle: {
+    marginTop: 6,
+  },
+  insight: {
+    marginTop: 20,
+  },
+  strong: {
+    fontFamily: fontFamily.bold,
+  },
+
+  entries: {
+    gap: 12,
+    marginTop: 24,
+  },
+  entry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    padding: 16,
+  },
+  entryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  entryText: {
+    flex: 1,
+    gap: 3,
+  },
+
+  sectionLabel: {
+    marginTop: 24,
+    marginBottom: 12,
+  },
+
+  // Pink-bordered card with a soft glow — the one thing to act on right now.
+  upNext: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderHot,
+    borderRadius: radius.card,
+    padding: 18,
+    shadowColor: colors.pink,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  startsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  startsDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.pink,
+  },
+  upNextTitle: {
+    marginTop: 10,
+  },
+  upNextMeta: {
+    marginTop: 4,
+  },
+  seatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+  },
+  startBtn: {
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    overflow: 'hidden',
+    marginTop: 18,
   },
-  heading: {
-    gap: spacing.xs,
+  startFill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
   },
-  row: {
-    paddingVertical: spacing.xs,
+  startLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15),
+    color: colors.white,
   },
 });
 

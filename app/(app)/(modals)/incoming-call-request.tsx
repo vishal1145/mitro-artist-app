@@ -171,8 +171,8 @@ const IncomingCallRequestScreen = () => {
             accessibilityRole="button"
             accessibilityLabel="Accept call"
           >
-            <Ionicons name="call" size={rf(18)} color={colors.successBg} />
-            <Text variant="link" color="successBg" style={styles.acceptLabel}>
+            <Ionicons name="call" size={rf(18)} color={colors.onSuccess} />
+            <Text variant="link" color="onSuccess" style={styles.acceptLabel}>
               Accept
             </Text>
           </Pressable>

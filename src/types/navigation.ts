@@ -20,7 +20,8 @@ export type AppRoute = AuthRoute | AppTabRoute;
 
 /** Params carried into the OTP verification screen. */
 export interface OtpVerifyParams {
-  email: string;
+  /** 10-digit mobile number the code was sent to. */
+  mobile: string;
   /** Where the OTP flow originated, so we can route correctly after verify. */
   origin: 'register' | 'forgot-password';
 }

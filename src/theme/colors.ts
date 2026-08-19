@@ -1,14 +1,16 @@
 /**
- * Color tokens — single source of truth for every color in the app.
- * Never use raw hex/rgba strings in components; import from here.
+ * Color tokens — ported 1:1 from the shipped Mitro user app.
+ * Never use raw hex/rgba in components; import from here.
  *
  * Layers:
- *   1. `palette`     — the raw brand/base ramp. Matches the design spec 1:1.
- *   2. `colors`      — role tokens (what a color is *for*, not what it looks like).
- *   3. `gradients`   — multi-stop fills.
+ *   1. `palette`  — the exact spec values.
+ *   2. `colors`   — role tokens. New spec names come first; the legacy names
+ *                   below them are aliases kept so existing screens compile.
+ *   3. `gradients`— multi-stop fills.
  *
- * Translucent tokens are derived from the palette via `withAlpha()` rather than
- * hand-written rgba, so a palette change propagates everywhere automatically.
+ * Key notes from the design:
+ *   - Cards are NEUTRAL dark grey, never purple-tinted.
+ *   - Content screens are flat black; the glow appears on auth screens only.
  */
 
 /** Convert a #rrggbb hex + alpha (0..1) into an rgba() string. */
@@ -21,45 +23,38 @@ const withAlpha = (hex: string, alpha: number): string => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  1. Palette — canonical spec values                                        */
+/*  1. Palette — exact spec values                                            */
 /* -------------------------------------------------------------------------- */
 
 export const palette = {
   // Surfaces
-  bg: '#141122',
-  surface: '#1c192b',
-  surfaceRaised: '#201d2f',
-  surfaceHigh: '#2b283a',
-  border: '#363245',
+  screen: '#050506',
+  card: '#151517',
+  cardRaised: '#1C1C1F',
+  input: '#141416',
+  heroIndigo: '#251E52',
+  navPill: 'rgba(26, 24, 48, 0.92)',
+
+  // Borders
+  border: 'rgba(255, 255, 255, 0.07)',
+  borderHot: 'rgba(255, 63, 173, 0.35)',
+  borderGold: 'rgba(255, 200, 107, 0.35)',
 
   // Text
-  textPrimary: '#e6dff8',
-  textSecondary: '#cfc2d6',
-  textMuted: '#988d9f',
+  textPrimary: '#F7F4FF',
+  textSecondary: '#A99DC4',
+  textMuted: '#6C6288',
 
-  // Brand
-  primary: '#ddb7ff',
-  onPrimary: '#490080',
-  primaryContainer: '#b76dff',
+  // Accents
+  pink: '#FF3FAD',
+  violet: '#7C4DFF',
+  purple: '#8C4DFF',
+  cyan: '#33E6FF',
+  gold: '#FFC86B',
+  green: '#35EEA3',
+  red: '#FF5C7A',
 
-  // Status
-  success: '#4edea3',
-  onSuccess: '#003824',
-  warning: '#ffb95f',
-  onWarning: '#472a00',
-  error: '#ffb4ab',
-  onError: '#690005',
-
-  // Accent
-  accentPink: '#ec4899',
-
-  /* --- Extended: not in the core spec, but required by existing UI --------- */
-  /** Deep violet — pressed state + the "Create Account" gradient end stop. */
-  violet: '#842bd2',
-  /** Informational blue — used by the neutral/info callout tone. */
-  info: '#82b1ff',
-
-  white: '#ffffff',
+  white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
 } as const;
@@ -69,91 +64,120 @@ export const palette = {
 /* -------------------------------------------------------------------------- */
 
 export const colors = {
-  // --- Brand ---
-  primary: palette.primary,
-  primaryDark: palette.primaryContainer,
-  primaryPressed: palette.violet,
-  /** Text/icon color on top of a light lavender surface. */
-  onPrimary: palette.onPrimary,
-  onPrimaryContrast: palette.onPrimary,
-  /** Dark ink on the bright pink/violet CTA gradient. */
-  ctaDark: palette.onPrimary,
-  accentPink: palette.accentPink,
+  // --- Surfaces (spec names) ---
+  screen: palette.screen,
+  card: palette.card,
+  cardRaised: palette.cardRaised,
+  input: palette.input,
+  heroIndigo: palette.heroIndigo,
+  navPill: palette.navPill,
 
-  // --- Surfaces ---
-  background: palette.bg,
-  surface: palette.surface,
-  surfaceElevated: palette.surfaceHigh,
-  /** Raised panel inside a card (list rows, inset blocks). */
-  surfaceRaised: palette.surfaceRaised,
+  // --- Borders ---
   border: palette.border,
+  borderHot: palette.borderHot,
+  borderGold: palette.borderGold,
 
   // --- Text ---
   textPrimary: palette.textPrimary,
   textSecondary: palette.textSecondary,
   textMuted: palette.textMuted,
-  textDisabled: palette.surfaceHigh,
-  onSurface: palette.textPrimary,
-  /** Auth-screen subhead. */
-  subtitle: palette.textSecondary,
-  /** Small mono field labels. */
-  fieldLabel: palette.textMuted,
 
-  // --- Inputs ---
-  inputBackground: palette.bg,
+  // --- Accents ---
+  pink: palette.pink,
+  violet: palette.violet,
+  purple: palette.purple,
+  cyan: palette.cyan,
+  gold: palette.gold,
+  green: palette.green,
+  red: palette.red,
+
+  // Tinted accent fills — icon chips use 15%.
+  pinkSoft: withAlpha(palette.pink, 0.15),
+  violetSoft: withAlpha(palette.violet, 0.15),
+  purpleSoft: withAlpha(palette.purple, 0.15),
+  cyanSoft: withAlpha(palette.cyan, 0.15),
+  goldSoft: withAlpha(palette.gold, 0.15),
+  greenSoft: withAlpha(palette.green, 0.15),
+  redSoft: withAlpha(palette.red, 0.15),
+
+  /* ------------------------------------------------------------------------ */
+  /*  Legacy aliases — keep existing screens compiling against the new palette */
+  /* ------------------------------------------------------------------------ */
+
+  background: palette.screen,
+  surface: palette.card,
+  surfaceRaised: palette.cardRaised,
+  surfaceElevated: palette.cardRaised,
+
+  primary: palette.pink,
+  primaryDark: palette.violet,
+  primaryPressed: palette.purple,
+  primarySoft: withAlpha(palette.pink, 0.15),
+  primaryChip: withAlpha(palette.pink, 0.2),
+  primaryBorder: palette.borderHot,
+  /** CTA label colour — the new CTA is white text on the gradient. */
+  onPrimary: palette.white,
+  onPrimaryContrast: palette.white,
+  ctaDark: palette.white,
+  accentPink: palette.pink,
+
+  onSurface: palette.textPrimary,
+  subtitle: palette.textSecondary,
+  fieldLabel: palette.textMuted,
+  textDisabled: palette.textMuted,
+
+  inputBackground: palette.input,
   inputBorder: palette.border,
-  inputBorderFocused: palette.primary,
+  inputBorderFocused: palette.pink,
   inputPlaceholder: palette.textMuted,
 
-  // --- Status ---
-  success: palette.success,
-  successBg: palette.onSuccess,
-  warning: palette.warning,
-  warningBg: palette.onWarning,
-  error: palette.error,
-  errorBg: palette.onError,
-  info: palette.info,
+  success: palette.green,
+  successBg: withAlpha(palette.green, 0.15),
+  successSoft: withAlpha(palette.green, 0.12),
+  successBorder: withAlpha(palette.green, 0.35),
+  successChip: withAlpha(palette.green, 0.15),
+
+  warning: palette.gold,
+  warningBg: withAlpha(palette.gold, 0.15),
+  warningSoft: withAlpha(palette.gold, 0.12),
+  warningBorder: palette.borderGold,
+  warningChip: withAlpha(palette.gold, 0.15),
+
+  error: palette.red,
+  errorBg: withAlpha(palette.red, 0.15),
+  errorSoft: withAlpha(palette.red, 0.12),
+  errorBorder: withAlpha(palette.red, 0.35),
+
+  info: palette.cyan,
+  infoSoft: withAlpha(palette.cyan, 0.12),
+  infoBorder: withAlpha(palette.cyan, 0.35),
+
+  /* ------------------------------------------------------------------------ */
+  /*  Foreground on a SOLID accent fill                                       */
+  /*                                                                          */
+  /*  `successBg` and friends are 15% tints meant for backgrounds. Text or an */
+  /*  icon painted with them on top of the matching solid fill is invisible —  */
+  /*  use these instead.                                                       */
+  /* ------------------------------------------------------------------------ */
+  onSuccess: palette.screen,
+  onWarning: palette.screen,
+  onInfo: palette.screen,
+  onError: palette.white,
 
   // --- Translucent, role-named ---
-  /** Fade behind chat feeds layered over live video. */
-  scrim: withAlpha(palette.bg, 0.65),
-  /** Top bars and floating overlays. Pair with blur intensity 12. */
-  glassSurface: withAlpha(palette.surfaceRaised, 0.6),
-  glassBorder: withAlpha(palette.textPrimary, 0.1),
-  /** Translucent pill sitting over video (e.g. "Mic on", duration badge). */
-  chipSurface: withAlpha(palette.bg, 0.55),
-  /** Higher-contrast pill for use over bright imagery. */
+  scrim: withAlpha(palette.screen, 0.65),
+  glassSurface: palette.navPill,
+  glassBorder: palette.border,
+  chipSurface: withAlpha(palette.screen, 0.55),
   chipSurfaceStrong: withAlpha(palette.black, 0.7),
-  /** Subtle icon-chip fill on an opaque card. */
-  iconChip: withAlpha(palette.textPrimary, 0.05),
-  /** Full-screen dim behind modals and sheets. */
-  overlayDim: withAlpha(palette.bg, 0.72),
-  /** Hairline rule (dividers, "OR CONNECT"). */
-  divider: withAlpha(palette.textPrimary, 0.1),
+  iconChip: withAlpha(palette.white, 0.06),
+  overlayDim: withAlpha(palette.screen, 0.72),
+  divider: palette.border,
 
-  /** Soft lavender wash — selected pills, primary icon chips. */
-  primarySoft: withAlpha(palette.primary, 0.14),
-
-  // Tinted callout fills + borders, one pair per status tone.
-  successSoft: withAlpha(palette.success, 0.06),
-  successBorder: withAlpha(palette.success, 0.35),
-  warningSoft: withAlpha(palette.warning, 0.08),
-  warningBorder: withAlpha(palette.warning, 0.2),
-  warningChip: withAlpha(palette.warning, 0.12),
-  successChip: withAlpha(palette.success, 0.12),
-  primaryChip: withAlpha(palette.primary, 0.2),
-  errorSoft: withAlpha(palette.error, 0.08),
-  errorBorder: withAlpha(palette.error, 0.3),
-  infoSoft: withAlpha(palette.info, 0.06),
-  infoBorder: withAlpha(palette.info, 0.3),
-  primaryBorder: withAlpha(palette.primary, 0.2),
-
-  // --- Glow (shadowColor for CTAs and focus states) ---
-  /** Shadow beneath the primary pink CTA. */
-  ctaGlow: withAlpha(palette.accentPink, 0.35),
-  /** Shadow for focused/active lavender elements. */
-  focusGlow: withAlpha(palette.primary, 0.3),
-  glow: palette.primary,
+  // --- Glow (shadowColor) ---
+  ctaGlow: withAlpha(palette.pink, 0.35),
+  focusGlow: withAlpha(palette.pink, 0.3),
+  glow: palette.pink,
 
   // --- Utility ---
   white: palette.white,
@@ -165,42 +189,71 @@ export const colors = {
 /*  3. Gradients                                                              */
 /* -------------------------------------------------------------------------- */
 
-/** Linear-gradient stops (left -> right, i.e. 90deg). */
+/** Linear-gradient stops. `cta` is 90deg; `avatar` is 135deg (see start/end). */
 export const gradients = {
-  /** Primary CTA — "Go Live" / "Start Live Broadcast". */
-  cta: [palette.accentPink, palette.primaryContainer] as const,
-  /** Alias kept for the login CTA call site. */
-  live: [palette.accentPink, palette.primaryContainer] as const,
-  /** Secondary CTA — "Create Account" / "Schedule Session". */
-  primary: [palette.primaryContainer, palette.violet] as const,
-  /** "Send Reset Link" (dark text on light lavender). */
-  forgot: [palette.primary, palette.primaryContainer] as const,
-  /** Logo mark. */
-  brand: [palette.primaryContainer, palette.violet] as const,
-  /** Large stat/hero panel wash. */
-  hero: [withAlpha(palette.violet, 0.55), withAlpha(palette.bg, 0.9)] as const,
-  /** Transparent -> bg fade for chat feeds over video. */
-  scrim: [withAlpha(palette.bg, 0), palette.bg] as const,
-  /** 1px top highlight on frosted glass cards. */
+  /** Primary CTA — violet -> pink, left to right. */
+  cta: [palette.violet, palette.pink] as const,
+  /** Avatar fill — purple -> pink on the 135deg diagonal. */
+  avatar: [palette.purple, palette.pink] as const,
+  /** Disabled CTA — the same ramp at low opacity, so it reads as "not yet". */
+  ctaMuted: [withAlpha(palette.violet, 0.28), withAlpha(palette.pink, 0.28)] as const,
+  /** Profile ring — the full accent wheel. */
+  ring: [palette.pink, palette.gold, palette.cyan, palette.violet, palette.pink] as const,
+
+  // Legacy aliases.
+  live: [palette.violet, palette.pink] as const,
+  primary: [palette.violet, palette.pink] as const,
+  forgot: [palette.violet, palette.pink] as const,
+  brand: [palette.purple, palette.pink] as const,
+  hero: [palette.heroIndigo, palette.heroIndigo] as const,
+  scrim: [withAlpha(palette.screen, 0), palette.screen] as const,
   glassHighlight: [
-    withAlpha(palette.primary, 0),
-    withAlpha(palette.primary, 0.35),
-    withAlpha(palette.primary, 0),
+    withAlpha(palette.pink, 0),
+    withAlpha(palette.pink, 0.35),
+    withAlpha(palette.pink, 0),
   ] as const,
 } as const;
 
-/** Shadow color used for the soft glow beneath each gradient CTA. */
+/** Gradient start/end points, so 90deg vs 135deg is expressed once. */
+export const gradientDirection = {
+  /** 90deg — left to right. */
+  horizontal: { start: { x: 0, y: 0 }, end: { x: 1, y: 0 } },
+  /** 135deg — top-left to bottom-right. */
+  diagonal: { start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
+} as const;
+
+/**
+ * Auth-screen glow: two soft radials over the flat screen colour.
+ * Content screens stay flat black — never apply this outside auth.
+ */
+export const authGlow = {
+  base: palette.screen,
+  orbs: [
+    {
+      color: withAlpha(palette.pink, 0.16),
+      cx: '12%',
+      cy: '2%',
+      rx: '70%',
+      ry: '45%',
+    },
+    {
+      color: 'rgba(107, 45, 244, 0.20)',
+      cx: '88%',
+      cy: '4%',
+      rx: '70%',
+      ry: '45%',
+    },
+  ],
+} as const;
+
+/** Shadow colour beneath each gradient CTA. */
 export const gradientGlow = {
   cta: colors.ctaGlow,
   live: colors.ctaGlow,
-  primary: colors.focusGlow,
-  forgot: colors.focusGlow,
+  primary: colors.ctaGlow,
+  forgot: colors.ctaGlow,
 } as const;
 
 export type ColorToken = keyof typeof colors;
 export type GradientToken = keyof typeof gradients;
-/**
- * Gradients valid on a CTA button — exactly those with a matching glow.
- * Decorative fills (brand, hero, scrim, glassHighlight) are excluded.
- */
 export type CtaGradientToken = keyof typeof gradientGlow;

@@ -1,16 +1,25 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   AuthBackground,
-  Divider,
+  AuthLegal,
+  AuthLogo,
+  AuthToggle,
   FormInput,
   Screen,
-  SocialButton,
+  type AuthToggleOption,
 } from '@components/shared';
-import { GradientButton, LogoBadge, Text } from '@components/ui';
+import { GradientButton, Text } from '@components/ui';
 import { useLogin } from '@screens/auth/login/useLogin';
-import { spacing } from '@theme';
-import { wp } from '@utils/responsive';
+import { layout, spacing } from '@theme';
+
+type IdentifierMode = 'mobile' | 'stage';
+
+const MODES: readonly [AuthToggleOption<IdentifierMode>, AuthToggleOption<IdentifierMode>] = [
+  { value: 'mobile', label: 'Mobile Number', icon: 'phone-portrait-outline' },
+  { value: 'stage', label: 'Stage Name', icon: 'at-outline' },
+];
 
 /** Login screen — UI only. All behavior lives in useLogin(). */
 const LoginScreen = () => {
@@ -19,57 +28,50 @@ const LoginScreen = () => {
     isValid,
     isSubmitting,
     submitError,
-    socialNotice,
     handleSubmit,
-    onSocialLogin,
     goToRegister,
     goToForgotPassword,
   } = useLogin();
 
+  const [mode, setMode] = useState<IdentifierMode>('mobile');
+  const mobile = mode === 'mobile';
+
   return (
     <Screen scrollable padded={false} background={<AuthBackground />}>
-      <View style={styles.screenPadding}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <LogoBadge variant="wave" />
-            <Text variant="display" align="center">
-              Mitro
-            </Text>
-            <Text variant="subtitle" color="subtitle" align="center">
-              Welcome back, creator.
-            </Text>
-          </View>
+      <View style={styles.body}>
+        <View style={styles.header}>
+          <AuthLogo />
+          <Text variant="h1" align="center" style={styles.title}>
+            Welcome Back
+          </Text>
+          <Text variant="body" color="textSecondary" align="center" style={styles.subtitle}>
+            Sign in to keep creating and going live.
+          </Text>
+        </View>
 
+        <View style={styles.toggle}>
+          <AuthToggle options={MODES} value={mode} onChange={setMode} />
+        </View>
+
+        <View style={styles.fields}>
           <FormInput
             control={control}
             name="identifier"
-            label="EMAIL OR USERNAME"
-            placeholder="streamer@mitro.tv"
-            keyboardType="email-address"
+            // Same field either way — the mode only changes how it's entered.
+            prefix={mobile ? '+91' : undefined}
+            leftIcon={mobile ? undefined : 'at-outline'}
+            placeholder={mobile ? '00000 00000' : 'yourstagename'}
+            keyboardType={mobile ? 'number-pad' : 'default'}
             autoCapitalize="none"
             autoComplete="username"
             autoCorrect={false}
             returnKeyType="next"
-            maxLength={255}
-            leftIcon="person-outline"
+            maxLength={mobile ? 10 : 255}
           />
 
           <FormInput
             control={control}
             name="password"
-            label="PASSWORD"
-            labelRight={
-              <Pressable
-                onPress={goToForgotPassword}
-                hitSlop={spacing.sm}
-                accessibilityRole="button"
-                accessibilityLabel="Forgot password"
-              >
-                <Text variant="label" color="primary">
-                  Forgot?
-                </Text>
-              </Pressable>
-            }
             placeholder="Enter your password"
             isPassword
             autoCapitalize="none"
@@ -79,65 +81,53 @@ const LoginScreen = () => {
             leftIcon="lock-closed-outline"
             onSubmitEditing={handleSubmit}
           />
+        </View>
 
-          {submitError ? (
-            <Text variant="caption" color="error" style={styles.submitError}>
-              {submitError}
+        <Pressable
+          onPress={goToForgotPassword}
+          hitSlop={spacing.xs}
+          accessibilityRole="button"
+          accessibilityLabel="Forgot password"
+          style={styles.forgot}
+        >
+          <Text variant="bodyLg" color="cyan">
+            Forgot password?
+          </Text>
+        </Pressable>
+
+        {submitError ? (
+          <Text variant="bodySm" color="error" align="center" style={styles.submitError}>
+            {submitError}
+          </Text>
+        ) : null}
+
+        <GradientButton
+          label="Login"
+          gradient="cta"
+          rightIcon="arrow-forward"
+          onPress={handleSubmit}
+          loading={isSubmitting}
+          disabled={!isValid}
+        />
+
+        <View style={styles.footer}>
+          <Text variant="body" color="textSecondary">
+            Don&apos;t have an account?{' '}
+          </Text>
+          <Pressable
+            onPress={goToRegister}
+            hitSlop={spacing.xs}
+            accessibilityRole="button"
+            accessibilityLabel="Sign up"
+          >
+            <Text variant="bodyLg" color="pink">
+              Sign Up
             </Text>
-          ) : null}
+          </Pressable>
+        </View>
 
-          <GradientButton
-            label="Go Live"
-            gradient="live"
-            textColor="ctaDark"
-            rightIcon="arrow-forward"
-            onPress={handleSubmit}
-            loading={isSubmitting}
-            disabled={!isValid}
-            style={styles.cta}
-          />
-
-          <View style={styles.dividerWrap}>
-            <Divider label="OR CONNECT" />
-          </View>
-
-          <View style={styles.social}>
-            <SocialButton
-              provider="google"
-              onPress={() => onSocialLogin('google')}
-            />
-            <SocialButton
-              provider="apple"
-              onPress={() => onSocialLogin('apple')}
-            />
-          </View>
-
-          {socialNotice ? (
-            <Text
-              variant="caption"
-              color="textMuted"
-              align="center"
-              style={styles.socialNotice}
-            >
-              {socialNotice}
-            </Text>
-          ) : null}
-
-          <View style={styles.footer}>
-            <Text variant="body" color="textMuted">
-              Don’t have an account?{' '}
-            </Text>
-            <Pressable
-              onPress={goToRegister}
-              hitSlop={spacing.xs}
-              accessibilityRole="button"
-              accessibilityLabel="Sign up"
-            >
-              <Text variant="link" color="primary">
-                Sign Up
-              </Text>
-            </Pressable>
-          </View>
+        <View style={styles.legal}>
+          <AuthLegal />
         </View>
       </View>
     </Screen>
@@ -145,44 +135,50 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  screenPadding: {
+  body: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: wp(12),
-  },
-  // No panel — content sits straight on the ambient background.
-  card: {
-    paddingVertical: wp(7),
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: 24,
   },
   header: {
     alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.lg,
+  },
+  // logo -> heading 32
+  title: {
+    marginTop: 32,
+  },
+  // heading -> subtitle 8
+  subtitle: {
+    marginTop: 8,
+  },
+  // subtitle -> first element 32
+  toggle: {
+    marginTop: 32,
+  },
+  fields: {
+    gap: 14,
+    marginTop: 14,
+  },
+  // 12 above "Forgot password?", 20 below.
+  forgot: {
+    alignSelf: 'flex-end',
+    marginTop: 12,
+    marginBottom: 20,
   },
   submitError: {
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
-  cta: {
-    marginTop: spacing.md,
-  },
-  dividerWrap: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.lg,
-  },
-  social: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.xxl,
-  },
-  socialNotice: {
-    marginTop: spacing.sm,
-  },
+  // CTA -> alt row 20
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: 20,
+  },
+  // alt row -> age note 32
+  legal: {
+    marginTop: 32,
   },
 });
 

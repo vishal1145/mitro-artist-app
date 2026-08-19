@@ -1,176 +1,223 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyState, Header, InfoCallout, ListRow, Screen, StatTile } from '@components/shared';
-import { Card, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import {
+  InsightLine,
+  PageHeader,
+  Screen,
+  SectionLabel,
+  TimelineRow,
+} from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, layout } from '@theme';
+import { rf } from '@utils/responsive';
 
-const PAST = [
-  { id: 'bc_001', title: 'Midnight Synth Session', when: 'Aug 17 · 12m', viewers: '342', earned: '+145 tk' },
-  { id: 'bc_002', title: 'Acoustic Chill Session', when: 'Aug 14 · 1h 20m', viewers: '890', earned: '+85 tk' },
-  { id: 'bc_003', title: 'Weekly Q&A #12', when: 'Aug 10 · 30m', viewers: '2.1K', earned: '+320 tk' },
+import type { ColorToken } from '@theme';
+
+interface Broadcast {
+  id: string;
+  title: string;
+  meta: string;
+  earned: string;
+  dot: string;
+  /** Amount tint tracks the dot: green earned well, gold means it ran short. */
+  earnedColor: ColorToken;
+}
+
+const PAST: Broadcast[] = [
+  {
+    id: 'bc_001',
+    title: 'Midnight Synth Session',
+    meta: 'Aug 17 · 12m · 342 viewers',
+    earned: '+145 tk',
+    dot: colors.green,
+    earnedColor: 'green',
+  },
+  {
+    id: 'bc_002',
+    title: 'Acoustic Chill Session',
+    meta: 'Aug 14 · 1h 20m · 890 viewers',
+    earned: '+85 tk',
+    dot: colors.gold,
+    earnedColor: 'gold',
+  },
+  {
+    id: 'bc_003',
+    title: 'Weekly Q&A #12',
+    meta: 'Aug 10 · 30m · 2.1K viewers',
+    earned: '+320 tk',
+    dot: colors.green,
+    earnedColor: 'green',
+  },
 ];
 
-/** Section heading with a leading icon. */
-const SectionTitle = ({
-  icon,
-  children,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  children: string;
-}) => (
-  <View style={styles.sectionTitle}>
-    <Ionicons name={icon} size={rf(16)} color={colors.primary} />
-    <Text variant="h3">{children}</Text>
-  </View>
-);
-
-/**
- * Broadcast history — solo broadcasts only. Private-call availability,
- * pending call requests and call history live in the PrivateCalls route.
- */
+/** Solo broadcast history — lifetime earnings, reward queue, and past shows. */
 const BroadcastHistoryScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
-      <Header title="Broadcast History" onBack={() => router.back()} />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
+      <PageHeader title="Broadcasts" onBack={() => router.back()} />
 
-      <InfoCallout
-        tone="neutral"
-        icon="information-circle-outline"
-        linkLabel="Learn more about session analytics"
-      >
-        <Text variant="caption" color="textSecondary">
-          This is the full record of every{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            solo broadcast
-          </Text>{' '}
-          you&apos;ve hosted, with peak viewers and earnings.{' '}
+      {/* Lifetime total */}
+      <View style={styles.hero}>
+        <Text style={styles.heroValue}>1.2k</Text>
+        <Text variant="bodyLg" color="textMuted">
+          tk
         </Text>
-      </InfoCallout>
+      </View>
 
-      {/* Stats */}
-      <View style={styles.grid}>
-        <StatTile icon="radio-outline" label="SHOWS" value="12" tint={colors.textSecondary} />
-        <StatTile
-          icon="sparkles-outline"
-          label="TOTAL EARNED"
-          value="1.2k"
-          unit="tk"
-          tint={colors.warning}
+      <Text variant="bodySm" color="textSecondary" align="center" style={styles.heroCaption}>
+        earned across{' '}
+        <Text variant="bodySm" color="pink" style={styles.strong}>
+          12 shows
+        </Text>
+      </Text>
+      <Text variant="bodySm" color="textMuted" align="center" style={styles.heroSub}>
+        845 unique viewers · 45m avg length
+      </Text>
+
+      <InsightLine
+        style={styles.insight}
+        lead="Fans notice when a shoutout never arrives"
+        tail=" — deliver rewards fast to keep tips coming."
+        onHelp={() => router.push('/(app)/(tabs)/home/reward-fulfillment')}
+      />
+
+      <SectionLabel divider style={styles.sectionLabel}>
+        PENDING REWARD DELIVERIES
+      </SectionLabel>
+
+      <View style={styles.empty}>
+        <Ionicons name="mail-outline" size={rf(40)} color={colors.textMuted} />
+        <Text variant="bodyLg" color="textSecondary" align="center" style={styles.emptyTitle}>
+          No rewards waiting on delivery right now
+        </Text>
+        <Pressable
+          onPress={() => router.push('/(app)/(tabs)/home/reward-fulfillment')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="View all rewards"
+        >
+          <Text variant="bodyLg" color="pink" style={styles.strong}>
+            View all rewards
+          </Text>
+        </Pressable>
+      </View>
+
+      <SectionLabel divider style={styles.sectionLabel}>
+        PAST BROADCASTS
+      </SectionLabel>
+
+      {PAST.map((b, i) => (
+        <TimelineRow
+          key={b.id}
+          title={b.title}
+          meta={b.meta}
+          value={b.earned}
+          valueColor={b.earnedColor}
+          dotColor={b.dot}
+          last={i === PAST.length - 1}
+          onPress={() =>
+            router.push({
+              pathname: '/(app)/(tabs)/home/broadcast-detail',
+              params: { broadcastId: b.id },
+            })
+          }
         />
-      </View>
-      <View style={styles.grid}>
-        <StatTile icon="people-outline" label="UNIQUE VIEWERS" value="845" tint={colors.success} />
-        <StatTile icon="time-outline" label="AVG LENGTH" value="45m" tint={colors.textSecondary} />
-      </View>
+      ))}
 
-      {/* Fulfill rewards callout */}
-      <View style={styles.accentCard}>
-        <Text variant="label" color="warning" style={styles.accentTitle}>
-          FULFILL REWARDS PROMPTLY
+      {/* Explains what the dot colours mean, so they aren't just decoration. */}
+      <View style={styles.legend}>
+        <Text variant="bodySm" color="textMuted">
+          Dot colors:
         </Text>
-        <Text variant="caption" color="textSecondary">
-          Fans notice when a shoutout or song request never arrives, and that erodes trust fast.
-          Quick delivery keeps fans confident enough to tip and book again.
-        </Text>
-      </View>
-
-      {/* Pending reward deliveries */}
-      <Card style={styles.section}>
-        <SectionTitle icon="checkmark-circle-outline">Pending Reward Deliveries</SectionTitle>
-        <View style={styles.empty}>
-          <EmptyState
-            icon="mail-open-outline"
-            title="No rewards waiting on delivery right now."
-            actionLabel="View all rewards"
-            onAction={() => router.push('/(app)/(tabs)/home/reward-fulfillment')}
-          />
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, styles.legendGreen]} />
+          <Text variant="bodySm" color="textMuted">
+            earned well
+          </Text>
         </View>
-      </Card>
-
-      {/* Past broadcasts */}
-      <SectionTitle icon="time-outline">Past Broadcasts</SectionTitle>
-      {PAST.length ? (
-        <Card style={styles.pastCard}>
-          {PAST.map((b, i) => (
-            <ListRow
-              key={b.id}
-              icon="radio-outline"
-              iconTint={colors.primary}
-              title={b.title}
-              subtitle={`${b.when} · ${b.viewers} viewers`}
-              right={
-                <Text variant="link" color="warning">
-                  {b.earned}
-                </Text>
-              }
-              divider={i > 0}
-              onPress={() =>
-                router.push({
-                  pathname: '/(app)/(tabs)/home/broadcast-detail',
-                  params: { broadcastId: b.id },
-                })
-              }
-            />
-          ))}
-        </Card>
-      ) : (
-        <Card>
-          <View style={styles.empty}>
-            <EmptyState
-              icon="radio-outline"
-              title="No past broadcasts yet."
-              description="Your solo broadcasts will appear here once you go live."
-            />
-          </View>
-        </Card>
-      )}
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, styles.legendGold]} />
+          <Text variant="bodySm" color="textMuted">
+            short show — go longer next time
+          </Text>
+        </View>
+      </View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: 24,
   },
-  bold: {
-    fontFamily: fontFamily.bodySemibold,
-  },
-  grid: {
+
+  hero: {
     flexDirection: 'row',
-    gap: spacing.md,
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
   },
-  sectionTitle: {
+  heroValue: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(32),
+    lineHeight: rf(38),
+    color: colors.gold,
+  },
+  heroCaption: {
+    marginTop: 4,
+  },
+  heroSub: {
+    marginTop: 2,
+  },
+  strong: {
+    fontFamily: fontFamily.bold,
+  },
+  insight: {
+    marginTop: 16,
+  },
+
+  sectionLabel: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+
+  empty: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+  },
+  emptyTitle: {
+    marginTop: 2,
+  },
+
+  legend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 24,
   },
-  section: {
-    gap: spacing.md,
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  accentCard: {
-    backgroundColor: colors.warningSoft,
-    borderRadius: radius.lg,
-    borderLeftWidth: wp(1),
-    borderLeftColor: colors.warning,
-    padding: spacing.md,
-    gap: spacing.xs,
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  accentTitle: {
-    letterSpacing: 1.1,
+  legendGreen: {
+    backgroundColor: colors.green,
   },
-  empty: {
-    minHeight: wp(45),
-    paddingVertical: spacing.lg,
-  },
-  pastCard: {
-    paddingVertical: 0,
-    paddingHorizontal: spacing.md,
+  legendGold: {
+    backgroundColor: colors.gold,
   },
 });
 

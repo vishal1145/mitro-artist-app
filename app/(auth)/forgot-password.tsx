@@ -1,11 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { FormInput, Header, Screen } from '@components/shared';
-import { GradientButton, LogoBadge, Text } from '@components/ui';
+import { AuthBackground, AuthLegal, AuthLogo, FormInput, Screen } from '@components/shared';
+import { GradientButton, Text } from '@components/ui';
 import { useForgotPassword } from '@screens/auth/forgot-password/useForgotPassword';
-import { colors, spacing } from '@theme';
-import { rf } from '@utils/responsive';
+import { layout, spacing } from '@theme';
 
 /** Forgot-password screen — UI only. Logic in useForgotPassword(). */
 const ForgotPasswordScreen = () => {
@@ -13,69 +11,69 @@ const ForgotPasswordScreen = () => {
     useForgotPassword();
 
   return (
-    <Screen scrollable padded>
-      <Header title="Forgot Password" onBack={goBack} />
-
+    <Screen scrollable padded={false} background={<AuthBackground />}>
       <View style={styles.body}>
-        <LogoBadge variant="icon" icon="refresh-outline" />
+        <View style={styles.header}>
+          <AuthLogo />
+          <Text variant="h1" align="center" style={styles.title}>
+            Forgot Password
+          </Text>
+          <Text variant="body" color="textSecondary" align="center" style={styles.subtitle}>
+            Enter your registered mobile number and we&apos;ll send you a code.
+          </Text>
+        </View>
 
-        <Text variant="display" align="center" style={styles.title}>
-          Reset Password
-        </Text>
-        <Text variant="body" color="textMuted" align="center" style={styles.subtitle}>
-          Enter your email and we’ll send a code to get you back into the stream.
-        </Text>
-
-        <FormInput
-          control={control}
-          name="email"
-          label="EMAIL ADDRESS"
-          placeholder="creator@broadcast.tv"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          autoCorrect={false}
-          returnKeyType="done"
-          maxLength={255}
-          leftIcon="mail-outline"
-          onSubmitEditing={handleSubmit}
-          containerStyle={styles.input}
-        />
+        <View style={styles.field}>
+          <FormInput
+            control={control}
+            name="mobile"
+            prefix="+91"
+            placeholder="00000 00000"
+            keyboardType="number-pad"
+            autoComplete="tel"
+            returnKeyType="done"
+            maxLength={10}
+            transform={(v) => v.replace(/\D/g, '')}
+            onSubmitEditing={handleSubmit}
+          />
+        </View>
 
         {submitError ? (
-          <Text variant="caption" color="error" style={styles.submitError}>
+          <Text variant="bodySm" color="error" align="center" style={styles.submitError}>
             {submitError}
           </Text>
         ) : null}
 
-        <GradientButton
-          label="Send Reset Link"
-          gradient="forgot"
-          textColor="onPrimaryContrast"
-          rightIcon="arrow-forward"
-          onPress={handleSubmit}
-          loading={isSubmitting}
-          disabled={!isValid}
-          style={styles.cta}
-        />
-
-        <Pressable
-          onPress={goBack}
-          hitSlop={spacing.sm}
-          accessibilityRole="button"
-          accessibilityLabel="Back to login"
-          style={styles.back}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={rf(16)}
-            color={colors.textSecondary}
-            style={styles.backIcon}
+        <View style={styles.cta}>
+          <GradientButton
+            label="Send OTP"
+            gradient="cta"
+            rightIcon="arrow-forward"
+            onPress={handleSubmit}
+            loading={isSubmitting}
+            disabled={!isValid}
           />
+        </View>
+
+        <View style={styles.footer}>
           <Text variant="body" color="textSecondary">
-            Back to Login
+            Remembered your password?{' '}
           </Text>
-        </Pressable>
+          <Pressable
+            onPress={goBack}
+            hitSlop={spacing.xs}
+            accessibilityRole="button"
+            accessibilityLabel="Back to login"
+          >
+            <Text variant="bodyLg" color="pink">
+              Login
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.legal}>
+          <AuthLegal />
+        </View>
       </View>
     </Screen>
   );
@@ -83,36 +81,43 @@ const ForgotPasswordScreen = () => {
 
 const styles = StyleSheet.create({
   body: {
-    flex: 1,
-    alignItems: 'center',
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: 24,
   },
+  header: {
+    alignItems: 'center',
+  },
+  // logo -> heading 32
   title: {
-    marginTop: spacing.lg,
+    marginTop: 32,
   },
+  // heading -> subtitle 8
   subtitle: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.md,
+    marginTop: 8,
   },
-  input: {
-    alignSelf: 'stretch',
+  // subtitle -> field 32
+  field: {
+    marginTop: 32,
   },
   submitError: {
-    marginBottom: spacing.sm,
-    alignSelf: 'stretch',
+    marginTop: 12,
   },
+  // field -> CTA 24
   cta: {
-    alignSelf: 'stretch',
+    marginTop: 24,
   },
-  back: {
+  // CTA -> alt row 20
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xxl,
+    justifyContent: 'center',
+    marginTop: 20,
   },
-  backIcon: {
-    marginRight: spacing.xs,
+  // alt row -> age note 32
+  legal: {
+    marginTop: 32,
   },
 });
 

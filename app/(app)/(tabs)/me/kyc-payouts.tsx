@@ -57,7 +57,7 @@ const KycPayoutsScreen = () => {
   const [emailReceipts, setEmailReceipts] = useState(true);
 
   return (
-    <Screen scrollable contentContainerStyle={styles.content}>
+    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
       <Header title="KYC & Payouts" onBack={() => router.back()} />
 
       {/* Verification status + stepper */}
@@ -89,7 +89,7 @@ const KycPayoutsScreen = () => {
                   ]}
                 >
                   {step.state === 'done' ? (
-                    <Ionicons name="checkmark" size={rf(14)} color={colors.successBg} />
+                    <Ionicons name="checkmark" size={rf(14)} color={colors.onSuccess} />
                   ) : step.state === 'active' ? (
                     <View style={styles.stepPulse} />
                   ) : (

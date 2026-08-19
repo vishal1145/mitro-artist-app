@@ -25,7 +25,9 @@ export const useLogin = (): UseLoginResult => {
     formState: { isValid, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    mode: 'onBlur',
+    // onChange, not onBlur — the CTA is gated on isValid, and with onBlur the
+    // button stays disabled while the user is still typing.
+    mode: 'onChange',
     defaultValues: { identifier: '', password: '' },
   });
 
