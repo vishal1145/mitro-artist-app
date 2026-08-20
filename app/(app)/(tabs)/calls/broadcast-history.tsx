@@ -57,8 +57,11 @@ const BroadcastHistoryScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <PageHeader title="Broadcasts" onBack={() => router.back()} />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <PageHeader title="Broadcasts" onBack={() => router.back()} />
+      }
+    >
 
       {/* Lifetime total */}
       <View style={styles.hero}>
@@ -157,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 24,
+    marginTop: 12,
   },
   heroValue: {
     fontFamily: fontFamily.extrabold,
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 16,
   },
 

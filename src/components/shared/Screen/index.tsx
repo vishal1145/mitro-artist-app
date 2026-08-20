@@ -1,7 +1,6 @@
 import { memo, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -11,7 +10,7 @@ import {
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { useTabBarSpace } from '@navigation/useTabBarSpace';
-import { colors, spacing } from '@theme';
+import { colors, layout, spacing } from '@theme';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -24,6 +23,11 @@ export interface ScreenProps {
   style?: StyleProp<ViewStyle>;
   /** Decorative element rendered absolutely behind all content (e.g. a grid/glow backdrop). */
   background?: ReactNode;
+  /**
+   * Pinned top bar. Rendered outside the ScrollView so it stays put while the
+   * content scrolls under it. Gets the screen's horizontal padding.
+   */
+  header?: ReactNode;
   /**
    * Reserve room for the floating tab bar. Required on any scrollable screen
    * inside the tabs, otherwise the last row is clipped behind the nav pill.
@@ -43,6 +47,7 @@ const ScreenComponent = ({
   contentContainerStyle,
   style,
   background,
+  header,
   tabBarSpacing = false,
 }: ScreenProps) => {
   const body = padded ? styles.padded : undefined;
@@ -56,10 +61,21 @@ const ScreenComponent = ({
           {background}
         </View>
       ) : null}
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      {/*
+        `padding` on BOTH platforms, not just iOS.
+
+        The Android default of `undefined` assumes the window resizes itself
+        via `adjustResize`, which is not happening in this build — the content
+        did not move at all when the keyboard opened, so fields sat underneath
+        it. Driving the inset from JS keyboard events works regardless of the
+        activity's softInputMode. `softwareKeyboardLayoutMode: "pan"` in
+        app.json keeps the OS from also shifting things, so only one mechanism
+        is ever in play.
+      */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+        {/* Outside the ScrollView, so it stays pinned while content moves. */}
+        {header ? <View style={styles.header}>{header}</View> : null}
+
         {scrollable ? (
           <ScrollView
             style={styles.flex}
@@ -70,6 +86,8 @@ const ScreenComponent = ({
               tabPad,
             ]}
             keyboardShouldPersistTaps="handled"
+            // Swipe the keyboard away instead of hunting for a blank spot.
+            keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
             {children}
@@ -95,10 +113,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   padded: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
+  },
+  // Sits flush against the content below it; the first element on each screen
+  // supplies the gap. Padding on both sides stacked into a dead band.
+  header: {
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xxs,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingVertical: spacing.lg,
+    paddingBottom: spacing.lg,
   },
 });

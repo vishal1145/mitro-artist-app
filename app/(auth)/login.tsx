@@ -37,7 +37,12 @@ const LoginScreen = () => {
   const mobile = mode === 'mobile';
 
   return (
-    <Screen scrollable padded={false} background={<AuthBackground />}>
+    <Screen
+      scrollable
+      padded={false}
+      background={<AuthBackground />}
+      contentContainerStyle={styles.content}
+    >
       <View style={styles.body}>
         <View style={styles.header}>
           <AuthLogo />
@@ -135,9 +140,16 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  body: {
-    flexGrow: 1,
+  /**
+   * Centring lives on the scroll container, not the body. A `flexGrow: 1`
+   * child always measures exactly one viewport, so content size equalled
+   * viewport size and the ScrollView had nothing to scroll — when the keyboard
+   * shrank the window the fields went under it with no way to reach them.
+   */
+  content: {
     justifyContent: 'center',
+  },
+  body: {
     paddingHorizontal: layout.screenPadding,
     paddingVertical: 24,
   },
@@ -146,7 +158,7 @@ const styles = StyleSheet.create({
   },
   // logo -> heading 32
   title: {
-    marginTop: 32,
+    marginTop: 12,
   },
   // heading -> subtitle 8
   subtitle: {

@@ -47,23 +47,26 @@ const PrivateCallsScreen = () => {
   const pending = accepting ? REQUESTS : [];
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <PageHeader
-        title="Private Calls"
-        onBack={() => router.back()}
-        right={
-          <Pressable
-            style={styles.helpBtn}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="How private calls work"
-          >
-            <Text style={styles.helpMark} color="textMuted">
-              ?
-            </Text>
-          </Pressable>
-        }
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <PageHeader
+          title="Private Calls"
+          onBack={() => router.back()}
+          right={
+            <Pressable
+              style={styles.helpBtn}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="How private calls work"
+            >
+              <Text style={styles.helpMark} color="textMuted">
+                ?
+              </Text>
+            </Pressable>
+          }
+        />
+      }
+    >
 
       {/* Availability */}
       <View style={[styles.control, accepting ? styles.controlOn : null]}>
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.card,
     padding: 18,
-    marginTop: 24,
+    marginTop: 12,
   },
   // Accepting calls is a "live" state — the card picks up the same green.
   controlOn: {
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 28,
+    marginTop: 12,
     marginBottom: 14,
   },
 

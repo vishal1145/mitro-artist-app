@@ -80,12 +80,15 @@ const CallsHubScreen = () => {
   const seatsLeft = UP_NEXT.total - UP_NEXT.filled;
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <EarningsBar
-        brand
-        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-        unread
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
 
       {/* Title + schedule CTA */}
       <View style={styles.titleRow}>
@@ -220,7 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 24,
+    marginTop: 12,
   },
   title: {
     flex: 1,
@@ -276,7 +279,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 12,
   },
 

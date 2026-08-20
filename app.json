@@ -8,14 +8,16 @@
     "scheme": "mitroartist",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "backgroundColor": "#141122",
-    "icon": "./src/static/images/mitro-logo.jpeg",
+    "backgroundColor": "#070614",
+    "icon": "./src/static/images/icon.png",
     "splash": {
-      "image": "./src/static/images/mitro-logo.jpeg",
+      "image": "./src/static/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#141122"
+      "backgroundColor": "#070614"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mitro.artist",
@@ -25,11 +27,12 @@
     },
     "android": {
       "package": "com.mitro.artist",
-      "backgroundColor": "#141122",
+      "backgroundColor": "#070614",
       "adaptiveIcon": {
-        "foregroundImage": "./src/static/images/mitro-logo.jpeg",
+        "foregroundImage": "./src/static/images/icon-adaptive.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "bundler": "metro",
@@ -42,10 +45,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./src/static/images/mitro-logo.jpeg",
-          "backgroundColor": "#141122",
+          "image": "./src/static/images/splash-icon.png",
+          "backgroundColor": "#070614",
           "resizeMode": "contain",
-          "imageWidth": 180
+          "imageWidth": 200
         }
       ]
     ],

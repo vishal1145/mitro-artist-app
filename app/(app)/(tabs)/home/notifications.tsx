@@ -114,18 +114,13 @@ const NotificationsScreen = () => {
   );
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <PageHeader
-        title="Notifications"
-        onBack={() => router.back()}
-        right={
-          <View style={styles.headRight}>
-            {unreadCount ? (
-              <View style={styles.headCount}>
-                <Text style={styles.headCountText}>{unreadCount}</Text>
-              </View>
-            ) : null}
-
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <PageHeader
+          title="Notifications"
+          onBack={() => router.back()}
+          badge={unreadCount}
+          right={
             <Pressable
               onPress={() => setRead(NOTES.map((n) => n.id))}
               style={styles.markAll}
@@ -135,10 +130,10 @@ const NotificationsScreen = () => {
             >
               <Feather name="check-square" size={rf(18)} color={colors.textPrimary} />
             </Pressable>
-          </View>
-        }
-      />
-
+          }
+        />
+      }
+    >
       <InsightLine style={styles.insight} lead={`${unreadCount} need your attention`} />
 
       <CircleFilters
@@ -240,26 +235,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // Count and mark-all share the header's trailing slot.
-  headRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headCount: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.pink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  headCountText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    color: colors.white,
-  },
-
   insight: {
     marginTop: 18,
   },
@@ -268,7 +243,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 26,
+    marginTop: 12,
     marginBottom: 12,
   },
   empty: {

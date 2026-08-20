@@ -50,21 +50,27 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.root}>
-      <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-        <PageHeader
-          title="Settings"
-          onBack={() => router.back()}
-          right={
-            <Pressable
-              style={styles.iconBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Search settings"
-            >
-              <Feather name="search" size={rf(17)} color={colors.textPrimary} />
-            </Pressable>
-          }
-        />
-
+      <Screen
+        tabBarSpacing
+        scrollable
+        padded={false}
+        contentContainerStyle={styles.content}
+        header={
+          <PageHeader
+            title="Settings"
+            onBack={() => router.back()}
+            right={
+              <Pressable
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Search settings"
+              >
+                <Feather name="search" size={rf(17)} color={colors.textPrimary} />
+              </Pressable>
+            }
+          />
+        }
+      >
         {/* Identity */}
         <SectionLabel style={styles.sectionLabel}>IDENTITY</SectionLabel>
 
@@ -323,7 +329,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 26,
+    marginTop: 12,
     marginBottom: 14,
   },
 

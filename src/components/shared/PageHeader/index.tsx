@@ -3,12 +3,14 @@ import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors } from '@theme';
+import { colors, fontFamily } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface PageHeaderProps {
   title: string;
   onBack?: () => void;
+  /** Count bubble shown immediately after the title. Hidden when 0. */
+  badge?: number;
   /** Trailing slot — a pill button, help chip, etc. */
   right?: ReactNode;
 }
@@ -17,7 +19,7 @@ export interface PageHeaderProps {
  * Pushed-screen header: circular back button, left-aligned title, optional
  * trailing action. Distinct from `Header`, which centres its title.
  */
-const PageHeaderComponent = ({ title, onBack, right }: PageHeaderProps) => (
+const PageHeaderComponent = ({ title, onBack, badge, right }: PageHeaderProps) => (
   <View style={styles.row}>
     {onBack ? (
       <Pressable
@@ -31,9 +33,18 @@ const PageHeaderComponent = ({ title, onBack, right }: PageHeaderProps) => (
       </Pressable>
     ) : null}
 
-    <Text variant="h2" style={styles.title} numberOfLines={1}>
-      {title}
-    </Text>
+    {/* Title and its count travel together, so the number reads as part of
+        the heading rather than as another trailing control. */}
+    <View style={styles.titleRow}>
+      <Text variant="h2" numberOfLines={1}>
+        {title}
+      </Text>
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : null}
+    </View>
 
     {right}
   </View>
@@ -57,7 +68,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
+  titleRow: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  badge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.pink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  badgeText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(11),
+    color: colors.white,
   },
 });

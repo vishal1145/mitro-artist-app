@@ -118,22 +118,24 @@ const FollowersScreen = () => {
   const rows = useMemo(() => FOLLOWERS.filter((f) => f.buckets.includes(filter)), [filter]);
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <PageHeader
-        title="Followers"
-        onBack={() => router.back()}
-        right={
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => router.push('/(app)/(tabs)/me/messages')}
-            accessibilityRole="button"
-            accessibilityLabel="Open messages"
-          >
-            <Feather name="message-circle" size={rf(17)} color={colors.textPrimary} />
-          </Pressable>
-        }
-      />
-
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <PageHeader
+          title="Followers"
+          onBack={() => router.back()}
+          right={
+            <Pressable
+              style={styles.iconBtn}
+              onPress={() => router.push('/(app)/(tabs)/me/messages')}
+              accessibilityRole="button"
+              accessibilityLabel="Open messages"
+            >
+              <Feather name="message-circle" size={rf(17)} color={colors.textPrimary} />
+            </Pressable>
+          }
+        />
+      }
+    >
       {/* Headline count */}
       <Text style={styles.heroValue}>48.2K</Text>
       <Text variant="label" color="textMuted" align="center">
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
     lineHeight: rf(42),
     color: colors.pink,
     textAlign: 'center',
-    marginTop: 22,
+    marginTop: 12,
   },
   insight: {
     marginTop: 18,
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionLabel: {
-    marginTop: 26,
+    marginTop: 12,
     marginBottom: 4,
   },
 

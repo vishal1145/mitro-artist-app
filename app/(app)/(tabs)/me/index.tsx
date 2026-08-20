@@ -156,12 +156,15 @@ const MeScreen = () => {
   );
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <EarningsBar
-        brand
-        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-        unread
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
 
       {/* Identity */}
       <View style={styles.identity}>
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
 
   identity: {
     alignItems: 'center',
-    marginTop: 28,
+    marginTop: 12,
   },
   handle: {
     marginTop: 24,
@@ -269,11 +272,11 @@ const styles = StyleSheet.create({
   },
 
   insight: {
-    marginTop: 22,
+    marginTop: 12,
   },
 
   sectionLabel: {
-    marginTop: 26,
+    marginTop: 12,
     marginBottom: 4,
   },
 

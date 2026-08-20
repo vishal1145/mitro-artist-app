@@ -1,26 +1,15 @@
-import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Text } from '@components/ui/Text';
-import { colors, spacing } from '@theme';
-import { rf } from '@utils/responsive';
+import { spacing } from '@theme';
 
-/** Age-gate notice pinned to the bottom of every auth screen. */
-const AuthLegalComponent = () => (
-  <View style={styles.row}>
-    <Feather
-      name="shield"
-      size={rf(14)}
-      color={colors.textMuted}
-      style={styles.icon}
-    />
-    <Text variant="bodySm" color="textMuted" style={styles.text}>
-      Mitro is an entertainment platform for adult audiences. By continuing, you confirm that you
-      are 18 years or older.
-    </Text>
-  </View>
-);
+/**
+ * Legal notice slot at the bottom of every auth screen.
+ *
+ * Currently empty — the age-gate copy was removed. Kept as a component so the
+ * three auth screens keep a single place to put the notice back.
+ */
+const AuthLegalComponent = () => <View style={styles.row} />;
 
 export const AuthLegal = memo(AuthLegalComponent);
 
@@ -28,11 +17,5 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: spacing.xs,
-  },
-  icon: {
-    marginTop: rf(2),
-  },
-  text: {
-    flex: 1,
   },
 });

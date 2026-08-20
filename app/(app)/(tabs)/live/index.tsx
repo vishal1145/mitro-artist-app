@@ -55,12 +55,15 @@ const GoLiveScreen = () => {
     setRewards((prev) => prev.map((r) => (r.id === id ? { ...r, on: !r.on } : r)));
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <EarningsBar
-        brand
-        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-        unread
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
 
       <Text variant="h1" style={styles.title}>
         Go Live
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
   },
   title: {
-    marginTop: 24,
+    marginTop: 12,
   },
   subtitle: {
     marginTop: 8,
@@ -298,7 +301,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 18,
     gap: 16,
-    marginTop: 22,
+    marginTop: 12,
   },
   previewTop: {
     flexDirection: 'row',
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 26,
+    marginTop: 12,
     marginBottom: 14,
   },
 

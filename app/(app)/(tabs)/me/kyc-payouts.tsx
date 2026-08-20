@@ -1,12 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 
-import { Header, ListRow, Screen, ToggleRow } from '@components/shared';
-import { Card, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { PageHeader, Screen, SectionLabel } from '@components/shared';
+import { Text } from '@components/ui';
+import { colors, fontFamily, layout, radius } from '@theme';
+import { rf } from '@utils/responsive';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
 type StepState = 'done' | 'active' | 'locked';
@@ -28,326 +28,291 @@ const IDENTITY: {
   { icon: 'home', title: 'Address proof', note: 'Review in progress', status: 'Pending' },
 ];
 
-/** Uppercase card header strip. */
-const CardHead = ({ children }: { children: string }) => (
-  <View style={styles.cardHead}>
-    <Text variant="label" color="textSecondary">
-      {children}
-    </Text>
-  </View>
-);
-
 /** Status pill with a leading dot. */
 const StatusPill = ({ status }: { status: 'Verified' | 'Pending' }) => {
   const verified = status === 'Verified';
   return (
-    <View style={[styles.pill, { backgroundColor: verified ? colors.successChip : colors.warningChip }]}>
+    <View style={styles.pill}>
       <View
-        style={[styles.pillDot, { backgroundColor: verified ? colors.success : colors.warning }]}
+        style={[styles.pillDot, { backgroundColor: verified ? colors.green : colors.gold }]}
       />
-      <Text variant="label" color={verified ? 'success' : 'warning'}>
+      <Text variant="label" color={verified ? 'green' : 'gold'}>
         {status}
       </Text>
     </View>
   );
 };
 
+/** Verification status and payout settings. Flat sections, no nested cards. */
 const KycPayoutsScreen = () => {
   const router = useRouter();
   const [emailReceipts, setEmailReceipts] = useState(true);
 
   return (
-    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
-      <Header title="KYC & Payouts" onBack={() => router.back()} />
-
-      {/* Verification status + stepper */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusAccent} />
-        <View style={styles.statusBody}>
-          <View style={styles.statusTop}>
-            <View style={styles.statusIcon}>
-              <Feather name="shield" size={rf(18)} color={colors.warning} />
-            </View>
-            <View style={styles.statusText}>
-              <Text variant="h3">Verification pending</Text>
-              <Text variant="caption" color="textSecondary">
-                Complete your KYC verification to unlock bank payouts and withdrawal features.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.stepper}>
-            <View style={styles.stepperTrack} />
-            {STEPS.map((step) => (
-              <View key={step.label} style={styles.step}>
-                <View
-                  style={[
-                    styles.stepDot,
-                    step.state === 'done' ? styles.stepDone : null,
-                    step.state === 'active' ? styles.stepActive : null,
-                    step.state === 'locked' ? styles.stepLocked : null,
-                  ]}
-                >
-                  {step.state === 'done' ? (
-                    <Feather name="check" size={rf(14)} color={colors.onSuccess} />
-                  ) : step.state === 'active' ? (
-                    <View style={styles.stepPulse} />
-                  ) : (
-                    <Feather name="lock" size={rf(12)} color={colors.textMuted} />
-                  )}
-                </View>
-                <Text
-                  variant="label"
-                  color={
-                    step.state === 'done'
-                      ? 'success'
-                      : step.state === 'active'
-                        ? 'warning'
-                        : 'textMuted'
-                  }
-                >
-                  {step.label}
-                </Text>
-              </View>
-            ))}
-          </View>
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
+      header={<PageHeader title="KYC & Payouts" onBack={() => router.back()} />}
+    >
+      {/* Status */}
+      <View style={styles.statusHead}>
+        <View style={styles.shield}>
+          <Feather name="shield" size={rf(17)} color={colors.gold} />
+        </View>
+        <View style={styles.statusText}>
+          <Text variant="h3">Verification pending</Text>
+          <Text variant="bodySm" color="textMuted">
+            Finish KYC to unlock bank payouts.
+          </Text>
         </View>
       </View>
 
-      {/* Identity verification */}
-      <Card style={styles.listCard}>
-        <CardHead>IDENTITY VERIFICATION</CardHead>
-        {IDENTITY.map((item, i) => (
-          <View key={item.title} style={styles.listRowWrap}>
-            <ListRow
-              icon={item.icon}
-              iconTint={item.status === 'Verified' ? colors.success : colors.warning}
-              title={item.title}
-              subtitle={item.note}
-              right={<StatusPill status={item.status} />}
-              chevron
-              divider={i > 0}
-              onPress={() => undefined}
-            />
+      {/* Stepper */}
+      <View style={styles.stepper}>
+        <View style={styles.stepperTrack} />
+        {STEPS.map((step) => (
+          <View key={step.label} style={styles.step}>
+            <View
+              style={[
+                styles.stepDot,
+                step.state === 'done' ? styles.stepDone : null,
+                step.state === 'active' ? styles.stepActive : null,
+                step.state === 'locked' ? styles.stepLocked : null,
+              ]}
+            >
+              {step.state === 'done' ? (
+                <Feather name="check" size={rf(13)} color={colors.onSuccess} />
+              ) : step.state === 'locked' ? (
+                <Feather name="lock" size={rf(11)} color={colors.textMuted} />
+              ) : null}
+            </View>
+            <Text
+              variant="label"
+              color={
+                step.state === 'done' ? 'green' : step.state === 'active' ? 'gold' : 'textMuted'
+              }
+            >
+              {step.label}
+            </Text>
           </View>
         ))}
-      </Card>
+      </View>
 
-      {/* Bank account — locked until KYC completes */}
-      <Card style={styles.listCard}>
-        <CardHead>BANK ACCOUNT</CardHead>
-        <View style={styles.lockedBody}>
-          <View style={styles.lockedIcon}>
-            <Feather name="briefcase" size={rf(26)} color={colors.textMuted} />
+      {/* Identity */}
+      <SectionLabel divider style={styles.sectionLabel}>
+        IDENTITY VERIFICATION
+      </SectionLabel>
+
+      {IDENTITY.map((item, i) => (
+        <View key={item.title} style={[styles.row, i === 0 ? null : styles.rowDivider]}>
+          <View style={styles.rowIcon}>
+            <Feather
+              name={item.icon}
+              size={rf(16)}
+              color={item.status === 'Verified' ? colors.green : colors.gold}
+            />
           </View>
-          <Text variant="body" color="textMuted" align="center">
-            No bank account linked
-          </Text>
-          <Pressable style={styles.dashedBtn} disabled accessibilityRole="button" accessibilityLabel="Add bank account (locked)">
-            <Feather name="lock" size={rf(14)} color={colors.textMuted} />
-            <Text variant="label" color="textMuted">
-              Add bank account
+
+          <View style={styles.rowText}>
+            <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>
+              {item.title}
             </Text>
-          </Pressable>
-          <Text variant="caption" color="textMuted" align="center" style={styles.lockedNote}>
-            Unlocks once identity verification is complete.
-          </Text>
+            {item.note ? (
+              <Text variant="bodySm" color="textMuted">
+                {item.note}
+              </Text>
+            ) : null}
+          </View>
+
+          <StatusPill status={item.status} />
         </View>
-      </Card>
+      ))}
+
+      {/* Bank account */}
+      <SectionLabel divider style={styles.sectionLabel}>
+        BANK ACCOUNT
+      </SectionLabel>
+
+      <View style={styles.empty}>
+        <Feather name="briefcase" size={rf(26)} color={colors.textMuted} />
+        <Text variant="bodyLg" color="textMuted" align="center" style={styles.emptyTitle}>
+          No bank account linked
+        </Text>
+        <Text variant="bodySm" color="textMuted" align="center">
+          Unlocks once identity verification is complete.
+        </Text>
+      </View>
 
       {/* Payout preferences */}
-      <Card style={styles.listCard}>
-        <CardHead>PAYOUT PREFERENCES</CardHead>
-        <View style={styles.listRowWrap}>
-          <ListRow icon="calendar" title="Payout schedule" value="Weekly" valueColor="textSecondary" chevron onPress={() => undefined} />
-        </View>
-        <View style={styles.listRowWrap}>
-          <ListRow icon="dollar-sign" title="Minimum payout" value="500 tk" valueColor="textSecondary" chevron divider onPress={() => undefined} />
-        </View>
-        <View style={[styles.listRowWrap, styles.receiptsRow]}>
-          <ToggleRow
-            icon="file-text"
-            label="Email me payout receipts"
-            value={emailReceipts}
-            onValueChange={setEmailReceipts}
-          />
-        </View>
-      </Card>
+      <SectionLabel divider style={styles.sectionLabel}>
+        PAYOUT PREFERENCES
+      </SectionLabel>
 
-      {/* Info */}
-      <View style={styles.infoCard}>
-        <View style={styles.infoAccent} />
-        <View style={styles.infoBody}>
-          <Feather name="info" size={rf(17)} color={colors.primary} />
-          <Text variant="caption" color="textSecondary" style={styles.infoText}>
-            Withdrawals typically process within 24-48 hours once requested. Business days only.
-          </Text>
+      <View style={styles.row}>
+        <View style={styles.rowIcon}>
+          <Feather name="calendar" size={rf(16)} color={colors.textSecondary} />
         </View>
+        <Text variant="bodyLg" color="textPrimary" style={styles.rowLabel}>
+          Payout schedule
+        </Text>
+        <Text variant="bodySm" color="textMuted">
+          Weekly
+        </Text>
       </View>
+
+      <View style={[styles.row, styles.rowDivider]}>
+        <View style={styles.rowIcon}>
+          <Feather name="dollar-sign" size={rf(16)} color={colors.textSecondary} />
+        </View>
+        <Text variant="bodyLg" color="textPrimary" style={styles.rowLabel}>
+          Minimum payout
+        </Text>
+        <Text variant="bodySm" color="textMuted">
+          500 tk
+        </Text>
+      </View>
+
+      <View style={[styles.row, styles.rowDivider]}>
+        <View style={styles.rowIcon}>
+          <Feather name="file-text" size={rf(16)} color={colors.textSecondary} />
+        </View>
+        <Text variant="bodyLg" color="textPrimary" style={styles.rowLabel}>
+          Email me receipts
+        </Text>
+        <Switch
+          value={emailReceipts}
+          onValueChange={setEmailReceipts}
+          trackColor={{ false: colors.surfaceSoft, true: colors.pink }}
+          thumbColor={colors.white}
+          accessibilityLabel="Email me payout receipts"
+        />
+      </View>
+
+      <Text variant="bodySm" color="textMuted" style={styles.footnote}>
+        Withdrawals process in 24–48 hours, business days only.
+      </Text>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
+    paddingHorizontal: layout.screenPadding,
   },
 
-  statusCard: {
+  statusHead: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: 12,
   },
-  statusAccent: {
-    width: wp(1.5),
-    backgroundColor: colors.warning,
-  },
-  statusBody: {
-    flex: 1,
-    padding: spacing.md,
-    gap: spacing.lg,
-  },
-  statusTop: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statusIcon: {
-    width: wp(10),
-    height: wp(10),
-    borderRadius: radius.full,
-    backgroundColor: colors.warningChip,
+  shield: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.goldSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusText: {
     flex: 1,
-    gap: spacing.xxs,
+    gap: 2,
   },
 
   stepper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
+    marginTop: 26,
   },
+  // Hairline behind the dots, inset so it starts and ends under them.
   stepperTrack: {
     position: 'absolute',
-    left: wp(8),
-    right: wp(8),
-    top: wp(4),
-    height: 2,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.full,
+    left: '16%',
+    right: '16%',
+    top: 13,
+    height: 1,
+    backgroundColor: colors.border,
   },
   step: {
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 8,
   },
   stepDot: {
-    width: wp(8),
-    height: wp(8),
-    borderRadius: radius.full,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepDone: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.green,
   },
   stepActive: {
-    backgroundColor: colors.warning,
+    backgroundColor: colors.gold,
   },
   stepLocked: {
-    backgroundColor: colors.surfaceElevated,
-  },
-  stepPulse: {
-    width: wp(2.5),
-    height: wp(2.5),
-    borderRadius: radius.full,
-    backgroundColor: colors.warningBg,
+    backgroundColor: colors.surfaceSoft,
   },
 
-  listCard: {
-    padding: 0,
-    overflow: 'hidden',
+  sectionLabel: {
+    marginTop: 26,
+    marginBottom: 4,
   },
-  cardHead: {
-    backgroundColor: colors.surfaceElevated,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
   },
-  listRowWrap: {
-    paddingHorizontal: spacing.md,
-  },
-  receiptsRow: {
-    paddingVertical: spacing.md,
+  rowDivider: {
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderSoft,
+  },
+  rowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowText: {
+    flex: 1,
+    gap: 2,
+  },
+  rowLabel: {
+    flex: 1,
   },
 
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
+    gap: 6,
+    backgroundColor: colors.surfaceSoft,
     borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   pillDot: {
-    width: wp(1.5),
-    height: wp(1.5),
-    borderRadius: radius.full,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 
-  lockedBody: {
+  empty: {
     alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.lg,
+    gap: 8,
+    paddingVertical: 20,
   },
-  lockedIcon: {
-    width: wp(16),
-    height: wp(16),
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dashedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    alignSelf: 'stretch',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    opacity: 0.6,
-  },
-  lockedNote: {
-    marginTop: spacing.xxs,
+  emptyTitle: {
+    fontFamily: fontFamily.bold,
   },
 
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  infoAccent: {
-    width: wp(1.5),
-    backgroundColor: colors.primary,
-  },
-  infoBody: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  infoText: {
-    flex: 1,
-    fontFamily: fontFamily.body,
+  footnote: {
+    marginTop: 26,
   },
 });
 

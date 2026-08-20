@@ -98,12 +98,15 @@ const HomeScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <EarningsBar
-        brand
-        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-        unread
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
 
       {/* Heading */}
       <Text variant="h1" style={styles.title}>
@@ -328,7 +331,7 @@ const styles = StyleSheet.create({
 
   // Heading
   title: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 16,
   },
 

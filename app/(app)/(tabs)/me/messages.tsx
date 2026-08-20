@@ -57,18 +57,21 @@ const MessagesScreen = () => {
   const unread = CONVERSATIONS.reduce((n, c) => n + (c.unread ?? 0), 0);
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <PageHeader
-        title="Messages"
-        onBack={() => router.back()}
-        right={
-          unread ? (
-            <View style={styles.headBadge}>
-              <Text style={styles.headBadgeText}>{unread}</Text>
-            </View>
-          ) : undefined
-        }
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <PageHeader
+          title="Messages"
+          onBack={() => router.back()}
+          right={
+            unread ? (
+              <View style={styles.headBadge}>
+                <Text style={styles.headBadgeText}>{unread}</Text>
+              </View>
+            ) : undefined
+          }
+        />
+      }
+    >
 
       <View style={styles.list}>
         {CONVERSATIONS.map((c, i) => (
@@ -148,11 +151,11 @@ const styles = StyleSheet.create({
   },
 
   insight: {
-    marginTop: 20,
+    marginTop: 12,
   },
 
   list: {
-    marginTop: 20,
+    marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: 4,

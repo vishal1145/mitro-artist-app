@@ -71,23 +71,26 @@ const GroupSessionsScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <PageHeader
-        title="Group Sessions"
-        onBack={() => router.back()}
-        right={
-          <Pressable
-            onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
-            style={styles.newBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Schedule a new session"
-          >
-            <Text variant="bodySm" color="white" style={styles.newLabel}>
-              + New
-            </Text>
-          </Pressable>
-        }
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <PageHeader
+          title="Group Sessions"
+          onBack={() => router.back()}
+          right={
+            <Pressable
+              onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
+              style={styles.newBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Schedule a new session"
+            >
+              <Text variant="bodySm" color="white" style={styles.newLabel}>
+                + New
+              </Text>
+            </Pressable>
+          }
+        />
+      }
+    >
 
       {/* Lifetime total */}
       <View style={styles.hero}>
@@ -207,7 +210,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 10,
-    marginTop: 24,
+    marginTop: 12,
   },
   heroValue: {
     fontFamily: fontFamily.extrabold,
@@ -220,7 +223,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 16,
   },
 

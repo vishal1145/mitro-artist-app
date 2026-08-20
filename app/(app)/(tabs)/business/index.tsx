@@ -48,12 +48,15 @@ const EarningsScreen = () => {
   const router = useRouter();
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}>
-      <EarningsBar
-        brand
-        onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-        unread
-      />
+    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
 
       <Text variant="h1" style={styles.title}>
         Earnings
@@ -196,7 +199,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
   },
   title: {
-    marginTop: 20,
+    marginTop: 12,
   },
 
   hero: {
@@ -283,7 +286,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 14,
   },
 

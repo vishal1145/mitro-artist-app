@@ -22,7 +22,12 @@ const RegisterScreen = () => {
   const password = useWatch({ control, name: 'password' }) ?? '';
 
   return (
-    <Screen scrollable padded={false} background={<AuthBackground />}>
+    <Screen
+      scrollable
+      padded={false}
+      background={<AuthBackground />}
+      contentContainerStyle={styles.content}
+    >
       <View style={styles.body}>
         <View style={styles.header}>
           <AuthLogo />
@@ -135,9 +140,11 @@ const RegisterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  body: {
-    flexGrow: 1,
+  /** See login.tsx — centring must sit on the scroll container, not the body. */
+  content: {
     justifyContent: 'center',
+  },
+  body: {
     paddingHorizontal: layout.screenPadding,
     paddingVertical: 24,
   },
@@ -146,7 +153,7 @@ const styles = StyleSheet.create({
   },
   // logo -> heading 32
   title: {
-    marginTop: 32,
+    marginTop: 12,
   },
   // heading -> subtitle 8
   subtitle: {
