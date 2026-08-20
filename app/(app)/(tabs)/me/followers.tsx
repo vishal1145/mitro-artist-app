@@ -111,10 +111,6 @@ const STATS: { value: string; label: string; color: ColorToken; star?: boolean }
   { value: '4.9', label: 'Creator Rating', color: 'gold', star: true },
 ];
 
-/** Rank colours: gold, silver, bronze, then muted. */
-const rankColor = (rank: number): ColorToken =>
-  rank === 1 ? 'gold' : rank === 2 ? 'textSecondary' : rank === 3 ? 'red' : 'textMuted';
-
 const FollowersScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('all');
@@ -175,10 +171,6 @@ const FollowersScreen = () => {
 
       {rows.map((f, i) => (
         <View key={f.id} style={[styles.row, i === 0 ? null : styles.rowDivider]}>
-          <Text variant="bodyLg" color={rankColor(i + 1)} style={styles.rank}>
-            {i + 1}
-          </Text>
-
           <Avatar initials={f.initials} name={f.name} size="md" color={f.color} />
 
           <View style={styles.rowText}>
@@ -294,10 +286,6 @@ const styles = StyleSheet.create({
   rowDivider: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
-  },
-  rank: {
-    width: 18,
-    fontFamily: fontFamily.extrabold,
   },
   rowText: {
     flex: 1,
