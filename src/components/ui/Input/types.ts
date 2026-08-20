@@ -1,4 +1,4 @@
-import type { Ionicons } from '@expo/vector-icons';
+import type { Feather } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import type { StyleProp, TextInputProps, ViewStyle } from 'react-native';
 
@@ -16,7 +16,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   hint?: string;
   /** Renders a show/hide toggle and secures entry. */
   isPassword?: boolean;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
+  leftIcon?: keyof typeof Feather.glyphMap;
   /** Static text before the field, separated by a rule (e.g. a "+91" dial code). */
   prefix?: string;
   disabled?: boolean;

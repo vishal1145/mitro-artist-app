@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -11,7 +11,7 @@ import { rf, wp } from '@utils/responsive';
 
 export interface ScreenPlaceholderProps {
   title: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   /** Short note describing what this screen will contain. */
   note?: string;
   /** Key/value params the route received — handy while wiring navigation. */
@@ -26,7 +26,7 @@ export interface ScreenPlaceholderProps {
  */
 const ScreenPlaceholderComponent = ({
   title,
-  icon = 'construct-outline',
+  icon = 'tool',
   note,
   params,
   hideBack = false,
@@ -40,7 +40,7 @@ const ScreenPlaceholderComponent = ({
 
       <View style={styles.body}>
         <View style={styles.iconWrap}>
-          <Ionicons name={icon} size={rf(26)} color={colors.primary} />
+          <Feather name={icon} size={rf(26)} color={colors.primary} />
         </View>
 
         <Text variant="h3" align="center">

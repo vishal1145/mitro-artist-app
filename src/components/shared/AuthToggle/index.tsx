@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -10,7 +10,7 @@ import { rf, wp } from '@utils/responsive';
 export interface AuthToggleOption<T extends string> {
   value: T;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Feather.glyphMap;
 }
 
 export interface AuthToggleProps<T extends string> {
@@ -51,7 +51,7 @@ const AuthToggleComponent = <T extends string>({
           ) : null}
 
           <View style={styles.content}>
-            <Ionicons
+            <Feather
               name={option.icon}
               size={rf(16)}
               color={active ? colors.white : colors.textMuted}

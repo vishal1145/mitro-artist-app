@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -15,7 +15,7 @@ import { Text } from '@components/ui';
 import { colors, fontFamily, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 type Category = 'all' | 'earnings' | 'followers' | 'system';
 type Group = 'TODAY' | 'THIS WEEK';
 
@@ -28,7 +28,7 @@ interface Note {
   id: string;
   group: Group;
   category: Exclude<Category, 'all'>;
-  icon: IoniconName;
+  icon: FeatherIconName;
   tint: string;
   fill: string;
   title: string;
@@ -57,7 +57,7 @@ const NOTES: Note[] = [
     id: 'n2',
     group: 'TODAY',
     category: 'earnings',
-    icon: 'wallet',
+    icon: 'credit-card',
     tint: colors.green,
     fill: colors.successChip,
     title: 'Payout ready',
@@ -83,7 +83,7 @@ const NOTES: Note[] = [
     id: 'n4',
     group: 'THIS WEEK',
     category: 'followers',
-    icon: 'people',
+    icon: 'users',
     tint: colors.cyan,
     fill: colors.cyanSoft,
     title: '940 new followers',
@@ -102,10 +102,10 @@ const NotificationsScreen = () => {
   const unreadCount = NOTES.filter((n) => n.unread && !read.includes(n.id)).length;
 
   const filters: CircleFilterOption[] = [
-    { value: 'all', label: 'All', icon: 'notifications', badge: unreadCount },
-    { value: 'earnings', label: 'Earnings', icon: 'cash-outline' },
-    { value: 'followers', label: 'Followers', icon: 'people-outline' },
-    { value: 'system', label: 'System', icon: 'add-outline' },
+    { value: 'all', label: 'All', icon: 'bell', badge: unreadCount },
+    { value: 'earnings', label: 'Earnings', icon: 'dollar-sign' },
+    { value: 'followers', label: 'Followers', icon: 'users' },
+    { value: 'system', label: 'System', icon: 'plus' },
   ];
 
   const visible = useMemo(
@@ -133,17 +133,13 @@ const NotificationsScreen = () => {
               accessibilityRole="button"
               accessibilityLabel="Mark all as read"
             >
-              <Ionicons name="checkmark-done" size={rf(18)} color={colors.textPrimary} />
+              <Feather name="check-square" size={rf(18)} color={colors.textPrimary} />
             </Pressable>
           </View>
         }
       />
 
-      <InsightLine
-        style={styles.insight}
-        lead={`${unreadCount} things need your eyes`}
-        tail=" — a trending stream, a payout ready to move, and two nudges that grow your income."
-      />
+      <InsightLine style={styles.insight} lead={`${unreadCount} need your attention`} />
 
       <CircleFilters
         style={styles.filters}
@@ -154,7 +150,7 @@ const NotificationsScreen = () => {
 
       {visible.length === 0 ? (
         <Text variant="bodySm" color="textMuted" align="center" style={styles.empty}>
-          Nothing here yet — notifications in this category will show up as they arrive.
+          Nothing here yet.
         </Text>
       ) : null}
 
@@ -183,7 +179,7 @@ const NotificationsScreen = () => {
                   <View style={[styles.accent, { backgroundColor: n.tint }]} />
 
                   <View style={[styles.noteIcon, { backgroundColor: n.fill }]}>
-                    <Ionicons name={n.icon} size={rf(16)} color={n.tint} />
+                    <Feather name={n.icon} size={rf(16)} color={n.tint} />
                   </View>
 
                   <View style={styles.noteText}>
@@ -260,7 +256,7 @@ const styles = StyleSheet.create({
   },
   headCountText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(11),
+    fontSize: rf(10),
     color: colors.white,
   },
 
@@ -277,7 +273,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     marginTop: 32,
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
 
   note: {

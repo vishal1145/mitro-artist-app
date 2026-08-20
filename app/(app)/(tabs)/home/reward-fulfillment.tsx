@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,12 +8,12 @@ import { Avatar, Card, Text } from '@components/ui';
 import { colors, fontFamily, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 type RewardStatus = 'pending' | 'delivered';
 
 interface Reward {
   id: string;
-  icon: IoniconName;
+  icon: FeatherIconName;
   tint: string;
   tintBg: string;
   title: string;
@@ -32,7 +32,7 @@ interface Reward {
 const REWARDS: Reward[] = [
   {
     id: 'r1',
-    icon: 'musical-note',
+    icon: 'music',
     tint: colors.primary,
     tintBg: colors.primarySoft,
     title: 'Song Request',
@@ -61,7 +61,7 @@ const REWARDS: Reward[] = [
   },
   {
     id: 'r3',
-    icon: 'videocam',
+    icon: 'video',
     tint: colors.textMuted,
     tintBg: colors.iconChip,
     title: '1:1 Video Call',
@@ -103,7 +103,7 @@ const RewardFulfillmentScreen = () => {
 
       {/* Urgency banner */}
       <View style={styles.banner}>
-        <Ionicons name="warning" size={rf(17)} color={colors.warning} />
+        <Feather name="alert-triangle" size={rf(17)} color={colors.warning} />
         <Text variant="caption" color="textSecondary" style={styles.bannerText}>
           Fulfil rewards promptly — fans notice when a shoutout or song request never arrives, and that erodes trust.
         </Text>
@@ -139,7 +139,7 @@ const RewardFulfillmentScreen = () => {
           <Card key={r.id} style={[styles.reward, isDone ? styles.rewardDone : null]}>
             <View style={styles.rewardHead}>
               <View style={[styles.rewardIcon, { backgroundColor: r.tintBg }]}>
-                <Ionicons name={r.icon} size={rf(18)} color={r.tint} />
+                <Feather name={r.icon} size={rf(18)} color={r.tint} />
               </View>
               <View style={styles.rewardHeadText}>
                 <Text
@@ -151,7 +151,7 @@ const RewardFulfillmentScreen = () => {
                 </Text>
                 {isDone ? (
                   <View style={styles.deliveredLine}>
-                    <Ionicons name="checkmark" size={rf(12)} color={colors.success} />
+                    <Feather name="check" size={rf(12)} color={colors.success} />
                     <Text variant="label" color="success">
                       {r.deliveredAgo ?? 'Delivered just now'}
                     </Text>
@@ -204,7 +204,7 @@ const RewardFulfillmentScreen = () => {
                   accessibilityRole="button"
                   accessibilityLabel={`Message ${r.fan}`}
                 >
-                  <Ionicons name="chatbubble-outline" size={rf(15)} color={colors.textPrimary} />
+                  <Feather name="message-circle" size={rf(15)} color={colors.textPrimary} />
                   <Text variant="caption" color="textPrimary">
                     Message
                   </Text>
@@ -216,7 +216,7 @@ const RewardFulfillmentScreen = () => {
                   accessibilityRole="button"
                   accessibilityLabel={`Mark ${r.title} delivered`}
                 >
-                  <Ionicons name="checkmark-circle" size={rf(15)} color={colors.onSuccess} />
+                  <Feather name="check-circle" size={rf(15)} color={colors.onSuccess} />
                   <Text variant="caption" color="onSuccess" style={styles.actionPrimaryText}>
                     Mark delivered
                   </Text>
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   fanSource: {
-    fontSize: rf(11),
+    fontSize: rf(10),
   },
   quote: {
     flexDirection: 'row',

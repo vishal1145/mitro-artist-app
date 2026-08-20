@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { memo, useMemo } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
@@ -11,7 +11,7 @@ export interface LogoBadgeProps {
   /** 'wave' = the Mitro brand mark on a light rounded tile. */
   /** 'icon' = muted circle containing an Ionicon. */
   variant?: 'wave' | 'icon';
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   size?: number;
   /** Drop the tile background — use on light surfaces or splash screens. */
   bare?: boolean;
@@ -25,7 +25,7 @@ export interface LogoBadgeProps {
  */
 const LogoBadgeComponent = ({
   variant = 'wave',
-  icon = 'megaphone-outline',
+  icon = 'volume-2',
   size = wp(16.7),
   bare = false,
 }: LogoBadgeProps) => {
@@ -41,7 +41,7 @@ const LogoBadgeComponent = ({
         accessibilityRole="image"
         accessibilityLabel="Mitro"
       >
-        <Ionicons name={icon} size={size * 0.42} color={colors.primary} />
+        <Feather name={icon} size={size * 0.42} color={colors.primary} />
       </View>
     );
   }

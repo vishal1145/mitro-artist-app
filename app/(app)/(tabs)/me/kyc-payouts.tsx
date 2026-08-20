@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,7 +8,7 @@ import { Card, Text } from '@components/ui';
 import { colors, fontFamily, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 type StepState = 'done' | 'active' | 'locked';
 
 const STEPS: { label: string; state: StepState }[] = [
@@ -18,14 +18,14 @@ const STEPS: { label: string; state: StepState }[] = [
 ];
 
 const IDENTITY: {
-  icon: IoniconName;
+  icon: FeatherIconName;
   title: string;
   note?: string;
   status: 'Verified' | 'Pending';
 }[] = [
-  { icon: 'card-outline', title: 'Government ID', status: 'Verified' },
-  { icon: 'happy-outline', title: 'Selfie check', status: 'Verified' },
-  { icon: 'home-outline', title: 'Address proof', note: 'Review in progress', status: 'Pending' },
+  { icon: 'credit-card', title: 'Government ID', status: 'Verified' },
+  { icon: 'smile', title: 'Selfie check', status: 'Verified' },
+  { icon: 'home', title: 'Address proof', note: 'Review in progress', status: 'Pending' },
 ];
 
 /** Uppercase card header strip. */
@@ -66,7 +66,7 @@ const KycPayoutsScreen = () => {
         <View style={styles.statusBody}>
           <View style={styles.statusTop}>
             <View style={styles.statusIcon}>
-              <Ionicons name="shield-outline" size={rf(18)} color={colors.warning} />
+              <Feather name="shield" size={rf(18)} color={colors.warning} />
             </View>
             <View style={styles.statusText}>
               <Text variant="h3">Verification pending</Text>
@@ -89,11 +89,11 @@ const KycPayoutsScreen = () => {
                   ]}
                 >
                   {step.state === 'done' ? (
-                    <Ionicons name="checkmark" size={rf(14)} color={colors.onSuccess} />
+                    <Feather name="check" size={rf(14)} color={colors.onSuccess} />
                   ) : step.state === 'active' ? (
                     <View style={styles.stepPulse} />
                   ) : (
-                    <Ionicons name="lock-closed" size={rf(12)} color={colors.textMuted} />
+                    <Feather name="lock" size={rf(12)} color={colors.textMuted} />
                   )}
                 </View>
                 <Text
@@ -138,13 +138,13 @@ const KycPayoutsScreen = () => {
         <CardHead>BANK ACCOUNT</CardHead>
         <View style={styles.lockedBody}>
           <View style={styles.lockedIcon}>
-            <Ionicons name="business-outline" size={rf(26)} color={colors.textMuted} />
+            <Feather name="briefcase" size={rf(26)} color={colors.textMuted} />
           </View>
           <Text variant="body" color="textMuted" align="center">
             No bank account linked
           </Text>
           <Pressable style={styles.dashedBtn} disabled accessibilityRole="button" accessibilityLabel="Add bank account (locked)">
-            <Ionicons name="lock-closed" size={rf(14)} color={colors.textMuted} />
+            <Feather name="lock" size={rf(14)} color={colors.textMuted} />
             <Text variant="label" color="textMuted">
               Add bank account
             </Text>
@@ -159,14 +159,14 @@ const KycPayoutsScreen = () => {
       <Card style={styles.listCard}>
         <CardHead>PAYOUT PREFERENCES</CardHead>
         <View style={styles.listRowWrap}>
-          <ListRow icon="calendar-outline" title="Payout schedule" value="Weekly" valueColor="textSecondary" chevron onPress={() => undefined} />
+          <ListRow icon="calendar" title="Payout schedule" value="Weekly" valueColor="textSecondary" chevron onPress={() => undefined} />
         </View>
         <View style={styles.listRowWrap}>
-          <ListRow icon="cash-outline" title="Minimum payout" value="500 tk" valueColor="textSecondary" chevron divider onPress={() => undefined} />
+          <ListRow icon="dollar-sign" title="Minimum payout" value="500 tk" valueColor="textSecondary" chevron divider onPress={() => undefined} />
         </View>
         <View style={[styles.listRowWrap, styles.receiptsRow]}>
           <ToggleRow
-            icon="receipt-outline"
+            icon="file-text"
             label="Email me payout receipts"
             value={emailReceipts}
             onValueChange={setEmailReceipts}
@@ -178,7 +178,7 @@ const KycPayoutsScreen = () => {
       <View style={styles.infoCard}>
         <View style={styles.infoAccent} />
         <View style={styles.infoBody}>
-          <Ionicons name="information-circle-outline" size={rf(17)} color={colors.primary} />
+          <Feather name="info" size={rf(17)} color={colors.primary} />
           <Text variant="caption" color="textSecondary" style={styles.infoText}>
             Withdrawals typically process within 24-48 hours once requested. Business days only.
           </Text>

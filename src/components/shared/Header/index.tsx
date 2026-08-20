@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -10,7 +10,7 @@ export interface HeaderProps {
   title: string;
   subtitle?: string;
   onBack?: () => void;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Feather.glyphMap;
   onRightPress?: () => void;
   rightAccessibilityLabel?: string;
 }
@@ -35,8 +35,8 @@ const HeaderComponent = ({
             accessibilityLabel="Go back"
             style={styles.iconButton}
           >
-            <Ionicons
-              name="chevron-back"
+            <Feather
+              name="chevron-left"
               size={rf(24)}
               color={colors.textPrimary}
             />
@@ -64,7 +64,7 @@ const HeaderComponent = ({
             accessibilityLabel={rightAccessibilityLabel ?? 'Action'}
             style={styles.iconButton}
           >
-            <Ionicons name={rightIcon} size={rf(22)} color={colors.textPrimary} />
+            <Feather name={rightIcon} size={rf(22)} color={colors.textPrimary} />
           </Pressable>
         ) : null}
       </View>

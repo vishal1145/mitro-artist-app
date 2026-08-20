@@ -43,7 +43,7 @@ const RegisterScreen = () => {
             autoComplete="name"
             returnKeyType="next"
             maxLength={24}
-            leftIcon="person-outline"
+            leftIcon="user"
           />
 
           <FormInput
@@ -55,7 +55,7 @@ const RegisterScreen = () => {
             autoComplete="username-new"
             returnKeyType="next"
             maxLength={20}
-            leftIcon="at-outline"
+            leftIcon="at-sign"
             // Strip spaces and force lowercase as the user types.
             transform={(v) => v.replace(/\s+/g, '').toLowerCase()}
           />
@@ -82,7 +82,7 @@ const RegisterScreen = () => {
               autoComplete="password-new"
               returnKeyType="done"
               maxLength={64}
-              leftIcon="lock-closed-outline"
+              leftIcon="lock"
               onSubmitEditing={handleSubmit}
             />
             {password.length ? (
@@ -103,7 +103,7 @@ const RegisterScreen = () => {
           <GradientButton
             label="Continue"
             gradient="cta"
-            rightIcon="arrow-forward"
+            rightIcon="arrow-right"
             onPress={handleSubmit}
             loading={isSubmitting}
             disabled={!isValid}

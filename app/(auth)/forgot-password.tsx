@@ -48,7 +48,7 @@ const ForgotPasswordScreen = () => {
           <GradientButton
             label="Send OTP"
             gradient="cta"
-            rightIcon="arrow-forward"
+            rightIcon="arrow-right"
             onPress={handleSubmit}
             loading={isSubmitting}
             disabled={!isValid}

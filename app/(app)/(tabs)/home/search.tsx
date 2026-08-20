@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -8,13 +8,13 @@ import { Avatar, Badge, Text } from '@components/ui';
 import { colors, fontFamily, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 const FILTERS = ['All', 'Sessions', 'Followers', 'Transactions'] as const;
 
 const SESSIONS = [
-  { id: 's1', title: 'Late Night Lofi Beats & Chill', meta: 'Aug 17 · +145 tk', icon: 'musical-notes' as IoniconName },
-  { id: 's2', title: 'Speedrun Saturday: Retro Classics', meta: 'Aug 12 · +89 tk', icon: 'game-controller' as IoniconName },
+  { id: 's1', title: 'Late Night Lofi Beats & Chill', meta: 'Aug 17 · +145 tk', icon: 'music' as FeatherIconName },
+  { id: 's2', title: 'Speedrun Saturday: Retro Classics', meta: 'Aug 12 · +89 tk', icon: 'monitor' as FeatherIconName },
 ];
 
 const FOLLOWERS = [
@@ -23,8 +23,8 @@ const FOLLOWERS = [
 ];
 
 const TRANSACTIONS = [
-  { id: 't1', title: 'Payout Processed', meta: 'Today, 09:41 AM', amount: '+$450.00', amountColor: 'success' as const, status: 'COMPLETED', tone: 'success' as const, icon: 'arrow-down' as IoniconName, iconTint: colors.success, iconBg: colors.successChip },
-  { id: 't2', title: 'Store Purchase: Neon Overlay', meta: 'Yesterday, 14:22 PM', amount: '-150 tk', amountColor: 'textPrimary' as const, status: 'DEDUCTED', tone: 'neutral' as const, icon: 'cart' as IoniconName, iconTint: colors.warning, iconBg: colors.warningChip },
+  { id: 't1', title: 'Payout Processed', meta: 'Today, 09:41 AM', amount: '+$450.00', amountColor: 'success' as const, status: 'COMPLETED', tone: 'success' as const, icon: 'arrow-down' as FeatherIconName, iconTint: colors.success, iconBg: colors.successChip },
+  { id: 't2', title: 'Store Purchase: Neon Overlay', meta: 'Yesterday, 14:22 PM', amount: '-150 tk', amountColor: 'textPrimary' as const, status: 'DEDUCTED', tone: 'neutral' as const, icon: 'shopping-cart' as FeatherIconName, iconTint: colors.warning, iconBg: colors.warningChip },
 ];
 
 const RECENT = ['live dj set config', 'payout history august'];
@@ -58,7 +58,7 @@ const SearchScreen = () => {
       {/* Search bar + cancel */}
       <View style={styles.searchRow}>
         <View style={styles.searchField}>
-          <Ionicons name="search" size={rf(18)} color={colors.primary} />
+          <Feather name="search" size={rf(18)} color={colors.primary} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -70,7 +70,7 @@ const SearchScreen = () => {
           />
           {query.length ? (
             <Pressable onPress={() => setQuery('')} hitSlop={spacing.xs} accessibilityRole="button" accessibilityLabel="Clear search">
-              <Ionicons name="close" size={rf(15)} color={colors.textSecondary} />
+              <Feather name="x" size={rf(15)} color={colors.textSecondary} />
             </Pressable>
           ) : null}
         </View>
@@ -99,7 +99,7 @@ const SearchScreen = () => {
               key={s.id}
               left={
                 <View style={styles.thumb}>
-                  <Ionicons name={s.icon} size={rf(18)} color={colors.primary} />
+                  <Feather name={s.icon} size={rf(18)} color={colors.primary} />
                 </View>
               }
               title={s.title}
@@ -147,7 +147,7 @@ const SearchScreen = () => {
               <ListRow
                 left={
                   <View style={[styles.txnIcon, { backgroundColor: t.iconBg }]}>
-                    <Ionicons name={t.icon} size={rf(18)} color={t.iconTint} />
+                    <Feather name={t.icon} size={rf(18)} color={t.iconTint} />
                   </View>
                 }
                 title={t.title}
@@ -173,13 +173,13 @@ const SearchScreen = () => {
         {RECENT.map((r) => (
           <ListRow
             key={r}
-            icon="time-outline"
+            icon="clock"
             title={r}
             chevron={false}
             onPress={() => setQuery(r)}
             right={
               <Pressable hitSlop={spacing.xs} accessibilityRole="button" accessibilityLabel={`Remove ${r}`}>
-                <Ionicons name="close" size={rf(15)} color={colors.textMuted} />
+                <Feather name="x" size={rf(15)} color={colors.textMuted} />
               </Pressable>
             }
           />
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.textPrimary,
     fontFamily: fontFamily.body,
-    fontSize: rf(14),
+    fontSize: rf(12),
     paddingVertical: spacing.sm,
   },
   // A horizontal ScrollView nested in the screen's vertical one will stretch to

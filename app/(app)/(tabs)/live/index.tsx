@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -9,20 +9,20 @@ import { Text } from '@components/ui';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
-const CATEGORIES: { key: string; icon: IoniconName }[] = [
-  { key: 'Gaming', icon: 'game-controller' },
-  { key: 'Music', icon: 'musical-note' },
-  { key: 'Talk', icon: 'chatbubble' },
+const CATEGORIES: { key: string; icon: FeatherIconName }[] = [
+  { key: 'Gaming', icon: 'monitor' },
+  { key: 'Music', icon: 'music' },
+  { key: 'Talk', icon: 'message-circle' },
 ];
 
 const CHECKS = ['camera detected', 'mic detected', 'connection looks good'];
 
-const PREVIEW_CONTROLS: { icon: IoniconName; label: string }[] = [
-  { icon: 'camera-reverse-outline', label: 'Flip camera' },
-  { icon: 'mic-outline', label: 'Audio settings' },
-  { icon: 'sunny-outline', label: 'Lighting' },
+const PREVIEW_CONTROLS: { icon: FeatherIconName; label: string }[] = [
+  { icon: 'refresh-cw', label: 'Flip camera' },
+  { icon: 'mic', label: 'Audio settings' },
+  { icon: 'sun', label: 'Lighting' },
 ];
 
 interface Reward {
@@ -65,9 +65,6 @@ const GoLiveScreen = () => {
       <Text variant="h1" style={styles.title}>
         Go Live
       </Text>
-      <Text variant="body" color="textSecondary" style={styles.subtitle}>
-        Set the stage before you open the doors.
-      </Text>
 
       {/* Preview */}
       <View style={styles.preview}>
@@ -87,14 +84,13 @@ const GoLiveScreen = () => {
         </View>
 
         <Text variant="bodySm" color="textSecondary" align="center" style={styles.previewHint}>
-          The moment you hit Go Live, everyone on Mitro can find this exact view — check your
-          framing and lighting.
+          Check your framing and lighting.
         </Text>
 
         <View style={styles.notVisible}>
-          <Ionicons name="close-circle-outline" size={rf(13)} color={colors.textMuted} />
+          <Feather name="x-circle" size={rf(13)} color={colors.textMuted} />
           <Text variant="bodySm" color="textMuted">
-            You&apos;re not visible to anyone yet.
+            Not visible yet
           </Text>
         </View>
 
@@ -106,8 +102,8 @@ const GoLiveScreen = () => {
             accessibilityState={{ selected: cameraOn }}
             accessibilityLabel={cameraOn ? 'Turn camera off' : 'Turn camera on'}
           >
-            <Ionicons
-              name={cameraOn ? 'videocam' : 'videocam-off'}
+            <Feather
+              name={cameraOn ? 'video' : 'video-off'}
               size={rf(14)}
               color={cameraOn ? colors.green : colors.textMuted}
             />
@@ -123,7 +119,7 @@ const GoLiveScreen = () => {
             accessibilityState={{ selected: micOn }}
             accessibilityLabel={micOn ? 'Mute microphone' : 'Unmute microphone'}
           >
-            <Ionicons
+            <Feather
               name={micOn ? 'mic' : 'mic-off'}
               size={rf(14)}
               color={micOn ? colors.green : colors.textMuted}
@@ -137,7 +133,7 @@ const GoLiveScreen = () => {
         <View style={styles.checks}>
           {CHECKS.map((c) => (
             <View key={c} style={styles.check}>
-              <Ionicons name="checkmark" size={rf(12)} color={colors.green} />
+              <Feather name="check" size={rf(12)} color={colors.green} />
               <Text variant="bodySm" color="green" style={styles.checkLabel}>
                 {c}
               </Text>
@@ -154,7 +150,7 @@ const GoLiveScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={c.label}
             >
-              <Ionicons name={c.icon} size={rf(16)} color={colors.textSecondary} />
+              <Feather name={c.icon} size={rf(16)} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>
@@ -189,7 +185,7 @@ const GoLiveScreen = () => {
               accessibilityState={{ selected: active }}
               accessibilityLabel={cat.key}
             >
-              <Ionicons
+              <Feather
                 name={cat.icon}
                 size={rf(14)}
                 color={active ? colors.pink : colors.textSecondary}
@@ -226,10 +222,6 @@ const GoLiveScreen = () => {
       <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
         REWARD MENU
       </SectionLabel>
-      <Text variant="bodySm" color="textMuted" style={styles.rewardNote}>
-        Rewards boost engagement — fans pay to interact.
-      </Text>
-
       {rewards.map((r, i) => (
         <View key={r.id} style={[styles.reward, i === 0 ? null : styles.rewardDivider]}>
           <View style={styles.rewardText}>
@@ -276,7 +268,7 @@ const GoLiveScreen = () => {
           end={gradientDirection.horizontal.end}
           style={styles.ctaFill}
         >
-          <Ionicons name="radio" size={rf(17)} color={colors.white} />
+          <Feather name="radio" size={rf(17)} color={colors.white} />
           <Text style={styles.ctaLabel}>START LIVE BROADCAST</Text>
         </LinearGradient>
       </Pressable>
@@ -340,7 +332,7 @@ const styles = StyleSheet.create({
     // Keeps the copy clear of the control stack on the right.
     paddingHorizontal: 34,
     marginTop: 12,
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
   notVisible: {
     flexDirection: 'row',
@@ -410,7 +402,7 @@ const styles = StyleSheet.create({
   titleInput: {
     color: colors.textPrimary,
     fontFamily: fontFamily.bold,
-    fontSize: rf(17),
+    fontSize: rf(15),
     padding: 0,
   },
 
@@ -440,8 +432,8 @@ const styles = StyleSheet.create({
   textarea: {
     color: colors.textSecondary,
     fontFamily: fontFamily.body,
-    fontSize: rf(13),
-    lineHeight: rf(20),
+    fontSize: rf(11),
+    lineHeight: rf(18),
     minHeight: 70,
     padding: 0,
   },
@@ -491,7 +483,7 @@ const styles = StyleSheet.create({
   },
   ctaLabel: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(14),
+    fontSize: rf(12),
     letterSpacing: 0.8,
     color: colors.white,
   },

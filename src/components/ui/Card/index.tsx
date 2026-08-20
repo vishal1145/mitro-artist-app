@@ -55,16 +55,18 @@ const CardComponent = ({
 export const Card = memo(CardComponent);
 
 const styles = StyleSheet.create({
-  // Spec: card fill, 1px border, radius 20, padding 18.
+  // Spec: surface fill, 1px border, radius 14-18, 20-22 top/sides and 18 bottom.
   card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: radius.card,
-    padding: layout.cardPadding,
+    paddingTop: layout.cardPadding,
+    paddingHorizontal: layout.cardPadding,
+    paddingBottom: layout.cardPaddingBottom,
     borderWidth: 1,
     borderColor: colors.border,
   },
   elevated: {
-    backgroundColor: colors.cardRaised,
+    backgroundColor: colors.surfaceStrong,
   },
   pressed: {
     opacity: 0.9,

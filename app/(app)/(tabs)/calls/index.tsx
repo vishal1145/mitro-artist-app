@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -14,7 +14,7 @@ import { Text } from '@components/ui';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 type Href =
   | '/(app)/(tabs)/calls/group-call-history'
@@ -22,7 +22,7 @@ type Href =
   | '/(app)/(tabs)/calls/broadcast-history';
 
 interface Entry {
-  icon: IoniconName;
+  icon: FeatherIconName;
   tint: string;
   fill: string;
   title: string;
@@ -33,32 +33,32 @@ interface Entry {
 
 const ENTRIES: Entry[] = [
   {
-    icon: 'people',
+    icon: 'users',
     tint: colors.pink,
     fill: colors.pinkSoft,
     title: 'Group Sessions',
     route: '/(app)/(tabs)/calls/group-call-history',
-    sub: { lead: 'Scheduled paid sessions · 9 hosted, 14.2k tk earned' },
+    sub: { lead: '9 hosted · 14.2k tk' },
   },
   {
-    icon: 'call',
+    icon: 'phone',
     tint: colors.violet,
     fill: colors.violetSoft,
     title: 'Private Calls',
     route: '/(app)/(tabs)/calls/private-calls',
-    sub: { lead: '1:1 requests & availability · currently ', strong: 'OFF', strongColor: 'pink' },
+    sub: { lead: 'Currently ', strong: 'OFF', strongColor: 'pink' },
   },
   {
-    icon: 'videocam',
+    icon: 'video',
     tint: colors.cyan,
     fill: colors.cyanSoft,
     title: 'Broadcasts',
     route: '/(app)/(tabs)/calls/broadcast-history',
     sub: {
-      lead: 'Every solo broadcast · 12 shows, ',
+      lead: '12 shows · ',
       strong: '845',
       strongColor: 'cyan',
-      tail: ' unique viewers',
+      tail: ' viewers',
     },
   },
 ];
@@ -105,20 +105,16 @@ const CallsHubScreen = () => {
             end={gradientDirection.horizontal.end}
             style={styles.scheduleFill}
           >
-            <Ionicons name="add" size={rf(15)} color={colors.white} />
+            <Feather name="plus" size={rf(15)} color={colors.white} />
             <Text style={styles.scheduleLabel}>SCHEDULE</Text>
           </LinearGradient>
         </Pressable>
       </View>
 
-      <Text variant="body" color="textSecondary" style={styles.subtitle}>
-        Manage scheduled group sessions, private call requests, and past broadcasts.
-      </Text>
-
       <InsightLine
         style={styles.insight}
-        lead="Your Mixing Masterclass starts today at 7 PM"
-        tail=" — 8 of 10 seats sold. Two more seats means another 800 tk before you even go live."
+        lead="Mixing Masterclass starts 7 PM"
+        tail=" — 2 seats left"
       />
 
       {/* Areas */}
@@ -132,7 +128,7 @@ const CallsHubScreen = () => {
             accessibilityLabel={entry.title}
           >
             <View style={[styles.entryIcon, { backgroundColor: entry.fill }]}>
-              <Ionicons name={entry.icon} size={rf(18)} color={entry.tint} />
+              <Feather name={entry.icon} size={rf(18)} color={entry.tint} />
             </View>
 
             <View style={styles.entryText}>
@@ -152,7 +148,7 @@ const CallsHubScreen = () => {
               </Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+            <Feather name="chevron-right" size={rf(16)} color={colors.textMuted} />
           </Pressable>
         ))}
       </View>
@@ -205,7 +201,7 @@ const CallsHubScreen = () => {
             end={gradientDirection.horizontal.end}
             style={styles.startFill}
           >
-            <Ionicons name="play" size={rf(15)} color={colors.white} />
+            <Feather name="play" size={rf(15)} color={colors.white} />
             <Text style={styles.startLabel}>Start session</Text>
           </LinearGradient>
         </Pressable>
@@ -242,15 +238,12 @@ const styles = StyleSheet.create({
   },
   scheduleLabel: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(11),
+    fontSize: rf(10),
     letterSpacing: 0.8,
     color: colors.white,
   },
-  subtitle: {
-    marginTop: 6,
-  },
   insight: {
-    marginTop: 20,
+    marginTop: 16,
   },
   strong: {
     fontFamily: fontFamily.bold,
@@ -337,7 +330,7 @@ const styles = StyleSheet.create({
   },
   startLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.white,
   },
 });

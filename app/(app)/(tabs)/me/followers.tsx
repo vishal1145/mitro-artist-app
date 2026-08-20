@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -99,10 +99,10 @@ const FOLLOWERS: Follower[] = [
 ];
 
 const FILTERS: CircleFilterOption[] = [
-  { value: 'all', label: 'All', icon: 'people' },
-  { value: 'top', label: 'Top', icon: 'trending-up-outline' },
-  { value: 'regulars', label: 'Regulars', icon: 'repeat-outline' },
-  { value: 'new', label: 'New', icon: 'sparkles-outline' },
+  { value: 'all', label: 'All', icon: 'users' },
+  { value: 'top', label: 'Top', icon: 'trending-up' },
+  { value: 'regulars', label: 'Regulars', icon: 'repeat' },
+  { value: 'new', label: 'New', icon: 'star' },
 ];
 
 const STATS: { value: string; label: string; color: ColorToken; star?: boolean }[] = [
@@ -133,7 +133,7 @@ const FollowersScreen = () => {
             accessibilityRole="button"
             accessibilityLabel="Open messages"
           >
-            <Ionicons name="chatbubble-outline" size={rf(17)} color={colors.textPrimary} />
+            <Feather name="message-circle" size={rf(17)} color={colors.textPrimary} />
           </Pressable>
         }
       />
@@ -144,11 +144,7 @@ const FollowersScreen = () => {
         FOLLOWERS
       </Text>
 
-      <InsightLine
-        style={styles.insight}
-        lead="940 new this week"
-        tail=" driven by live gifts and paid sessions."
-      />
+      <InsightLine style={styles.insight} lead="940 new this week" />
 
       <View style={styles.stats}>
         {STATS.map((s) => (
@@ -157,7 +153,7 @@ const FollowersScreen = () => {
               <Text variant="h3" color={s.color} style={styles.statValue}>
                 {s.value}
               </Text>
-              {s.star ? <Ionicons name="star" size={rf(12)} color={colors.gold} /> : null}
+              {s.star ? <Feather name="star" size={rf(12)} color={colors.gold} /> : null}
             </View>
             <Text variant="bodySm" color="textMuted">
               {s.label}
@@ -226,14 +222,11 @@ const FollowersScreen = () => {
             accessibilityRole="button"
             accessibilityLabel={`Message ${f.name}`}
           >
-            <Ionicons name="chatbubble-outline" size={rf(15)} color={colors.textSecondary} />
+            <Feather name="message-circle" size={rf(15)} color={colors.textSecondary} />
           </Pressable>
         </View>
       ))}
 
-      <Text variant="bodySm" color="textMuted" align="center" style={styles.footnote}>
-        Message with care — a personal note beats a promo blast; spammy DMs get unfollows.
-      </Text>
     </Screen>
   );
 };
@@ -256,8 +249,8 @@ const styles = StyleSheet.create({
 
   heroValue: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(40),
-    lineHeight: rf(48),
+    fontSize: rf(35),
+    lineHeight: rf(42),
     color: colors.pink,
     textAlign: 'center',
     marginTop: 22,
@@ -339,7 +332,7 @@ const styles = StyleSheet.create({
 
   footnote: {
     marginTop: 26,
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
 });
 

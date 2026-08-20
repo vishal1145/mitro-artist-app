@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -72,7 +72,7 @@ const EarningsScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Transaction history"
         >
-          <Ionicons name="receipt-outline" size={rf(17)} color={colors.screen} />
+          <Feather name="file-text" size={rf(17)} color={colors.screen} />
         </Pressable>
 
         <Text style={styles.heroLabel}>ALL-TIME EARNED</Text>
@@ -93,7 +93,7 @@ const EarningsScreen = () => {
       </LinearGradient>
 
       <Text variant="bodySm" color="gold" align="center" style={styles.kycNote}>
-        Earnings sit as pending until a payout window closes — and withdrawals need KYC first.{' '}
+        Withdrawals need KYC.{' '}
         <Text
           variant="bodySm"
           color="white"
@@ -175,10 +175,6 @@ const EarningsScreen = () => {
         })}
       </View>
 
-      <Text variant="bodySm" color="textMuted" align="center" style={styles.trendNote}>
-        Saturday shows earn most — your fans are night owls.
-      </Text>
-
       <SectionLabel style={styles.sectionLabel}>RECENT PAYOUTS</SectionLabel>
 
       {PAYOUTS.map((p, i) => (
@@ -221,7 +217,7 @@ const styles = StyleSheet.create({
   },
   heroLabel: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
+    fontSize: rf(9),
     letterSpacing: 1.1,
     color: colors.white,
   },
@@ -233,13 +229,13 @@ const styles = StyleSheet.create({
   },
   heroValue: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(38),
-    lineHeight: rf(44),
+    fontSize: rf(33),
+    lineHeight: rf(39),
     color: colors.white,
   },
   heroUnit: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.white,
   },
   heroPills: {
@@ -255,14 +251,14 @@ const styles = StyleSheet.create({
   },
   heroPillText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
+    fontSize: rf(9),
     letterSpacing: 0.8,
     color: colors.white,
   },
 
   kycNote: {
     marginTop: 18,
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
   kycLink: {
     fontFamily: fontFamily.bold,
@@ -282,7 +278,7 @@ const styles = StyleSheet.create({
   },
   withdrawLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.textMuted,
   },
 
@@ -339,7 +335,7 @@ const styles = StyleSheet.create({
   },
   barValue: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(10),
+    fontSize: rf(9),
   },
   barTrack: {
     flex: 1,

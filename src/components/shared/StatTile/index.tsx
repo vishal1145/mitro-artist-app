@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -7,7 +7,7 @@ import { colors, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
 export interface StatTileProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Feather.glyphMap;
   label: string;
   value: string;
   unit?: string;
@@ -23,7 +23,7 @@ const StatTileComponent = ({ icon, label, value, unit, unitColor = 'textMuted', 
   <Card style={[styles.card, style]}>
     <View style={styles.top}>
       <View style={styles.chip}>
-        <Ionicons name={icon} size={rf(16)} color={tint ?? colors.textSecondary} />
+        <Feather name={icon} size={rf(16)} color={tint ?? colors.textSecondary} />
       </View>
       <Text variant="label" color="textMuted" numberOfLines={1} style={styles.label}>
         {label}
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   value: {
-    fontSize: rf(22),
+    fontSize: rf(19),
   },
   unit: {
     marginBottom: rf(3),

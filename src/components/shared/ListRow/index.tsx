@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo, type ReactNode } from 'react';
 import {
   Pressable,
@@ -16,7 +16,7 @@ export interface ListRowProps {
   title: string;
   subtitle?: string;
   /** Leading Ionicon, rendered inside a tinted chip. Ignored if `left` is set. */
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   /** Tint for the leading icon. Defaults to secondary text. */
   iconTint?: string;
   /** Custom leading node (e.g. an <Avatar />) — takes precedence over `icon`. */
@@ -69,7 +69,7 @@ const ListRowComponent = ({
       {left ??
         (icon ? (
           <View style={styles.iconChip}>
-            <Ionicons
+            <Feather
               name={icon}
               size={rf(18)}
               color={iconTint ?? colors.textSecondary}
@@ -101,7 +101,7 @@ const ListRowComponent = ({
       ) : null}
 
       {showChevron ? (
-        <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+        <Feather name="chevron-right" size={rf(16)} color={colors.textMuted} />
       ) : null}
     </View>
   );

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -70,7 +70,7 @@ const ChatThreadScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={rf(20)} color={colors.textPrimary} />
+          <Feather name="chevron-left" size={rf(20)} color={colors.textPrimary} />
         </Pressable>
 
         <Avatar initials="RS" name={fan} size="md" color={colors.pink} />
@@ -80,7 +80,7 @@ const ChatThreadScreen = () => {
             {fan}
           </Text>
           <View style={styles.headerMeta}>
-            <Ionicons name="star" size={rf(11)} color={colors.gold} />
+            <Feather name="star" size={rf(11)} color={colors.gold} />
             <Text variant="bodySm" color="textMuted">
               Top Supporter · 12,450 coins
             </Text>
@@ -98,7 +98,7 @@ const ChatThreadScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={`Start a video call with ${firstName}`}
         >
-          <Ionicons name="videocam" size={rf(18)} color={colors.cyan} />
+          <Feather name="video" size={rf(18)} color={colors.cyan} />
         </Pressable>
       </View>
 
@@ -119,7 +119,7 @@ const ChatThreadScreen = () => {
                 <View key={b.id} style={styles.gift}>
                   <View style={styles.giftHead}>
                     <View style={styles.giftIcon}>
-                      <Ionicons name="gift" size={rf(14)} color={colors.gold} />
+                      <Feather name="gift" size={rf(14)} color={colors.gold} />
                     </View>
                     <Text variant="bodyLg" color="gold" style={styles.giftTitle}>
                       {firstName} sent {b.amount}
@@ -160,7 +160,7 @@ const ChatThreadScreen = () => {
             accessibilityRole="button"
             accessibilityLabel="Attach a file"
           >
-            <Ionicons name="attach" size={rf(18)} color={colors.textMuted} />
+            <Feather name="paperclip" size={rf(18)} color={colors.textMuted} />
           </Pressable>
 
           <TextInput
@@ -186,7 +186,7 @@ const ChatThreadScreen = () => {
               end={gradientDirection.diagonal.end}
               style={styles.sendFill}
             >
-              <Ionicons name="send" size={rf(17)} color={colors.white} />
+              <Feather name="send" size={rf(17)} color={colors.white} />
             </LinearGradient>
           </Pressable>
         </View>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 6,
   },
   bubbleText: {
-    lineHeight: rf(20),
+    lineHeight: rf(18),
   },
   stamp: {
     marginTop: 6,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   giftNote: {
     fontStyle: 'italic',
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
 
   composer: {
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     color: colors.textPrimary,
     fontFamily: fontFamily.body,
-    fontSize: rf(13),
+    fontSize: rf(11),
   },
   sendBtn: {
     width: 44,

@@ -97,11 +97,7 @@ const GroupSessionsScreen = () => {
         </Text>
       </View>
 
-      <InsightLine
-        style={styles.insight}
-        lead="Sessions with a set date sell 3× more seats"
-        tail=" — your Today 7 PM class is nearly full."
-      />
+      <InsightLine style={styles.insight} lead="Today's 7 PM class is nearly full" />
 
       <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
         UPCOMING
@@ -187,10 +183,6 @@ const GroupSessionsScreen = () => {
         />
       ))}
 
-      <Text variant="bodySm" color="textMuted" style={styles.footnote}>
-        Fans who join one session buy the next one 2× more often — schedule the follow-up while the
-        buzz is warm.
-      </Text>
     </Screen>
   );
 };
@@ -219,8 +211,8 @@ const styles = StyleSheet.create({
   },
   heroValue: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(32),
-    lineHeight: rf(38),
+    fontSize: rf(28),
+    lineHeight: rf(33),
     color: colors.gold,
   },
   insight: {
@@ -286,7 +278,7 @@ const styles = StyleSheet.create({
   },
   ctaLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.white,
   },
   // Not yet startable — dashed outline reads as "waiting", not "broken".

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -93,7 +93,7 @@ const IncomingCallRequestScreen = () => {
           </Text>
           <View style={styles.pills}>
             <View style={[styles.pill, styles.pillWarning]}>
-              <Ionicons name="star" size={rf(13)} color={colors.warning} />
+              <Feather name="star" size={rf(13)} color={colors.warning} />
               <Text variant="caption" color="warning">
                 Top Supporter
               </Text>
@@ -171,7 +171,7 @@ const IncomingCallRequestScreen = () => {
             accessibilityRole="button"
             accessibilityLabel="Accept call"
           >
-            <Ionicons name="call" size={rf(18)} color={colors.onSuccess} />
+            <Feather name="phone" size={rf(18)} color={colors.onSuccess} />
             <Text variant="link" color="onSuccess" style={styles.acceptLabel}>
               Accept
             </Text>

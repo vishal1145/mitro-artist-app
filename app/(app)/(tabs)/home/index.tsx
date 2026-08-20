@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,7 +8,7 @@ import { Card, Text } from '@components/ui';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 /* -------------------------------------------------------------------------- */
 /*  Data                                                                      */
@@ -61,7 +61,7 @@ type AlertRoute =
 
 const ALERTS: {
   id: string;
-  icon: IoniconName;
+  icon: FeatherIconName;
   tint: string;
   fill: string;
   title: string;
@@ -75,17 +75,17 @@ const ALERTS: {
     tint: colors.pink,
     fill: colors.pinkSoft,
     title: 'Rewards',
-    body: '3 fan rewards waiting on delivery — 1 due today · 10 min ago',
+    body: '3 waiting · 1 due today',
     unread: true,
     route: '/(app)/(tabs)/home/reward-fulfillment',
   },
   {
     id: 'a2',
-    icon: 'sparkles',
+    icon: 'star',
     tint: colors.violet,
     fill: colors.violetSoft,
     title: 'System',
-    body: 'New milestone! 48K followers unlocked · 2h ago',
+    body: '48K followers unlocked · 2h',
     route: '/(app)/(tabs)/home/notifications',
   },
 ];
@@ -109,15 +109,11 @@ const HomeScreen = () => {
       <Text variant="h1" style={styles.title}>
         Creator Hub
       </Text>
-      <Text variant="body" color="textSecondary" style={styles.subtitle}>
-        Manage streams, sessions, earnings, and your audience.
-      </Text>
 
       {/* Prime-time tip */}
       <View style={styles.tip}>
         <Text variant="bodySm" color="textSecondary" style={styles.tipText}>
-          <Text style={styles.tipStrong}>Prime time for your audience is ~9 PM</Text> — schedule
-          tonight&apos;s session now.
+          <Text style={styles.tipStrong}>Prime time ~9 PM</Text> — schedule tonight
         </Text>
         <Pressable
           style={styles.helpChip}
@@ -144,7 +140,7 @@ const HomeScreen = () => {
             end={gradientDirection.horizontal.end}
             style={styles.actionFill}
           >
-            <Ionicons name="videocam" size={rf(16)} color={colors.white} />
+            <Feather name="video" size={rf(16)} color={colors.white} />
             <Text style={styles.actionLabel}>Start Live</Text>
           </LinearGradient>
         </Pressable>
@@ -155,7 +151,7 @@ const HomeScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Schedule a session"
         >
-          <Ionicons name="calendar-outline" size={rf(16)} color={colors.textPrimary} />
+          <Feather name="calendar" size={rf(16)} color={colors.textPrimary} />
           <Text style={styles.actionLabel}>Schedule</Text>
         </Pressable>
       </View>
@@ -299,7 +295,7 @@ const HomeScreen = () => {
             accessibilityLabel={`${a.title}. ${a.body}`}
           >
             <View style={[styles.alertIcon, { backgroundColor: a.fill }]}>
-              <Ionicons name={a.icon} size={rf(16)} color={a.tint} />
+              <Feather name={a.icon} size={rf(16)} color={a.tint} />
             </View>
 
             <View style={styles.alertText}>
@@ -312,7 +308,7 @@ const HomeScreen = () => {
             </View>
 
             {a.unread ? <View style={styles.alertUnread} /> : null}
-            <Ionicons name="chevron-forward" size={rf(15)} color={colors.textMuted} />
+            <Feather name="chevron-right" size={rf(15)} color={colors.textMuted} />
           </Pressable>
         ))}
       </View>
@@ -333,10 +329,7 @@ const styles = StyleSheet.create({
   // Heading
   title: {
     marginTop: 24,
-    marginBottom: 6,
-  },
-  subtitle: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
 
   // Tip
@@ -363,7 +356,7 @@ const styles = StyleSheet.create({
   },
   helpMark: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
+    fontSize: rf(10),
   },
 
   // Actions
@@ -397,7 +390,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
+    fontSize: rf(12),
     color: colors.white,
   },
 
@@ -446,7 +439,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   barLabel: {
-    fontSize: rf(11),
+    fontSize: rf(10),
   },
   legend: {
     flexDirection: 'row',

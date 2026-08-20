@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -11,7 +11,7 @@ export interface CircleFilterOption {
   value: string;
   /** Shown under the circle, uppercased by the `label` type variant. */
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Feather.glyphMap;
   /** Count bubble on the circle. Omit or 0 to hide. */
   badge?: number;
 }
@@ -48,11 +48,11 @@ const CircleFiltersComponent = ({ options, value, onChange, style }: CircleFilte
                 end={gradientDirection.diagonal.end}
                 style={styles.circle}
               >
-                <Ionicons name={opt.icon} size={rf(19)} color={colors.white} />
+                <Feather name={opt.icon} size={rf(19)} color={colors.white} />
               </LinearGradient>
             ) : (
               <View style={[styles.circle, styles.circleIdle]}>
-                <Ionicons name={opt.icon} size={rf(19)} color={colors.textMuted} />
+                <Feather name={opt.icon} size={rf(19)} color={colors.textMuted} />
               </View>
             )}
 
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
+    fontSize: rf(9),
     color: colors.white,
   },
 });

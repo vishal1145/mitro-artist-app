@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useEffect, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -17,7 +17,7 @@ export interface ConfirmDialogProps {
   cancelLabel?: string;
   /** `danger` gives a red confirm button, `primary` the CTA gradient. */
   tone?: ConfirmTone;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -81,7 +81,7 @@ const ConfirmDialogComponent = ({
         >
           {icon ? (
             <View style={[styles.icon, { backgroundColor: accentFill }]}>
-              <Ionicons name={icon} size={rf(22)} color={accent} />
+              <Feather name={icon} size={rf(22)} color={accent} />
             </View>
           ) : null}
 
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   message: {
-    lineHeight: rf(19),
+    lineHeight: rf(17),
     marginBottom: 24,
   },
 
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   confirmLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.white,
   },
 

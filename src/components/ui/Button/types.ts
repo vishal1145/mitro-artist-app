@@ -1,4 +1,4 @@
-import type { Ionicons } from '@expo/vector-icons';
+import type { Feather } from '@expo/vector-icons';
 import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -11,8 +11,8 @@ export interface ButtonProps extends Omit<PressableProps, 'style'> {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  leftIcon?: keyof typeof Feather.glyphMap;
+  rightIcon?: keyof typeof Feather.glyphMap;
   style?: StyleProp<ViewStyle>;
   /** Overrides the auto-generated accessibility label. */
   accessibilityLabel?: string;

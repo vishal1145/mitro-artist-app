@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo, useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -99,7 +99,7 @@ const ButtonComponent = ({
       ) : (
         <View style={styles.content}>
           {leftIcon ? (
-            <Ionicons
+            <Feather
               name={leftIcon}
               size={rf(18)}
               color={colors[textColor]}
@@ -110,7 +110,7 @@ const ButtonComponent = ({
             {label}
           </Text>
           {rightIcon ? (
-            <Ionicons
+            <Feather
               name={rightIcon}
               size={rf(18)}
               color={colors[textColor]}

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -8,11 +8,11 @@ import { Badge, Card, Text, type BadgeTone } from '@components/ui';
 import { colors, fontFamily, radius, spacing } from '@theme';
 import { rf } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 type TxnStatus = 'Pending' | 'Settled';
 
 interface Txn {
-  icon: IoniconName;
+  icon: FeatherIconName;
   title: string;
   sub: string;
   amount: string;
@@ -20,9 +20,9 @@ interface Txn {
 }
 
 const TXNS: Txn[] = [
-  { icon: 'dice-outline', title: 'Fun Wheel from vishal_9953', sub: 'Fun-wheel spin in group call · 8/17/2026', amount: '+25 tk', status: 'Pending' },
-  { icon: 'star-outline', title: 'Rewards from vishal_9953', sub: "Reward 'Say My Name' · 8/17/2026", amount: '+20 tk', status: 'Pending' },
-  { icon: 'chatbubble-outline', title: 'Highlight from user_12x', sub: 'Highlighted message · 8/16/2026', amount: '+10 tk', status: 'Settled' },
+  { icon: 'shuffle', title: 'Fun Wheel from vishal_9953', sub: 'Fun-wheel spin in group call · 8/17/2026', amount: '+25 tk', status: 'Pending' },
+  { icon: 'star', title: 'Rewards from vishal_9953', sub: "Reward 'Say My Name' · 8/17/2026", amount: '+20 tk', status: 'Pending' },
+  { icon: 'message-circle', title: 'Highlight from user_12x', sub: 'Highlighted message · 8/16/2026', amount: '+10 tk', status: 'Settled' },
 ];
 
 const FILTERS = ['All', 'Pending', 'Settled'] as const;
@@ -51,7 +51,7 @@ const TransactionsScreen = () => {
 
       <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} />
 
-      <InfoCallout tone="success" icon="information-circle-outline" linkLabel="Learn more about your ledger">
+      <InfoCallout tone="success" icon="info" linkLabel="Learn more about your ledger">
         <Text variant="caption" color="textSecondary">
           This is your full{' '}
           <Text variant="caption" color="onSurface" style={styles.bold}>
@@ -62,20 +62,20 @@ const TransactionsScreen = () => {
       </InfoCallout>
 
       <View style={styles.grid}>
-        <StatTile icon="time-outline" label="PENDING" value="819" unit="tk" tint={colors.warning} />
-        <StatTile icon="checkmark-circle-outline" label="SETTLED" value="0" unit="tk" tint={colors.success} />
+        <StatTile icon="clock" label="PENDING" value="819" unit="tk" tint={colors.warning} />
+        <StatTile icon="check-circle" label="SETTLED" value="0" unit="tk" tint={colors.success} />
       </View>
 
       <Card style={styles.ledger}>
         <View style={styles.ledgerBadge}>
-          <Ionicons name="link-outline" size={rf(13)} color={colors.warning} />
+          <Feather name="link" size={rf(13)} color={colors.warning} />
           <Text variant="label" color="warning">
             LEDGER
           </Text>
         </View>
         <Text variant="h3">Recent Activity</Text>
 
-        <InfoCallout tone="warning" icon="information-circle-outline">
+        <InfoCallout tone="warning" icon="info">
           <Text variant="caption" color="textSecondary">
             <Text variant="caption" color="onSurface" style={styles.bold}>
               Pending

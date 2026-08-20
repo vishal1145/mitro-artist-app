@@ -67,6 +67,6 @@ const styles = StyleSheet.create({
   },
   helpMark: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
+    fontSize: rf(10),
   },
 });

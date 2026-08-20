@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import {
   StyleSheet,
@@ -20,7 +20,7 @@ export interface ToggleRowProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
   /** Optional leading Ionicon in a tinted chip. */
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   iconTint?: string;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -43,7 +43,7 @@ const ToggleRowComponent = ({
   <View style={[styles.row, disabled ? styles.disabled : null, style]}>
     {icon ? (
       <View style={styles.iconChip}>
-        <Ionicons
+        <Feather
           name={icon}
           size={rf(16)}
           color={iconTint ?? colors.textSecondary}

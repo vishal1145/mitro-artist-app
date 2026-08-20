@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -24,7 +24,7 @@ const OnboardingScreen = () => {
     <Screen>
       <View style={styles.body}>
         <View style={styles.iconWrap}>
-          <Ionicons name="color-palette-outline" size={rf(64)} color={colors.primary} />
+          <Feather name="droplet" size={rf(64)} color={colors.primary} />
         </View>
         <Text variant="display" align="center">
           Mitro Artist

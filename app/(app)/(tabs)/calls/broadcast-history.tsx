@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -80,8 +80,7 @@ const BroadcastHistoryScreen = () => {
 
       <InsightLine
         style={styles.insight}
-        lead="Fans notice when a shoutout never arrives"
-        tail=" — deliver rewards fast to keep tips coming."
+        lead="Deliver rewards fast to keep tips coming"
         onHelp={() => router.push('/(app)/(tabs)/home/reward-fulfillment')}
       />
 
@@ -90,9 +89,9 @@ const BroadcastHistoryScreen = () => {
       </SectionLabel>
 
       <View style={styles.empty}>
-        <Ionicons name="mail-outline" size={rf(40)} color={colors.textMuted} />
+        <Feather name="mail" size={rf(40)} color={colors.textMuted} />
         <Text variant="bodyLg" color="textSecondary" align="center" style={styles.emptyTitle}>
-          No rewards waiting on delivery right now
+          Nothing waiting
         </Text>
         <Pressable
           onPress={() => router.push('/(app)/(tabs)/home/reward-fulfillment')}
@@ -130,19 +129,16 @@ const BroadcastHistoryScreen = () => {
 
       {/* Explains what the dot colours mean, so they aren't just decoration. */}
       <View style={styles.legend}>
-        <Text variant="bodySm" color="textMuted">
-          Dot colors:
-        </Text>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.legendGreen]} />
           <Text variant="bodySm" color="textMuted">
-            earned well
+            Earned well
           </Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.legendGold]} />
           <Text variant="bodySm" color="textMuted">
-            short show — go longer next time
+            Ran short
           </Text>
         </View>
       </View>
@@ -165,8 +161,8 @@ const styles = StyleSheet.create({
   },
   heroValue: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(32),
-    lineHeight: rf(38),
+    fontSize: rf(28),
+    lineHeight: rf(33),
     color: colors.gold,
   },
   heroCaption: {

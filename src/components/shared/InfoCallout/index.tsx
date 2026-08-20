@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -9,7 +9,7 @@ import { rf } from '@utils/responsive';
 export type CalloutTone = 'success' | 'warning' | 'neutral' | 'info';
 
 export interface InfoCalloutProps {
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   tone?: CalloutTone;
   children: ReactNode;
   linkLabel?: string;
@@ -29,7 +29,7 @@ const InfoCalloutComponent = ({ icon, tone = 'neutral', children, linkLabel, onL
 
   return (
     <View style={[styles.card, { backgroundColor: t.bg, borderColor: t.border }]}>
-      {icon ? <Ionicons name={icon} size={rf(18)} color={t.icon} style={styles.icon} /> : null}
+      {icon ? <Feather name={icon} size={rf(18)} color={t.icon} style={styles.icon} /> : null}
       <View style={styles.body}>
         <Text variant="caption" color="textSecondary">
           {children}

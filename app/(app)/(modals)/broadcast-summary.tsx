@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -7,13 +7,13 @@ import { Avatar, Button, Card, GradientButton, Text } from '@components/ui';
 import { colors, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
-const STATS: { icon: IoniconName; label: string; value: string }[] = [
-  { icon: 'eye-outline', label: 'PEAK VIEWERS', value: '1,204' },
-  { icon: 'chatbubble-outline', label: 'MESSAGES', value: '348' },
-  { icon: 'person-add-outline', label: 'NEW FOLLOWERS', value: '52' },
-  { icon: 'gift-outline', label: 'REWARDS', value: '18' },
+const STATS: { icon: FeatherIconName; label: string; value: string }[] = [
+  { icon: 'eye', label: 'PEAK VIEWERS', value: '1,204' },
+  { icon: 'message-circle', label: 'MESSAGES', value: '348' },
+  { icon: 'user-plus', label: 'NEW FOLLOWERS', value: '52' },
+  { icon: 'gift', label: 'REWARDS', value: '18' },
 ];
 
 const SUPPORTERS: {
@@ -21,13 +21,13 @@ const SUPPORTERS: {
   name: string;
   amount: string;
   tag: string;
-  tagIcon: IoniconName;
+  tagIcon: FeatherIconName;
   tagTint: string;
   top?: boolean;
 }[] = [
   { initials: 'JD', name: 'Jaxon D.', amount: '300 TK', tag: 'MVP', tagIcon: 'star', tagTint: colors.warning, top: true },
-  { initials: 'SV', name: 'Sarah V.', amount: '150 TK', tag: 'HYPE', tagIcon: 'flame', tagTint: colors.primary },
-  { initials: 'MR', name: 'Mike R.', amount: '84 TK', tag: 'SONG', tagIcon: 'musical-note', tagTint: colors.success },
+  { initials: 'SV', name: 'Sarah V.', amount: '150 TK', tag: 'HYPE', tagIcon: 'zap', tagTint: colors.primary },
+  { initials: 'MR', name: 'Mike R.', amount: '84 TK', tag: 'SONG', tagIcon: 'music', tagTint: colors.success },
 ];
 
 const BroadcastSummaryScreen = () => {
@@ -48,7 +48,7 @@ const BroadcastSummaryScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Close summary"
         >
-          <Ionicons name="close" size={rf(18)} color={colors.textPrimary} />
+          <Feather name="x" size={rf(18)} color={colors.textPrimary} />
         </Pressable>
       </View>
 
@@ -79,7 +79,7 @@ const BroadcastSummaryScreen = () => {
         {STATS.map((s) => (
           <Card key={s.label} style={styles.statCard}>
             <View style={styles.statTop}>
-              <Ionicons name={s.icon} size={rf(15)} color={colors.textSecondary} />
+              <Feather name={s.icon} size={rf(15)} color={colors.textSecondary} />
               <Text variant="label" color="textSecondary" numberOfLines={1}>
                 {s.label}
               </Text>
@@ -110,7 +110,7 @@ const BroadcastSummaryScreen = () => {
             chevron={false}
             right={
               <View style={styles.tag}>
-                <Ionicons name={s.tagIcon} size={rf(12)} color={s.tagTint} />
+                <Feather name={s.tagIcon} size={rf(12)} color={s.tagTint} />
                 <Text variant="label" color="textSecondary">
                   {s.tag}
                 </Text>
@@ -124,7 +124,7 @@ const BroadcastSummaryScreen = () => {
       <View style={styles.nudge}>
         <View style={styles.nudgeAccent} />
         <View style={styles.nudgeBody}>
-          <Ionicons name="warning" size={rf(17)} color={colors.warning} />
+          <Feather name="alert-triangle" size={rf(17)} color={colors.warning} />
           <View style={styles.nudgeText}>
             <Text variant="link" color="textPrimary">
               3 rewards waiting on delivery
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   headlineTitle: {
-    fontSize: rf(32),
+    fontSize: rf(28),
   },
 
   hero: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.successSoft,
   },
   heroValue: {
-    fontSize: rf(40),
+    fontSize: rf(35),
   },
   heroUnit: {
     letterSpacing: 1.8,
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   statValue: {
-    fontSize: rf(21),
+    fontSize: rf(18),
   },
 
   section: {

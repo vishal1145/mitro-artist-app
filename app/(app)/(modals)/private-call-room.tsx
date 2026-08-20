@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
@@ -87,7 +87,7 @@ const PrivateCallRoomScreen = () => {
           <Text variant="h3" numberOfLines={1}>
             {fanName}
           </Text>
-          <Ionicons name="checkmark-circle" size={rf(15)} color={colors.primary} />
+          <Feather name="check-circle" size={rf(15)} color={colors.primary} />
           <View style={styles.privatePill}>
             <Text variant="label" color="primary">
               PRIVATE
@@ -104,7 +104,7 @@ const PrivateCallRoomScreen = () => {
         <View style={styles.billingAccent} />
         <View style={styles.billingBody}>
           <View style={styles.billingRow}>
-            <Ionicons name="timer-outline" size={rf(14)} color={colors.warning} />
+            <Feather name="clock" size={rf(14)} color={colors.warning} />
             <Text variant="caption" color="textPrimary" style={styles.billingText}>
               {inPrepaid
                 ? `First 5 minutes prepaid · per-minute billing starts in ${Math.floor(untilBilling / 60)}:${String(untilBilling % 60).padStart(2, '0')}`
@@ -122,14 +122,14 @@ const PrivateCallRoomScreen = () => {
         <View style={styles.pip}>
           {camOn ? (
             <>
-              <Ionicons name="person" size={rf(22)} color={colors.textMuted} />
+              <Feather name="user" size={rf(22)} color={colors.textMuted} />
               <Text variant="caption" color="textMuted" style={styles.pipLabel}>
                 You
               </Text>
             </>
           ) : (
             <>
-              <Ionicons name="videocam-off" size={rf(20)} color={colors.textMuted} />
+              <Feather name="video-off" size={rf(20)} color={colors.textMuted} />
               <Text variant="caption" color="textMuted" style={styles.pipLabel}>
                 Camera off
               </Text>
@@ -142,7 +142,7 @@ const PrivateCallRoomScreen = () => {
 
       {/* Live earnings */}
       <View style={styles.earnings}>
-        <Ionicons name="cash-outline" size={rf(15)} color={colors.success} />
+        <Feather name="dollar-sign" size={rf(15)} color={colors.success} />
         <Text variant="label" color="success">
           {rate} tk/min · {earned} tk earned
         </Text>
@@ -156,7 +156,7 @@ const PrivateCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={micOn ? 'Mute microphone' : 'Unmute microphone'}
         >
-          <Ionicons name={micOn ? 'mic' : 'mic-off'} size={rf(20)} color={colors.textPrimary} />
+          <Feather name={micOn ? 'mic' : 'mic-off'} size={rf(20)} color={colors.textPrimary} />
         </Pressable>
 
         <Pressable
@@ -165,8 +165,8 @@ const PrivateCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={camOn ? 'Turn camera off' : 'Turn camera on'}
         >
-          <Ionicons
-            name={camOn ? 'videocam' : 'videocam-off'}
+          <Feather
+            name={camOn ? 'video' : 'video-off'}
             size={rf(20)}
             color={colors.textPrimary}
           />
@@ -178,22 +178,22 @@ const PrivateCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={`End call ${callId ?? ''}`}
         >
-          <Ionicons name="call" size={rf(26)} color={colors.onError} style={styles.endIcon} />
+          <Feather name="phone" size={rf(26)} color={colors.onError} style={styles.endIcon} />
         </Pressable>
 
         <Pressable style={styles.ctrlBtn} accessibilityRole="button" accessibilityLabel="Flip camera">
-          <Ionicons name="camera-reverse" size={rf(20)} color={colors.textPrimary} />
+          <Feather name="refresh-cw" size={rf(20)} color={colors.textPrimary} />
         </Pressable>
 
         <Pressable style={styles.ctrlBtn} accessibilityRole="button" accessibilityLabel="Call chat">
-          <Ionicons name="chatbubble" size={rf(20)} color={colors.textPrimary} />
+          <Feather name="message-circle" size={rf(20)} color={colors.textPrimary} />
           <View style={styles.badgeDot} />
         </Pressable>
       </View>
 
       <ConfirmDialog
         visible={confirmingEnd}
-        icon="call-outline"
+        icon="phone"
         title="End call?"
         message={`The call with ${fanName} will end for both of you.`}
         confirmLabel="End call"
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   pipLabel: {
-    fontSize: rf(10),
+    fontSize: rf(9),
   },
 
   spacer: {

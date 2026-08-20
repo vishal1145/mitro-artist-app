@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { forwardRef, useCallback, useState } from 'react';
 import {
   Pressable,
@@ -97,7 +97,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             <View style={styles.prefixRule} />
           </View>
         ) : leftIcon ? (
-          <Ionicons
+          <Feather
             name={leftIcon}
             size={rf(18)}
             color={colors.textMuted}
@@ -130,8 +130,8 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
             style={styles.toggle}
           >
-            <Ionicons
-              name={hidden ? 'eye-off-outline' : 'eye-outline'}
+            <Feather
+              name={hidden ? 'eye-off' : 'eye'}
               size={rf(20)}
               color={colors.textMuted}
             />
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: colors.textPrimary,
-    fontFamily: fontFamily.body,
+    fontFamily: fontFamily.medium,
     fontSize: rf(14),
     paddingVertical: spacing.sm,
   },

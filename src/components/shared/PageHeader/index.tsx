@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -27,7 +27,7 @@ const PageHeaderComponent = ({ title, onBack, right }: PageHeaderProps) => (
         accessibilityRole="button"
         accessibilityLabel="Go back"
       >
-        <Ionicons name="chevron-back" size={rf(20)} color={colors.textPrimary} />
+        <Feather name="chevron-left" size={rf(20)} color={colors.textPrimary} />
       </Pressable>
     ) : null}
 

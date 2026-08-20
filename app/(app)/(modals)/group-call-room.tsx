@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -88,7 +88,7 @@ const GroupCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Leave session"
         >
-          <Ionicons name="chevron-back" size={rf(20)} color={colors.textPrimary} />
+          <Feather name="chevron-left" size={rf(20)} color={colors.textPrimary} />
         </Pressable>
 
         <View style={styles.headerText}>
@@ -104,11 +104,11 @@ const GroupCallRoomScreen = () => {
           </View>
 
           <View style={styles.headerMeta}>
-            <Ionicons name="timer-outline" size={rf(12)} color={colors.textMuted} />
+            <Feather name="clock" size={rf(12)} color={colors.textMuted} />
             <Text variant="bodySm" color="textMuted">
               {formatElapsed(elapsed)}
             </Text>
-            <Ionicons name="people" size={rf(12)} color={colors.textMuted} />
+            <Feather name="users" size={rf(12)} color={colors.textMuted} />
             <Text variant="bodySm" color="textMuted">
               {filled}/{SEATS}
             </Text>
@@ -120,7 +120,7 @@ const GroupCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel="Session chat"
         >
-          <Ionicons name="chatbubble-outline" size={rf(17)} color={colors.textPrimary} />
+          <Feather name="message-circle" size={rf(17)} color={colors.textPrimary} />
           <View style={styles.badgeDot} />
         </Pressable>
       </View>
@@ -168,7 +168,7 @@ const GroupCallRoomScreen = () => {
               </Text>
 
               <View style={[styles.micChip, p.muted ? styles.micChipMuted : null]}>
-                <Ionicons
+                <Feather
                   name={p.muted ? 'mic-off' : 'mic'}
                   size={rf(12)}
                   color={p.muted ? colors.red : colors.green}
@@ -180,15 +180,12 @@ const GroupCallRoomScreen = () => {
 
         {/* Rate strip */}
         <View style={styles.rateStrip}>
-          <Ionicons name="diamond" size={rf(13)} color={colors.green} />
+          <Feather name="award" size={rf(13)} color={colors.green} />
           <Text variant="label" color="green">
             {RATE} TK/MIN · {filled} SEATS FILLED
           </Text>
         </View>
 
-        <Text variant="bodySm" color="textMuted" align="center" style={styles.note}>
-          Everyone in this room paid {RATE} tk/min — keep the energy up.
-        </Text>
       </ScrollView>
 
       {/* Floating control dock */}
@@ -199,7 +196,7 @@ const GroupCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={micOn ? 'Mute microphone' : 'Unmute microphone'}
         >
-          <Ionicons
+          <Feather
             name={micOn ? 'mic' : 'mic-off'}
             size={rf(19)}
             color={micOn ? colors.textPrimary : colors.red}
@@ -212,8 +209,8 @@ const GroupCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={camOn ? 'Turn camera off' : 'Turn camera on'}
         >
-          <Ionicons
-            name={camOn ? 'videocam' : 'videocam-off'}
+          <Feather
+            name={camOn ? 'video' : 'video-off'}
             size={rf(19)}
             color={camOn ? colors.textPrimary : colors.red}
           />
@@ -224,7 +221,7 @@ const GroupCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={`Participants, ${filled} in the room`}
         >
-          <Ionicons name="people" size={rf(19)} color={colors.textPrimary} />
+          <Feather name="users" size={rf(19)} color={colors.textPrimary} />
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{filled}</Text>
           </View>
@@ -236,13 +233,13 @@ const GroupCallRoomScreen = () => {
           accessibilityRole="button"
           accessibilityLabel={`End session ${sessionId ?? ''}`}
         >
-          <Ionicons name="call" size={rf(22)} color={colors.white} style={styles.endIcon} />
+          <Feather name="phone" size={rf(22)} color={colors.white} style={styles.endIcon} />
         </Pressable>
       </View>
 
       <ConfirmDialog
         visible={confirmingLeave}
-        icon="exit-outline"
+        icon="log-out"
         title="Leave session?"
         message="Attendees will stay in the room until you end it."
         confirmLabel="Leave"

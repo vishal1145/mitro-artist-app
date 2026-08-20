@@ -57,5 +57,7 @@ export { CircleFilters } from './CircleFilters';
 export type { CircleFiltersProps, CircleFilterOption } from './CircleFilters';
 export { RingAvatar } from './RingAvatar';
 export type { RingAvatarProps } from './RingAvatar';
+export { Skeleton, SkeletonRows } from './Skeleton';
+export type { SkeletonProps, SkeletonRowsProps } from './Skeleton';
 export { ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps, ConfirmTone } from './ConfirmDialog';

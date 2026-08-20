@@ -17,8 +17,8 @@ import { layout, spacing } from '@theme';
 type IdentifierMode = 'mobile' | 'stage';
 
 const MODES: readonly [AuthToggleOption<IdentifierMode>, AuthToggleOption<IdentifierMode>] = [
-  { value: 'mobile', label: 'Mobile Number', icon: 'phone-portrait-outline' },
-  { value: 'stage', label: 'Stage Name', icon: 'at-outline' },
+  { value: 'mobile', label: 'Mobile Number', icon: 'smartphone' },
+  { value: 'stage', label: 'Stage Name', icon: 'at-sign' },
 ];
 
 /** Login screen — UI only. All behavior lives in useLogin(). */
@@ -59,7 +59,7 @@ const LoginScreen = () => {
             name="identifier"
             // Same field either way — the mode only changes how it's entered.
             prefix={mobile ? '+91' : undefined}
-            leftIcon={mobile ? undefined : 'at-outline'}
+            leftIcon={mobile ? undefined : 'at-sign'}
             placeholder={mobile ? '00000 00000' : 'yourstagename'}
             keyboardType={mobile ? 'number-pad' : 'default'}
             autoCapitalize="none"
@@ -78,7 +78,7 @@ const LoginScreen = () => {
             autoComplete="password"
             returnKeyType="done"
             maxLength={64}
-            leftIcon="lock-closed-outline"
+            leftIcon="lock"
             onSubmitEditing={handleSubmit}
           />
         </View>
@@ -104,7 +104,7 @@ const LoginScreen = () => {
         <GradientButton
           label="Login"
           gradient="cta"
-          rightIcon="arrow-forward"
+          rightIcon="arrow-right"
           onPress={handleSubmit}
           loading={isSubmitting}
           disabled={!isValid}

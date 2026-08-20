@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback, useMemo } from 'react';
 import {
@@ -48,7 +48,8 @@ const GradientButtonComponent = ({
   ...rest
 }: GradientButtonProps) => {
   const isInactive = disabled || loading;
-  const [gradientStart, gradientEnd] = gradients[gradient];
+  // Pass every stop — the brand ramp is three-stop (violet -> pink -> rose).
+  const stops = gradients[gradient];
   const tint = colors[textColor];
 
   const glowStyle = useMemo<ViewStyle>(
@@ -84,7 +85,7 @@ const GradientButtonComponent = ({
       {...rest}
     >
       <LinearGradient
-        colors={[gradientStart, gradientEnd]}
+        colors={stops}
         start={GRADIENT_START}
         end={GRADIENT_END}
         style={styles.fill}
@@ -94,7 +95,7 @@ const GradientButtonComponent = ({
         ) : (
           <View style={styles.content}>
             {leftIcon ? (
-              <Ionicons
+              <Feather
                 name={leftIcon}
                 size={rf(18)}
                 color={tint}
@@ -105,7 +106,7 @@ const GradientButtonComponent = ({
               {label}
             </Text>
             {rightIcon ? (
-              <Ionicons
+              <Feather
                 name={rightIcon}
                 size={rf(18)}
                 color={tint}

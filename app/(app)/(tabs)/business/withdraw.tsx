@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -57,7 +57,7 @@ const WithdrawScreen = () => {
           </Text>
         </View>
         <View style={styles.heroPending}>
-          <Ionicons name="time-outline" size={rf(14)} color={colors.warning} />
+          <Feather name="clock" size={rf(14)} color={colors.warning} />
           <Text variant="caption" color="textMuted">
             674 tk still pending
           </Text>
@@ -107,7 +107,7 @@ const WithdrawScreen = () => {
       {/* Destination */}
       <Card style={styles.destination}>
         <ListRow
-          icon="business-outline"
+          icon="briefcase"
           title="HDFC Bank ****4829"
           subtitle="Primary account"
           chevron={false}
@@ -165,7 +165,7 @@ const WithdrawScreen = () => {
 
       {/* Warning */}
       <View style={styles.warning}>
-        <Ionicons name="information-circle-outline" size={rf(17)} color={colors.warning} />
+        <Feather name="info" size={rf(17)} color={colors.warning} />
         <Text variant="caption" color="textSecondary" style={styles.warningText}>
           Payouts process within 24-48 hours. KYC must be complete to avoid delays.
         </Text>
@@ -175,7 +175,7 @@ const WithdrawScreen = () => {
         label="Request Payout"
         gradient="forgot"
         textColor="ctaDark"
-        rightIcon="arrow-forward"
+        rightIcon="arrow-right"
         disabled={parsed <= 0 || belowMinimum}
         onPress={() => router.back()}
       />
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   heroNumber: {
-    fontSize: rf(40),
+    fontSize: rf(35),
   },
   heroPending: {
     flexDirection: 'row',
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     color: colors.textPrimary,
     fontFamily: fontFamily.display,
-    fontSize: rf(32),
+    fontSize: rf(28),
     textAlign: 'center',
     paddingVertical: spacing.lg,
   },

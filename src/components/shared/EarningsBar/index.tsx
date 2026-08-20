@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -47,7 +47,7 @@ const EarningsBarComponent = ({
         accessibilityLabel={`${amount} ${caption.toLowerCase()}`}
       >
         <View style={styles.icon}>
-          <Ionicons name="flash" size={rf(14)} color={colors.gold} />
+          <Feather name="zap" size={rf(14)} color={colors.gold} />
         </View>
         <View>
           <Text style={styles.amount}>{amount}</Text>
@@ -65,7 +65,7 @@ const EarningsBarComponent = ({
         accessibilityRole="button"
         accessibilityLabel="Notifications"
       >
-        <Ionicons name="notifications-outline" size={rf(18)} color={colors.textSecondary} />
+        <Feather name="bell" size={rf(18)} color={colors.textSecondary} />
         {unread ? <View style={styles.bellDot} /> : null}
       </Pressable>
     ) : null}
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(19),
+    fontSize: rf(17),
     color: colors.textPrimary,
   },
   pill: {
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.gold,
   },
   caption: {

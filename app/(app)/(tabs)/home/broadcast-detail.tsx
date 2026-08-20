@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -9,7 +9,7 @@ import { Badge, Card, Text } from '@components/ui';
 import { colors, gradients, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 const STATS = [
   { label: 'PEAK VIEWERS', value: '342' },
@@ -30,7 +30,7 @@ const CHAT = [20, 35, 25, 50, 80, 40, 60, 30, 90, 70, 45, 20, 30, 15];
 const CHAT_PEAKS = [4, 8];
 
 const ORDERS: {
-  icon: IoniconName;
+  icon: FeatherIconName;
   tint: string;
   title: string;
   by: string;
@@ -39,8 +39,8 @@ const ORDERS: {
   tone: 'success' | 'warning';
 }[] = [
   { icon: 'gift', tint: colors.primary, title: 'Custom Shoutout', by: 'by @neon_rider', amount: '15 tk', status: 'DELIVERED', tone: 'success' },
-  { icon: 'musical-note', tint: colors.warning, title: 'Song Request', by: 'by @synth_wave99', amount: '10 tk', status: 'PENDING', tone: 'warning' },
-  { icon: 'sparkles', tint: colors.success, title: 'Confetti Drop', by: 'by @pixel_punk', amount: '5 tk', status: 'DELIVERED', tone: 'success' },
+  { icon: 'music', tint: colors.warning, title: 'Song Request', by: 'by @synth_wave99', amount: '10 tk', status: 'PENDING', tone: 'warning' },
+  { icon: 'star', tint: colors.success, title: 'Confetti Drop', by: 'by @pixel_punk', amount: '5 tk', status: 'DELIVERED', tone: 'success' },
 ];
 
 /** Smoothed viewer-retention curve, drawn on a 0..100 x 0..40 viewBox. */
@@ -56,7 +56,7 @@ const BroadcastDetailScreen = () => {
       <Header
         title="Broadcast Analytics"
         onBack={() => router.back()}
-        rightIcon="share-outline"
+        rightIcon="share-2"
         rightAccessibilityLabel="Share broadcast"
       />
 
@@ -67,7 +67,7 @@ const BroadcastDetailScreen = () => {
         end={{ x: 1, y: 1 }}
         style={styles.hero}
       >
-        <Ionicons name="musical-notes" size={rf(30)} color={colors.textPrimary} />
+        <Feather name="music" size={rf(30)} color={colors.textPrimary} />
       </LinearGradient>
 
       <View style={styles.heading}>
@@ -191,7 +191,7 @@ const BroadcastDetailScreen = () => {
             key={o.title}
             left={
               <View style={styles.orderIcon}>
-                <Ionicons name={o.icon} size={rf(18)} color={o.tint} />
+                <Feather name={o.icon} size={rf(18)} color={o.tint} />
               </View>
             }
             title={o.title}
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   earningsNumber: {
-    fontSize: rf(34),
+    fontSize: rf(30),
   },
   grid: {
     flexDirection: 'row',
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   statValue: {
-    fontSize: rf(21),
+    fontSize: rf(18),
   },
   card: {
     gap: spacing.md,

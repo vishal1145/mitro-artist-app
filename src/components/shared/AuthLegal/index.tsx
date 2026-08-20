@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -9,8 +9,8 @@ import { rf } from '@utils/responsive';
 /** Age-gate notice pinned to the bottom of every auth screen. */
 const AuthLegalComponent = () => (
   <View style={styles.row}>
-    <Ionicons
-      name="shield-outline"
+    <Feather
+      name="shield"
       size={rf(14)}
       color={colors.textMuted}
       style={styles.icon}

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
@@ -10,22 +10,22 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Text } from '@components/ui';
 import { colors, fontFamily, gradientDirection, gradients, layout } from '@theme';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 interface TabDef {
   name: string;
   label: string;
-  icon: IoniconName;
+  icon: FeatherIconName;
   /** Live is the raised circular action, not a standard tab. */
   raised?: boolean;
 }
 
 const TABS: TabDef[] = [
-  { name: 'home', label: 'Home', icon: 'grid-outline' },
-  { name: 'calls', label: 'Calls', icon: 'call-outline' },
-  { name: 'live', label: 'Live', icon: 'videocam', raised: true },
-  { name: 'business', label: 'Business', icon: 'wallet-outline' },
-  { name: 'me', label: 'Me', icon: 'person-circle-outline' },
+  { name: 'home', label: 'Home', icon: 'grid' },
+  { name: 'calls', label: 'Calls', icon: 'phone' },
+  { name: 'live', label: 'Live', icon: 'video', raised: true },
+  { name: 'business', label: 'Business', icon: 'credit-card' },
+  { name: 'me', label: 'Me', icon: 'user' },
 ];
 
 const ICON_SIZE = 22;
@@ -102,7 +102,7 @@ const FloatingTabBar = ({ state, navigation }: BottomTabBarProps) => {
               >
                 <View style={styles.iconSlot}>
                   {/* Outline glyph throughout — only the tint changes. */}
-                  <Ionicons
+                  <Feather
                     name={tab.icon}
                     size={ICON_SIZE}
                     color={focused ? colors.pink : colors.textMuted}
@@ -139,7 +139,7 @@ const FloatingTabBar = ({ state, navigation }: BottomTabBarProps) => {
               end={gradientDirection.horizontal.end}
               style={styles.liveCircle}
             >
-              <Ionicons name="videocam" size={18} color={colors.white} />
+              <Feather name="video" size={18} color={colors.white} />
               <Text style={styles.liveLabel}>LIVE</Text>
             </LinearGradient>
           </Pressable>

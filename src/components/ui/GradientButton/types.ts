@@ -1,4 +1,4 @@
-import type { Ionicons } from '@expo/vector-icons';
+import type { Feather } from '@expo/vector-icons';
 import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 
 import type { ColorToken, CtaGradientToken } from '@theme';
@@ -17,8 +17,8 @@ export interface GradientButtonProps extends Omit<PressableProps, 'style'> {
   textColor?: ColorToken;
   loading?: boolean;
   disabled?: boolean;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  leftIcon?: keyof typeof Feather.glyphMap;
+  rightIcon?: keyof typeof Feather.glyphMap;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   accessibilityHint?: string;

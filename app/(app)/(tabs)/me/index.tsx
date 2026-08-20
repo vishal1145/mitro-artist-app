@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -18,7 +18,7 @@ import { rf } from '@utils/responsive';
 
 import type { ColorToken } from '@theme';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 type Href =
   | '/(app)/(tabs)/me/messages'
@@ -29,7 +29,7 @@ type Href =
   | '/(app)/(tabs)/business/transactions';
 
 interface Row {
-  icon: IoniconName;
+  icon: FeatherIconName;
   tint: string;
   fill: string;
   title: string;
@@ -43,20 +43,20 @@ interface Row {
 
 const ACCOUNT: Row[] = [
   {
-    icon: 'chatbubble-ellipses',
+    icon: 'message-circle',
     tint: colors.pink,
     fill: colors.pinkSoft,
     title: 'Messages',
-    sub: 'Riya sent 250 coins with a note',
+    sub: 'Riya sent 250 coins',
     route: '/(app)/(tabs)/me/messages',
     badge: 2,
   },
   {
-    icon: 'people',
+    icon: 'users',
     tint: colors.violet,
     fill: colors.violetSoft,
     title: 'Followers',
-    sub: '128 top supporters to thank',
+    sub: '128 top supporters',
     route: '/(app)/(tabs)/me/followers',
   },
   {
@@ -68,11 +68,11 @@ const ACCOUNT: Row[] = [
     route: '/(app)/(tabs)/me/settings',
   },
   {
-    icon: 'shield-checkmark',
+    icon: 'shield',
     tint: colors.gold,
     fill: colors.goldSoft,
     title: 'KYC & Payouts',
-    sub: 'Needed before your first withdrawal',
+    sub: 'Required before withdrawal',
     route: '/(app)/(tabs)/me/kyc-payouts',
     pill: 'REQUIRED',
   },
@@ -84,12 +84,12 @@ const ACTIVITY: Row[] = [
     tint: colors.pink,
     fill: colors.pinkSoft,
     title: 'Reward Deliveries',
-    sub: 'Fans notice when a shoutout never arrives',
+    sub: '3 waiting on delivery',
     route: '/(app)/(tabs)/home/reward-fulfillment',
     badge: 3,
   },
   {
-    icon: 'file-tray-full',
+    icon: 'inbox',
     tint: colors.green,
     fill: colors.successChip,
     title: 'Transaction History',
@@ -125,7 +125,7 @@ const MeScreen = () => {
       accessibilityHint={row.sub}
     >
       <View style={[styles.rowIcon, { backgroundColor: row.fill }]}>
-        <Ionicons name={row.icon} size={rf(17)} color={row.tint} />
+        <Feather name={row.icon} size={rf(17)} color={row.tint} />
       </View>
 
       <View style={styles.rowText}>
@@ -151,7 +151,7 @@ const MeScreen = () => {
         </View>
       ) : null}
 
-      <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+      <Feather name="chevron-right" size={rf(16)} color={colors.textMuted} />
     </Pressable>
   );
 
@@ -175,11 +175,11 @@ const MeScreen = () => {
         </Text>
 
         <View style={styles.rating}>
-          <Ionicons name="star" size={rf(12)} color={colors.gold} />
-          <Ionicons name="star" size={rf(12)} color={colors.gold} />
-          <Ionicons name="star" size={rf(12)} color={colors.gold} />
-          <Ionicons name="star" size={rf(12)} color={colors.gold} />
-          <Ionicons name="star" size={rf(12)} color={colors.gold} />
+          <Feather name="star" size={rf(12)} color={colors.gold} />
+          <Feather name="star" size={rf(12)} color={colors.gold} />
+          <Feather name="star" size={rf(12)} color={colors.gold} />
+          <Feather name="star" size={rf(12)} color={colors.gold} />
+          <Feather name="star" size={rf(12)} color={colors.gold} />
           <Text variant="bodySm" color="textPrimary" style={styles.ratingText}>
             4.9 creator rating
           </Text>
@@ -199,11 +199,7 @@ const MeScreen = () => {
         ))}
       </View>
 
-      <InsightLine
-        style={styles.insight}
-        lead="940 new followers this week."
-        tail=" Your last Q&A pulled 2.1K viewers — fans respond when you go live around 9 PM. Finish KYC to unlock withdrawals."
-      />
+      <InsightLine style={styles.insight} lead="940 new followers this week" />
 
       <SectionLabel style={styles.sectionLabel}>ACCOUNT</SectionLabel>
       {ACCOUNT.map((row, i) => renderRow(row, i === ACCOUNT.length - 1))}
@@ -217,7 +213,7 @@ const MeScreen = () => {
         accessibilityRole="button"
         accessibilityLabel="Log out"
       >
-        <Ionicons name="log-out-outline" size={rf(17)} color={colors.red} />
+        <Feather name="log-out" size={rf(17)} color={colors.red} />
         <Text variant="bodyLg" color="red" style={styles.logoutLabel}>
           Log out
         </Text>
@@ -225,7 +221,7 @@ const MeScreen = () => {
 
       <ConfirmDialog
         visible={confirmingLogout}
-        icon="log-out-outline"
+        icon="log-out"
         title="Log out?"
         message="You'll need to sign in again to go live."
         confirmLabel="Log out"
@@ -324,7 +320,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(11),
+    fontSize: rf(10),
     color: colors.white,
   },
 

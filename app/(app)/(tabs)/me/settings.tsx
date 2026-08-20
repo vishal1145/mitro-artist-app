@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -20,7 +20,7 @@ interface Reward {
 const INITIAL_REWARDS: Reward[] = [
   { id: 'r1', title: 'Say My Name', sub: 'Shoutout during your live show', price: 20, on: true },
   { id: 'r2', title: 'Read My Message', sub: "Read the fan's note on stream", price: 25, on: true },
-  { id: 'r3', title: 'Dance Request', sub: 'Hidden from fans while off', price: 40, on: false },
+  { id: 'r3', title: 'Dance Request', sub: 'Hidden while off', price: 40, on: false },
 ];
 
 const INITIAL_ACTIVITIES = [
@@ -60,7 +60,7 @@ const SettingsScreen = () => {
               accessibilityRole="button"
               accessibilityLabel="Search settings"
             >
-              <Ionicons name="search" size={rf(17)} color={colors.textPrimary} />
+              <Feather name="search" size={rf(17)} color={colors.textPrimary} />
             </Pressable>
           }
         />
@@ -75,7 +75,7 @@ const SettingsScreen = () => {
               @yash_7247
             </Text>
             <View style={styles.verified}>
-              <Ionicons name="checkmark-circle" size={rf(11)} color={colors.green} />
+              <Feather name="check-circle" size={rf(11)} color={colors.green} />
               <Text variant="label" color="green">
                 VERIFIED CREATOR
               </Text>
@@ -111,10 +111,6 @@ const SettingsScreen = () => {
         <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
           PUBLIC DETAILS
         </SectionLabel>
-
-        <Text variant="bodySm" color="textMuted" align="center" style={styles.note}>
-          This is what fans see on your creator card — skills feed search discovery.
-        </Text>
 
         <Text variant="label" color="textMuted" style={styles.inputLabel}>
           DISPLAY NAME
@@ -155,10 +151,6 @@ const SettingsScreen = () => {
         <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
           REWARD MENU
         </SectionLabel>
-
-        <Text variant="bodySm" color="textMuted" align="center" style={styles.note}>
-          Fans pay coins to redeem perks live. Toggle to hide without deleting.
-        </Text>
 
         {rewards.map((r, i) => (
           <View key={r.id} style={[styles.reward, i === 0 ? null : styles.rowDivider]}>
@@ -240,7 +232,7 @@ const SettingsScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={`Remove ${a}`}
             >
-              <Ionicons name="close" size={rf(14)} color={colors.red} />
+              <Feather name="x" size={rf(14)} color={colors.red} />
             </Pressable>
           </View>
         ))}
@@ -263,7 +255,7 @@ const SettingsScreen = () => {
           accessibilityLabel="KYC and payouts"
         >
           <View style={styles.kycIcon}>
-            <Ionicons name="shield-checkmark" size={rf(17)} color={colors.gold} />
+            <Feather name="shield" size={rf(17)} color={colors.gold} />
           </View>
           <View style={styles.kycText}>
             <Text variant="bodyLg" color="textPrimary" style={styles.rewardTitle}>
@@ -278,7 +270,7 @@ const SettingsScreen = () => {
               REQUIRED
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={rf(16)} color={colors.textMuted} />
+          <Feather name="chevron-right" size={rf(16)} color={colors.textMuted} />
         </Pressable>
 
         {/* `Screen`'s tab-bar padding is a fixed override, so the extra room the
@@ -376,7 +368,7 @@ const styles = StyleSheet.create({
 
   note: {
     marginBottom: 18,
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
   inputLabel: {
     marginBottom: 8,
@@ -390,7 +382,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     color: colors.textPrimary,
     fontFamily: fontFamily.body,
-    fontSize: rf(13),
+    fontSize: rf(11),
     marginBottom: 18,
   },
   textarea: {
@@ -530,7 +522,7 @@ const styles = StyleSheet.create({
   },
   saveLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.white,
   },
 });

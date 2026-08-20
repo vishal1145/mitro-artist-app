@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { InsightLine, PageHeader, Screen } from '@components/shared';
+import { PageHeader, Screen } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
 import { colors, fontFamily, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
@@ -70,12 +70,6 @@ const MessagesScreen = () => {
         }
       />
 
-      <InsightLine
-        style={styles.insight}
-        lead="Replies go straight to the fan"
-        tail=" — keep them personal."
-      />
-
       <View style={styles.list}>
         {CONVERSATIONS.map((c, i) => (
           <Pressable
@@ -129,12 +123,6 @@ const MessagesScreen = () => {
         ))}
       </View>
 
-      <Text variant="bodySm" color="textMuted" align="center" style={styles.footnote}>
-        A 20-second personal reply keeps a supporter for months — copy-paste blasts read cold.{' '}
-        <Text variant="bodySm" color="gold" style={styles.footLink}>
-          Messaging tips
-        </Text>
-      </Text>
     </Screen>
   );
 };
@@ -155,7 +143,7 @@ const styles = StyleSheet.create({
   },
   headBadgeText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(11),
+    fontSize: rf(10),
     color: colors.white,
   },
 
@@ -201,7 +189,7 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
+    fontSize: rf(9),
     color: colors.white,
   },
   newPill: {
@@ -215,7 +203,7 @@ const styles = StyleSheet.create({
 
   footnote: {
     marginTop: 26,
-    lineHeight: rf(19),
+    lineHeight: rf(17),
   },
   footLink: {
     fontFamily: fontFamily.bold,

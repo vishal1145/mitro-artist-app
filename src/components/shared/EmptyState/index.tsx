@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -10,7 +10,7 @@ import { rf } from '@utils/responsive';
 export interface EmptyStateProps {
   title: string;
   description?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   actionLabel?: string;
   onAction?: () => void;
   /** Reuse for the "error" async state with a retry action. */
@@ -26,13 +26,13 @@ const EmptyStateComponent = ({
   onAction,
   variant = 'empty',
 }: EmptyStateProps) => {
-  const resolvedIcon: keyof typeof Ionicons.glyphMap =
-    icon ?? (variant === 'error' ? 'alert-circle-outline' : 'file-tray-outline');
+  const resolvedIcon: keyof typeof Feather.glyphMap =
+    icon ?? (variant === 'error' ? 'alert-circle' : 'inbox');
 
   return (
     <View style={styles.container} accessibilityRole="summary">
       <View style={styles.iconWrap}>
-        <Ionicons
+        <Feather
           name={resolvedIcon}
           size={rf(40)}
           color={variant === 'error' ? colors.error : colors.textMuted}

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -69,8 +69,8 @@ const PrivateCallsScreen = () => {
       <View style={[styles.control, accepting ? styles.controlOn : null]}>
         <View style={styles.controlHead}>
           <View style={[styles.shield, accepting ? styles.shieldOn : null]}>
-            <Ionicons
-              name="shield-checkmark"
+            <Feather
+              name="shield"
               size={rf(17)}
               color={accepting ? colors.green : colors.pink}
             />
@@ -79,11 +79,11 @@ const PrivateCallsScreen = () => {
         </View>
 
         <Text variant="bodySm" color="textSecondary" style={styles.controlBody}>
-          Let fans send you{' '}
+          First{' '}
           <Text variant="bodySm" color={accepting ? 'pink' : 'textSecondary'}>
-            1:1
+            5 minutes
           </Text>{' '}
-          call requests. The first 5 minutes are charged upfront the moment you accept.
+          charged upfront.
         </Text>
 
         <View style={styles.rateRow}>
@@ -126,11 +126,11 @@ const PrivateCallsScreen = () => {
 
         {accepting ? (
           <Text variant="bodySm" color="green" style={styles.controlNote}>
-            You&apos;re visible as available — requests appear below
+            Visible as available
           </Text>
         ) : (
           <Text variant="bodySm" color="textMuted" style={styles.controlNote}>
-            Private calls are currently OFF
+            Currently off
           </Text>
         )}
       </View>
@@ -141,7 +141,7 @@ const PrivateCallsScreen = () => {
 
       {pending.length === 0 ? (
         <Text variant="bodySm" color="textMuted">
-          No pending requests — they&apos;ll appear the moment a fan sends one.
+          No pending requests.
         </Text>
       ) : (
         pending.map((r) => (
@@ -218,10 +218,6 @@ const PrivateCallsScreen = () => {
         />
       ))}
 
-      <Text variant="bodySm" color="textMuted" style={styles.footnote}>
-        Your longest calls come from fans who caught you live first — go live before switching this
-        on.
-      </Text>
     </Screen>
   );
 };
@@ -244,7 +240,7 @@ const styles = StyleSheet.create({
   },
   helpMark: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(13),
+    fontSize: rf(11),
   },
 
   control: {
@@ -295,7 +291,7 @@ const styles = StyleSheet.create({
   rateInput: {
     minWidth: 44,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
+    fontSize: rf(19),
     color: colors.gold,
     padding: 0,
   },
@@ -315,12 +311,12 @@ const styles = StyleSheet.create({
   },
   toggleLabelOff: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(15),
+    fontSize: rf(13),
     color: colors.screen,
   },
   toggleLabelOn: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(13),
+    fontSize: rf(11),
     color: colors.white,
   },
   controlNote: {

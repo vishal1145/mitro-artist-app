@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo, useMemo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -16,7 +16,7 @@ export type IconChipTone =
   | 'red';
 
 export interface IconChipProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Feather.glyphMap;
   /** Accent tone — fills at 15% with the solid colour as the icon. */
   tone?: IconChipTone;
   /** Override the icon colour directly (ignores `tone`). */
@@ -41,7 +41,7 @@ const IconChipComponent = ({ icon, tone = 'pink', color, style }: IconChipProps)
 
   return (
     <View style={[styles.chip, fillStyle, style]}>
-      <Ionicons name={icon} size={rf(20)} color={color ?? t.icon} />
+      <Feather name={icon} size={rf(20)} color={color ?? t.icon} />
     </View>
   );
 };

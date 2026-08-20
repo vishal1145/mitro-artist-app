@@ -12,7 +12,7 @@ const NotFound = () => {
       <Screen>
         <EmptyState
           variant="error"
-          icon="compass-outline"
+          icon="compass"
           title="Page not found"
           description="The screen you’re looking for doesn’t exist."
           actionLabel="Go home"

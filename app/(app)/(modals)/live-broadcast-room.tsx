@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -10,7 +10,7 @@ import { Avatar, Text } from '@components/ui';
 import { colors, gradients, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type FeatherIconName = keyof typeof Feather.glyphMap;
 
 const SUPPORTERS = [
   { id: 'sp1', initials: 'NR', name: 'NeonRider', amount: '150 tk' },
@@ -30,10 +30,10 @@ const CHAT: ChatItem[] = [
   { id: 'c5', kind: 'msg', user: 'SleepyPanda', body: 'I love this overlay tbh' },
 ];
 
-const REWARDS: { id: string; icon: IoniconName; label: string; price: string }[] = [
-  { id: 'r1', icon: 'megaphone-outline', label: 'Say My Name', price: '20 tk' },
-  { id: 'r2', icon: 'chatbox-ellipses-outline', label: 'Read My Message', price: '25 tk' },
-  { id: 'r3', icon: 'mic-outline', label: 'Shoutout on Stream', price: '50 tk' },
+const REWARDS: { id: string; icon: FeatherIconName; label: string; price: string }[] = [
+  { id: 'r1', icon: 'volume-2', label: 'Say My Name', price: '20 tk' },
+  { id: 'r2', icon: 'message-square', label: 'Read My Message', price: '25 tk' },
+  { id: 'r3', icon: 'mic', label: 'Shoutout on Stream', price: '50 tk' },
 ];
 
 /** mm:ss / hh:mm:ss elapsed formatter. */
@@ -85,7 +85,7 @@ const LiveBroadcastRoomScreen = () => {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Video surface placeholder */}
       <View style={styles.stage}>
-        <Ionicons name="videocam" size={rf(40)} color={colors.textDisabled} />
+        <Feather name="video" size={rf(40)} color={colors.textDisabled} />
         <Text variant="caption" color="textMuted">
           {camOn ? 'Camera preview' : 'Camera off'}
         </Text>
@@ -107,7 +107,7 @@ const LiveBroadcastRoomScreen = () => {
 
         <View style={styles.topRight}>
           <View style={styles.viewerPill}>
-            <Ionicons name="eye" size={rf(14)} color={colors.textPrimary} />
+            <Feather name="eye" size={rf(14)} color={colors.textPrimary} />
             <Text variant="label" color="textPrimary">
               1.2K
             </Text>
@@ -118,21 +118,21 @@ const LiveBroadcastRoomScreen = () => {
             accessibilityRole="button"
             accessibilityLabel="Broadcast settings"
           >
-            <Ionicons name="settings-outline" size={rf(18)} color={colors.textPrimary} />
+            <Feather name="settings" size={rf(18)} color={colors.textPrimary} />
           </Pressable>
         </View>
       </View>
 
       {/* Right rail */}
       <View style={styles.rail}>
-        {(['camera-reverse', 'sparkles', 'share-outline'] as IoniconName[]).map((icon) => (
+        {(['refresh-cw', 'star', 'share-2'] as FeatherIconName[]).map((icon) => (
           <Pressable
             key={icon}
             style={styles.railBtn}
             accessibilityRole="button"
             accessibilityLabel={icon}
           >
-            <Ionicons name={icon} size={rf(20)} color={colors.textPrimary} />
+            <Feather name={icon} size={rf(20)} color={colors.textPrimary} />
           </Pressable>
         ))}
       </View>
@@ -144,7 +144,7 @@ const LiveBroadcastRoomScreen = () => {
         <View style={styles.bottomContent}>
           {/* Earnings */}
           <View style={styles.earnings}>
-            <Ionicons name="cash-outline" size={rf(15)} color={colors.success} />
+            <Feather name="dollar-sign" size={rf(15)} color={colors.success} />
             <Text variant="label" color="success">
               674 tk this stream
             </Text>
@@ -185,7 +185,7 @@ const LiveBroadcastRoomScreen = () => {
                 c.kind === 'reward' ? (
                   <View key={c.id} style={styles.rewardEvent}>
                     <View style={styles.rewardIcon}>
-                      <Ionicons name="gift" size={rf(15)} color={colors.warning} />
+                      <Feather name="gift" size={rf(15)} color={colors.warning} />
                     </View>
                     <View style={styles.rewardBody}>
                       <Text variant="caption" color="textPrimary">
@@ -227,7 +227,7 @@ const LiveBroadcastRoomScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={micOn ? 'Mute microphone' : 'Unmute microphone'}
             >
-              <Ionicons name={micOn ? 'mic' : 'mic-off'} size={rf(20)} color={colors.textPrimary} />
+              <Feather name={micOn ? 'mic' : 'mic-off'} size={rf(20)} color={colors.textPrimary} />
             </Pressable>
 
             <Pressable
@@ -236,8 +236,8 @@ const LiveBroadcastRoomScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={camOn ? 'Turn camera off' : 'Turn camera on'}
             >
-              <Ionicons
-                name={camOn ? 'videocam' : 'videocam-off'}
+              <Feather
+                name={camOn ? 'video' : 'video-off'}
                 size={rf(20)}
                 color={colors.textPrimary}
               />
@@ -249,7 +249,7 @@ const LiveBroadcastRoomScreen = () => {
               accessibilityRole="button"
               accessibilityLabel="End broadcast"
             >
-              <Ionicons name="close" size={rf(26)} color={colors.onError} />
+              <Feather name="x" size={rf(26)} color={colors.onError} />
             </Pressable>
 
             <Pressable
@@ -258,7 +258,7 @@ const LiveBroadcastRoomScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={chatOn ? 'Hide chat' : 'Show chat'}
             >
-              <Ionicons name="chatbubble" size={rf(20)} color={colors.textPrimary} />
+              <Feather name="message-circle" size={rf(20)} color={colors.textPrimary} />
             </Pressable>
 
             <Pressable
@@ -267,7 +267,7 @@ const LiveBroadcastRoomScreen = () => {
               accessibilityRole="button"
               accessibilityLabel="Reward menu"
             >
-              <Ionicons name="gift" size={rf(20)} color={colors.textPrimary} />
+              <Feather name="gift" size={rf(20)} color={colors.textPrimary} />
             </Pressable>
           </View>
         </View>
@@ -302,21 +302,21 @@ const LiveBroadcastRoomScreen = () => {
       >
         <View style={styles.sheetBody}>
           <ToggleRow
-            icon="sparkles-outline"
+            icon="star"
             label="Beauty filter"
             description="Smooths the camera feed"
             value={beautyOn}
             onValueChange={setBeautyOn}
           />
           <ToggleRow
-            icon="chatbubble-outline"
+            icon="message-circle"
             label="Show live chat"
             description="Hide to focus on the camera"
             value={chatOn}
             onValueChange={setChatOn}
           />
           <ToggleRow
-            icon="mic-outline"
+            icon="mic"
             label="Microphone"
             value={micOn}
             onValueChange={setMicOn}
@@ -326,7 +326,7 @@ const LiveBroadcastRoomScreen = () => {
 
       <ConfirmDialog
         visible={confirmingEnd}
-        icon="stop-circle-outline"
+        icon="stop-circle"
         title="End broadcast?"
         message="Your stream will end for everyone watching. You can review the summary afterwards."
         confirmLabel="End broadcast"
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
   },
   tiny: {
-    fontSize: rf(10),
+    fontSize: rf(9),
   },
 
   chat: {

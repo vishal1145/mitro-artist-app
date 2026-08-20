@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -49,7 +49,7 @@ const SocialButtonComponent = ({
       {provider === 'google' ? (
         <GoogleGlyph size={rf(20)} />
       ) : (
-        <Ionicons name="logo-apple" size={rf(20)} color={colors.textPrimary} />
+        <Feather name="command" size={rf(20)} color={colors.textPrimary} />
       )}
       <Text variant="body" color="textPrimary">
         {LABEL[provider]}
