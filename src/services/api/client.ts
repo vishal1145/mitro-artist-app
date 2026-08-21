@@ -9,10 +9,17 @@ import { logger } from '@utils/logger';
  */
 
 /**
- * HTTPS is mandatory in release builds. Dev builds may point at a plaintext
- * LAN address (e.g. http://192.168.x.x:8081) so the app can talk to a local
- * API server — but it warns loudly, and a release build still refuses to boot
- * against a plaintext endpoint.
+ * HTTPS is mandatory in release builds; dev builds may point at a plaintext
+ * LAN address (e.g. http://192.168.x.x:8081) to reach a local API server.
+ *
+ * This only reports the problem — it must never throw. This module is imported
+ * during startup, so throwing here kills the process before React mounts and
+ * the app closes the instant it's opened, with no screen and no message. A
+ * release APK built against a plaintext URL did exactly that.
+ *
+ * Enforcement lives in the request interceptor instead, which rejects any
+ * non-HTTPS request outside dev. Same guarantee, but the app stays up and the
+ * failure is visible where it can be read.
  */
 if (!REGEX.httpsOnly.test(API_CONFIG.baseUrl)) {
   if (__DEV__) {
@@ -20,8 +27,9 @@ if (!REGEX.httpsOnly.test(API_CONFIG.baseUrl)) {
       baseUrl: API_CONFIG.baseUrl,
     });
   } else {
-    throw new Error(
-      `Insecure API base URL rejected: "${API_CONFIG.baseUrl}". HTTPS is required.`,
+    logger.error(
+      'API base URL is not HTTPS — every request will be blocked in this build',
+      { baseUrl: API_CONFIG.baseUrl },
     );
   }
 }
