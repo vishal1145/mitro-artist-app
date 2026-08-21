@@ -17,6 +17,7 @@ const AuthLayout = () => {
       <Stack.Screen name="register" />
       <Stack.Screen name="forgot-password" />
       <Stack.Screen name="otp-verify" />
+      <Stack.Screen name="reset-password" />
     </Stack>
   );
 };

@@ -4,9 +4,11 @@ import { useCallback, useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 
 import { DEMO_AUTH } from '@constants';
-import { authApi } from '@services/api';
+import { useLoginMutation } from '@hooks/useAuthMutations';
+import { USE_MOCK } from '@services/api';
 import { useAuthStore } from '@store';
 import type { AuthSession, SocialProviderId } from '@app-types/api';
+import { getErrorMessage } from '@utils/errorHandler';
 import { logger } from '@utils/logger';
 
 import { loginSchema, type LoginFormValues } from './schema';
@@ -16,6 +18,7 @@ import type { UseLoginResult } from './types';
 export const useLogin = (): UseLoginResult => {
   const router = useRouter();
   const authenticate = useAuthStore((s) => s.authenticate);
+  const { mutateAsync: login, isPending } = useLoginMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
 
@@ -35,49 +38,45 @@ export const useLogin = (): UseLoginResult => {
     async (values) => {
       setSubmitError(null);
 
-      // --- Temporary demo bypass ------------------------------------------
-      // Until the real auth API is live, the hardcoded DEMO_AUTH credentials
-      // authenticate locally and jump straight to the dashboard.
+      // --- Demo bypass, mock mode only -------------------------------------
+      // Lets the screens be exercised without a backend. Never reachable once
+      // USE_MOCK is false, so it can't shadow a real account in production.
       const identifier = values.identifier.trim().toLowerCase();
       if (
+        USE_MOCK &&
         identifier === DEMO_AUTH.identifier &&
         values.password === DEMO_AUTH.password
       ) {
         const demoSession: AuthSession = {
           user: {
-            id: 'demo-user',
+            id: 'demo-artist',
             name: 'Alex Rivera',
-            email: DEMO_AUTH.identifier,
             username: 'creator',
-            createdAt: new Date().toISOString(),
+            approvalStatus: 'Approved',
           },
-          tokens: {
-            accessToken: 'demo-access-token',
-            refreshToken: 'demo-refresh-token',
-          },
+          tokens: { accessToken: 'demo-access-token' },
         };
         logger.info('Demo login success');
         await authenticate(demoSession);
         router.replace('/(app)/(tabs)/home');
         return;
       }
-      // --------------------------------------------------------------------
+      // ---------------------------------------------------------------------
 
-      const result = await authApi.login({
-        identifier: values.identifier,
-        password: values.password,
-      });
-
-      if (!result.success) {
-        setSubmitError(result.error);
-        return;
+      try {
+        // One field either way — the server decides whether it's a mobile
+        // number or a stage name.
+        await login({
+          phoneOrStageName: values.identifier.trim(),
+          password: values.password,
+        });
+        logger.info('Login success');
+        router.replace('/(app)/(tabs)/home');
+      } catch (error) {
+        setSubmitError(getErrorMessage(error));
       }
-
-      logger.info('Login success');
-      await authenticate(result.data);
-      router.replace('/(app)/(tabs)/home');
     },
-    [authenticate, router],
+    [authenticate, login, router],
   );
 
   const onSocialLogin = useCallback((provider: SocialProviderId) => {
@@ -92,7 +91,9 @@ export const useLogin = (): UseLoginResult => {
   return {
     control,
     isValid,
-    isSubmitting,
+    // The mutation owns the in-flight state; RHF's own flag misses the window
+    // between the request resolving and navigation completing.
+    isSubmitting: isSubmitting || isPending,
     submitError,
     socialNotice,
     handleSubmit: handleSubmit(onSubmit),

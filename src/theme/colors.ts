@@ -188,6 +188,8 @@ export const colors = {
   chipSurfaceStrong: withAlpha(palette.black, 0.7),
   iconChip: palette.surfaceSoft,
   overlayDim: withAlpha(palette.background, 0.72),
+  /** Near-opaque backdrop for full-screen media, so nothing shows through. */
+  overlayStrong: withAlpha(palette.background, 0.96),
   divider: palette.borderSoft,
 
   // --- Glow (shadowColor) ---

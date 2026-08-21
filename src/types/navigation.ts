@@ -9,7 +9,8 @@ export type AuthRoute =
   | '/(auth)/login'
   | '/(auth)/register'
   | '/(auth)/forgot-password'
-  | '/(auth)/otp-verify';
+  | '/(auth)/otp-verify'
+  | '/(auth)/reset-password';
 
 export type AppTabRoute =
   | '/(app)/(tabs)/home'
@@ -24,4 +25,10 @@ export interface OtpVerifyParams {
   mobile: string;
   /** Where the OTP flow originated, so we can route correctly after verify. */
   origin: 'register' | 'forgot-password';
+}
+
+/** Params carried into the new-password screen, after the code is verified. */
+export interface ResetPasswordParams {
+  /** The verified number the reset applies to. */
+  mobile: string;
 }

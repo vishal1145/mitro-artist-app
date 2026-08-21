@@ -23,6 +23,7 @@ const ModalsLayout = () => (
     <Stack.Screen name="incoming-call-request" />
     <Stack.Screen name="chat-thread" options={{ presentation: 'modal', gestureEnabled: true }} />
     <Stack.Screen name="verify-number" options={{ presentation: 'modal', gestureEnabled: true }} />
+    <Stack.Screen name="change-password" options={{ presentation: 'modal', gestureEnabled: true }} />
   </Stack>
 );
 

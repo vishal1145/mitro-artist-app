@@ -7,13 +7,19 @@ import {
   ConfirmDialog,
   EarningsBar,
   InsightLine,
+  LoadFailed,
   RingAvatar,
   Screen,
   SectionLabel,
+  Skeleton,
 } from '@components/shared';
 import { Text } from '@components/ui';
+import { useEarningsSummary } from '@hooks/useInsights';
+import { useProfile } from '@hooks/useProfile';
 import { useAuthStore } from '@store/authStore';
 import { colors, fontFamily, layout, radius } from '@theme';
+import { getErrorMessage } from '@utils/errorHandler';
+import { formatTokens, initialsFrom, titleCase } from '@utils/format';
 import { rf } from '@utils/responsive';
 
 import type { ColorToken } from '@theme';
@@ -23,6 +29,7 @@ type FeatherIconName = keyof typeof Feather.glyphMap;
 type Href =
   | '/(app)/(tabs)/me/messages'
   | '/(app)/(tabs)/me/followers'
+  | '/(app)/(tabs)/me/photos'
   | '/(app)/(tabs)/me/settings'
   | '/(app)/(tabs)/me/kyc-payouts'
   | '/(app)/(tabs)/home/reward-fulfillment'
@@ -59,6 +66,15 @@ const ACCOUNT: Row[] = [
     sub: '128 top supporters',
     route: '/(app)/(tabs)/me/followers',
   },
+  // Photos is hidden until the backend gives `/photos/upload-url` a unique
+  // storage key per photo. Today it reuses one key per artist, so every
+  // upload overwrites the last and the gallery shows the same picture on
+  // every tile. The screen, its route and the whole data layer are intact —
+  // restoring it is just putting this row back:
+  //
+  //   { icon: 'image', tint: colors.gold, fill: colors.goldSoft,
+  //     title: 'Photos', sub: 'Your public gallery',
+  //     route: '/(app)/(tabs)/me/photos' },
   {
     icon: 'settings',
     tint: colors.cyan,
@@ -98,17 +114,40 @@ const ACTIVITY: Row[] = [
   },
 ];
 
-const STATS: { value: string; label: string; color: ColorToken }[] = [
-  { value: '48.2K', label: 'Followers', color: 'pink' },
-  { value: '1.2k tk', label: 'Earned', color: 'gold' },
-  { value: '12', label: 'Shows', color: 'cyan' },
-];
+interface Stat {
+  value: string;
+  label: string;
+  color: ColorToken;
+}
 
 /** Me tab root — creator identity, headline numbers, and account navigation. */
 const MeScreen = () => {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+
+  const { data: profile, isLoading, error: profileError } = useProfile();
+  const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
+
+  const isApproved = profile?.approvalStatus === 'approved';
+
+  // Followers and Shows have no endpoint yet — they stay as placeholders.
+  // Earned is the wallet balance from /profile/me; Total is everything ever
+  // earned, from /earnings/summary. They differ once payouts start.
+  const stats: Stat[] = [
+    { value: '48.2K', label: 'Followers', color: 'pink' },
+    {
+      value: profile ? formatTokens(profile.walletTokens) : '—',
+      label: 'Earned',
+      color: 'gold',
+    },
+    {
+      value: earnings ? formatTokens(earnings.totalTokens) : '—',
+      label: 'Total',
+      color: 'green',
+    },
+    { value: '12', label: 'Shows', color: 'cyan' },
+  ];
 
   const handleLogout = () => {
     setConfirmingLogout(false);
@@ -167,34 +206,63 @@ const MeScreen = () => {
     >
 
       {/* Identity */}
-      <View style={styles.identity}>
-        <RingAvatar initials="Y7" badge="READY" />
-
-        <Text variant="h2" style={styles.handle}>
-          @yash_7247
-        </Text>
-        <Text variant="bodySm" color="textMuted">
-          Verified creator · Music &amp; Talk
-        </Text>
-
-        <View style={styles.rating}>
-          <Feather name="star" size={rf(12)} color={colors.gold} />
-          <Feather name="star" size={rf(12)} color={colors.gold} />
-          <Feather name="star" size={rf(12)} color={colors.gold} />
-          <Feather name="star" size={rf(12)} color={colors.gold} />
-          <Feather name="star" size={rf(12)} color={colors.gold} />
-          <Text variant="bodySm" color="textPrimary" style={styles.ratingText}>
-            4.9 creator rating
-          </Text>
+      {isLoading ? (
+        <View style={styles.identity}>
+          <Skeleton width={96} height={96} round={48} />
+          <Skeleton width={160} height={22} round={11} style={styles.handleSkeleton} />
+          <Skeleton width={200} height={14} round={7} style={styles.subSkeleton} />
         </View>
-      </View>
+      ) : profileError ? (
+        // No retry button here by request. The message alone is the trade-off:
+        // the rest of the screen still works, and pulling the tab again
+        // refetches. Settings and Photos keep their retry.
+        <LoadFailed message={getErrorMessage(profileError)} />
+      ) : (
+        <View style={styles.identity}>
+          <RingAvatar
+            initials={initialsFrom(profile?.stageName)}
+            imageUrl={profile?.avatarUrl}
+            // The badge means "cleared to go live", so it tracks approval.
+            badge={isApproved ? 'READY' : undefined}
+          />
+
+          <Text variant="h2" style={styles.handle}>
+            @{profile?.stageName ?? ''}
+          </Text>
+          <Text variant="bodySm" color={isApproved ? 'textMuted' : 'gold'}>
+            {isApproved ? 'Verified creator' : titleCase(profile?.approvalStatus ?? 'Pending')}
+            {profile?.categoryName ? ` · ${profile.categoryName}` : ''}
+          </Text>
+
+          {profile?.rejectedReason ? (
+            <Text variant="bodySm" color="error" style={styles.rejected}>
+              {profile.rejectedReason}
+            </Text>
+          ) : null}
+
+          <View style={styles.rating}>
+            <Feather name="star" size={rf(12)} color={colors.gold} />
+            <Feather name="star" size={rf(12)} color={colors.gold} />
+            <Feather name="star" size={rf(12)} color={colors.gold} />
+            <Feather name="star" size={rf(12)} color={colors.gold} />
+            <Feather name="star" size={rf(12)} color={colors.gold} />
+            <Text variant="bodySm" color="textPrimary" style={styles.ratingText}>
+              4.9 creator rating
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.stats}>
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <View key={s.label} style={styles.stat}>
-            <Text variant="h2" color={s.color} style={styles.statValue}>
-              {s.value}
-            </Text>
+            {isLoading || loadingEarnings ? (
+              <Skeleton width={56} height={22} round={11} />
+            ) : (
+              <Text variant="h2" color={s.color} style={styles.statValue}>
+                {s.value}
+              </Text>
+            )}
             <Text variant="bodySm" color="textMuted">
               {s.label}
             </Text>
@@ -246,6 +314,16 @@ const styles = StyleSheet.create({
   },
   handle: {
     marginTop: 24,
+  },
+  rejected: {
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  handleSkeleton: {
+    marginTop: 24,
+  },
+  subSkeleton: {
+    marginTop: 10,
   },
   rating: {
     flexDirection: 'row',

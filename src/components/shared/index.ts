@@ -18,6 +18,17 @@ export type { SocialButtonProps, SocialProvider } from './SocialButton';
 export { GlassCard } from './GlassCard';
 export type { GlassCardProps } from './GlassCard';
 export { AuthBackground } from './AuthBackground';
+export { AddRewardDialog } from './AddRewardDialog';
+export type { AddRewardDialogProps } from './AddRewardDialog';
+export { AvatarPreview } from './AvatarPreview';
+export type { AvatarPreviewProps } from './AvatarPreview';
+export { LabeledField } from './LabeledField';
+export { LoadFailed } from './LoadFailed';
+export type { LoadFailedProps } from './LoadFailed';
+export { TextPromptDialog } from './TextPromptDialog';
+export type { TextPromptDialogProps } from './TextPromptDialog';
+export { PhotoViewer } from './PhotoViewer';
+export type { PhotoViewerProps } from './PhotoViewer';
 export { InfoCallout } from './InfoCallout';
 export type { InfoCalloutProps, CalloutTone } from './InfoCallout';
 export { StatTile } from './StatTile';
@@ -57,7 +68,18 @@ export { CircleFilters } from './CircleFilters';
 export type { CircleFiltersProps, CircleFilterOption } from './CircleFilters';
 export { RingAvatar } from './RingAvatar';
 export type { RingAvatarProps } from './RingAvatar';
-export { Skeleton, SkeletonRows } from './Skeleton';
-export type { SkeletonProps, SkeletonRowsProps } from './Skeleton';
+export {
+  Skeleton,
+  SkeletonCard,
+  SkeletonListRow,
+  SkeletonStatTile,
+  SkeletonRows,
+} from './Skeleton';
+export type {
+  SkeletonProps,
+  SkeletonCardProps,
+  SkeletonListRowProps,
+  SkeletonGroupProps,
+} from './Skeleton';
 export { ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps, ConfirmTone } from './ConfirmDialog';

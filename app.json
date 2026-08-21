@@ -43,6 +43,12 @@
       "expo-secure-store",
       "expo-font",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mitro Artist uses your photos so you can set your profile picture."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./src/static/images/splash-icon.png",
@@ -60,7 +66,8 @@
       "apiTimeoutMs": 20000,
       "router": {
         "origin": false
-      }
+      },
+      "useMock": true
     }
   }
 }

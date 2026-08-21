@@ -2,3 +2,8 @@ export { api, refreshClient } from './client';
 export { attachInterceptors, registerAuthHandlers } from './interceptors';
 export { ENDPOINTS } from './endpoints';
 export { authApi } from './authApi';
+export { profileApi } from './profileApi';
+export { insightsApi } from './insightsApi';
+export { settingsApi } from './settingsApi';
+export { contentTypeFor, fileNameFor, putFileToSignedUrl } from './uploadFile';
+export { USE_MOCK, mocked, mockedError } from './mock';

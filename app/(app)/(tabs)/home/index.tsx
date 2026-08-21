@@ -3,9 +3,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EarningsBar, Screen } from '@components/shared';
+import { EarningsBar, EmptyState, Screen, Skeleton } from '@components/shared';
 import { Card, Text } from '@components/ui';
+import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { compactCount, duration, formatTokens, shortDate, shortWeekday } from '@utils/format';
 import { rf } from '@utils/responsive';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
@@ -14,46 +16,14 @@ type FeatherIconName = keyof typeof Feather.glyphMap;
 /*  Data                                                                      */
 /* -------------------------------------------------------------------------- */
 
-const STATS = [
-  { value: '674 tk', label: 'Pending', color: 'gold' as const },
-  { value: '48.2K', label: 'Followers', color: 'pink' as const },
-  { value: '12', label: 'Shows', color: 'cyan' as const },
-];
+/** How many past broadcasts the Home timeline shows. */
+const RECENT_COUNT = 3;
 
-/** Bar heights as a fraction of the chart area; Sunday is the best day. */
-const CHART = [
-  { day: 'Mon', value: 0.42 },
-  { day: 'Tue', value: 0.3 },
-  { day: 'Wed', value: 0.55 },
-  { day: 'Thu', value: 0.34 },
-  { day: 'Fri', value: 0.7 },
-  { day: 'Sat', value: 0.85 },
-  { day: 'Sun', value: 1 },
-];
-
-const BROADCASTS = [
-  {
-    id: 'bc_001',
-    title: 'Midnight Synth Session',
-    meta: 'Aug 17 · 12m · 342 viewers',
-    earned: '+145 tk',
-    dot: colors.green,
-  },
-  {
-    id: 'bc_002',
-    title: 'Acoustic Chill Session',
-    meta: 'Aug 14 · 1h 20m · 890 viewers',
-    earned: '+85 tk',
-    dot: colors.gold,
-  },
-  {
-    id: 'bc_003',
-    title: 'Weekly Q&A #12',
-    meta: 'Aug 10 · 30m · 2.1K viewers',
-    earned: '+320 tk',
-    dot: colors.green,
-  },
-];
+/**
+ * A broadcast that ended cleanly gets a green dot; anything else — a dropped
+ * connection, a timeout — gets gold, so the timeline flags it at a glance.
+ */
+const CLEAN_END = 'Ended by artist';
 
 type AlertRoute =
   | '/(app)/(tabs)/home/reward-fulfillment'
@@ -96,6 +66,45 @@ const ALERTS: {
 
 const HomeScreen = () => {
   const router = useRouter();
+
+  const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
+  const { data: broadcasts, isLoading: loadingBroadcasts } =
+    useBroadcastHistory(RECENT_COUNT);
+
+  // Followers and Shows have no endpoint yet and stay hardcoded; Pending and
+  // Total come from /earnings/summary.
+  const stats = [
+    {
+      value: earnings ? formatTokens(earnings.pendingTokens) : '—',
+      label: 'Pending',
+      color: 'gold' as const,
+      route: '/(app)/(tabs)/business' as const,
+    },
+    {
+      value: earnings ? formatTokens(earnings.totalTokens) : '—',
+      label: 'Total',
+      color: 'green' as const,
+      route: '/(app)/(tabs)/business/transactions' as const,
+    },
+    {
+      value: '48.2K',
+      label: 'Followers',
+      color: 'pink' as const,
+      route: '/(app)/(tabs)/me/followers' as const,
+    },
+    {
+      value: '12',
+      label: 'Shows',
+      color: 'cyan' as const,
+      route: '/(app)/(tabs)/calls/broadcast-history' as const,
+    },
+  ];
+
+  // Bars are drawn as a fraction of the busiest day, so a quiet week still
+  // fills the chart rather than flatlining. An all-zero week draws nothing.
+  const week = earnings?.last7Days ?? [];
+  const peakDay = Math.max(...week.map((d) => d.tokens), 0);
+  const weekTotal = week.reduce((sum, d) => sum + d.tokens, 0);
 
   return (
     <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
@@ -161,25 +170,21 @@ const HomeScreen = () => {
 
       {/* Inline stats */}
       <View style={styles.stats}>
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <Pressable
             key={s.label}
             style={styles.stat}
-            onPress={() =>
-              router.push(
-                s.label === 'Pending'
-                  ? '/(app)/(tabs)/business'
-                  : s.label === 'Followers'
-                    ? '/(app)/(tabs)/me/followers'
-                    : '/(app)/(tabs)/calls/broadcast-history',
-              )
-            }
+            onPress={() => router.push(s.route)}
             accessibilityRole="button"
             accessibilityLabel={`${s.value} ${s.label}`}
           >
-            <Text variant="h2" color={s.color} style={styles.statValue}>
-              {s.value}
-            </Text>
+            {loadingEarnings ? (
+              <Skeleton width={56} height={20} round={10} />
+            ) : (
+              <Text variant="h2" color={s.color} style={styles.statValue}>
+                {s.value}
+              </Text>
+            )}
             <Text variant="bodySm" color="textMuted">
               {s.label}
             </Text>
@@ -204,21 +209,27 @@ const HomeScreen = () => {
         </View>
 
         <View style={styles.chart}>
-          {CHART.map((bar) => (
-            <View key={bar.day} style={styles.barCol}>
-              <View style={styles.barTrack}>
-                <LinearGradient
-                  colors={gradients.cta}
-                  start={{ x: 0, y: 1 }}
-                  end={{ x: 0, y: 0 }}
-                  style={[styles.bar, { height: `${bar.value * 100}%` }]}
-                />
+          {week.map((day) => {
+            const height: `${number}%` = peakDay
+              ? `${(day.tokens / peakDay) * 100}%`
+              : '0%';
+
+            return (
+              <View key={day.date} style={styles.barCol}>
+                <View style={styles.barTrack}>
+                  <LinearGradient
+                    colors={gradients.cta}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 0, y: 0 }}
+                    style={[styles.bar, { height }]}
+                  />
+                </View>
+                <Text variant="bodySm" color="textMuted" style={styles.barLabel}>
+                  {shortWeekday(day.date)}
+                </Text>
               </View>
-              <Text variant="bodySm" color="textMuted" style={styles.barLabel}>
-                {bar.day}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         <View style={styles.legend}>
@@ -235,7 +246,7 @@ const HomeScreen = () => {
             </Text>
           </View>
           <Text variant="bodySm" color="textMuted" style={styles.legendSummary}>
-            This week: <Text style={styles.legendStrong}>312 tk</Text> up 18%
+            This week: <Text style={styles.legendStrong}>{formatTokens(weekTotal)}</Text>
           </Text>
         </View>
       </Card>
@@ -245,43 +256,72 @@ const HomeScreen = () => {
         Recent Broadcasts
       </Text>
       <View style={styles.broadcasts}>
-        {BROADCASTS.map((b, i) => {
-          const last = i === BROADCASTS.length - 1;
+        {loadingBroadcasts ? (
+          <View style={styles.broadcastSkeleton}>
+            <Skeleton height={38} round={radius.md} />
+            <Skeleton height={38} round={radius.md} />
+            <Skeleton height={38} round={radius.md} />
+          </View>
+        ) : !broadcasts?.length ? (
+          <EmptyState
+            icon="video"
+            title="No broadcasts yet"
+            description="Your first show will show up here."
+          />
+        ) : (
+          broadcasts.map((b, i) => {
+            const last = i === broadcasts.length - 1;
+            const viewers = compactCount(b.totalUniqueViewers);
 
-          return (
-            <Pressable
-              key={b.id}
-              style={[styles.broadcastRow, last ? styles.broadcastRowLast : null]}
-              onPress={() =>
-                router.push({
-                  pathname: '/(app)/(tabs)/home/broadcast-detail',
-                  params: { broadcastId: b.id },
-                })
-              }
-              accessibilityRole="button"
-              accessibilityLabel={b.title}
-            >
-              {/* Timeline rail — runs from this dot down to the next one. */}
-              {last ? null : <View style={styles.timeline} />}
-              <View style={styles.gutter}>
-                <View style={[styles.statusDot, { backgroundColor: b.dot }]} />
-              </View>
-              <View style={styles.broadcastText}>
-                <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>
-                  {b.title}
-                </Text>
-                <View style={styles.broadcastMeta}>
-                  <Text variant="bodySm" color="textMuted" style={styles.broadcastMetaText}>
-                    {b.meta}
-                  </Text>
-                  <Text variant="bodySm" color="green" style={styles.broadcastEarned}>
-                    {b.earned}
-                  </Text>
+            return (
+              <Pressable
+                key={b.broadcastId}
+                style={[styles.broadcastRow, last ? styles.broadcastRowLast : null]}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(app)/(tabs)/home/broadcast-detail',
+                    params: { broadcastId: b.broadcastId },
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={b.title}
+              >
+                {/* Timeline rail — runs from this dot down to the next one. */}
+                {last ? null : <View style={styles.timeline} />}
+                <View style={styles.gutter}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      {
+                        backgroundColor:
+                          b.endReason === CLEAN_END ? colors.green : colors.gold,
+                      },
+                    ]}
+                  />
                 </View>
-              </View>
-            </Pressable>
-          );
-        })}
+                <View style={styles.broadcastText}>
+                  <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>
+                    {b.title}
+                  </Text>
+                  <View style={styles.broadcastMeta}>
+                    <Text
+                      variant="bodySm"
+                      color="textMuted"
+                      style={styles.broadcastMetaText}
+                      numberOfLines={1}
+                    >
+                      {shortDate(b.startedAtUtc)} · {duration(b.durationSeconds)} ·{' '}
+                      {viewers} {b.totalUniqueViewers === 1 ? 'viewer' : 'viewers'}
+                    </Text>
+                    <Text variant="bodySm" color="green" style={styles.broadcastEarned}>
+                      +{b.totalRevenueTokens} tk
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })
+        )}
       </View>
 
       {/* Alerts */}
@@ -483,6 +523,9 @@ const styles = StyleSheet.create({
   // Broadcasts — a timeline: fixed dot gutter on the left, rail linking the dots.
   broadcasts: {
     marginBottom: 24,
+  },
+  broadcastSkeleton: {
+    gap: 14,
   },
   broadcastRow: {
     flexDirection: 'row',

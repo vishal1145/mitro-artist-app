@@ -3,15 +3,16 @@ import { z } from 'zod';
 import { LIMITS } from '@utils/validators';
 
 /**
- * Login accepts an email OR a username as the identifier, so we validate a
- * relaxed identifier rather than a strict email. Password uses length-only
- * rules here (full complexity is enforced at registration).
+ * The server takes a single `phoneOrStageName` field and works out which it
+ * is, so this validates a relaxed identifier rather than a specific format.
+ * Password uses length-only rules here — full complexity is enforced at
+ * registration.
  */
 export const loginSchema = z.object({
   identifier: z
     .string()
     .trim()
-    .min(3, 'Enter your email or username.')
+    .min(3, 'Enter your mobile number or stage name.')
     .max(255, 'That value is too long.'),
   password: z
     .string()

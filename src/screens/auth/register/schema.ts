@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
-import {
-  authPasswordSchema,
-  displayNameSchema,
-  mobileSchema,
-  stageNameSchema,
-} from '@utils/validators';
+import { authPasswordSchema, mobileSchema, stageNameSchema } from '@utils/validators';
 
-/** Register form: display name, stage name, mobile number, password. */
+/**
+ * Register form: stage name, mobile number, password.
+ *
+ * No display name — `POST /api/artist/auth/register` accepts only
+ * `{ phone, stageName, password }`. The display name is set later from
+ * Settings → Public details.
+ */
 export const registerSchema = z.object({
-  name: displayNameSchema,
   username: stageNameSchema,
   mobile: mobileSchema,
   password: authPasswordSchema,

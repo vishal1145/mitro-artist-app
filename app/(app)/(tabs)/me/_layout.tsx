@@ -8,6 +8,7 @@ const MeStackLayout = () => (
     <Stack.Screen name="index" />
     <Stack.Screen name="followers" />
     <Stack.Screen name="messages" />
+    <Stack.Screen name="photos" />
     <Stack.Screen name="settings" />
     <Stack.Screen name="kyc-payouts" />
   </Stack>

@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Header, OtpInput, Screen } from '@components/shared';
+import { Header, InfoCallout, OtpInput, Screen } from '@components/shared';
 import { Button, Text } from '@components/ui';
 import { useOtp } from '@screens/auth/otp/useOtp';
 import { spacing } from '@theme';
@@ -17,6 +17,7 @@ const OtpVerifyScreen = () => {
     cooldownSec,
     canResend,
     mobile,
+    otpHint,
     resend,
     goBack,
   } = useOtp();
@@ -33,6 +34,16 @@ const OtpVerifyScreen = () => {
           {mobile ? `+91 ${mobile}` : 'your mobile'}
         </Text>
       </View>
+
+      {/* Shown only while the server echoes the code back instead of texting
+          it. Wiring a real SMS provider removes this line automatically. */}
+      {otpHint ? (
+        <View style={styles.hint}>
+          <InfoCallout icon="info" tone="info">
+            Test mode — your code is {otpHint}
+          </InfoCallout>
+        </View>
+      ) : null}
 
       <OtpInput
         value={code}
@@ -81,6 +92,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: spacing.sm,
     marginBottom: spacing.xl,
+  },
+  hint: {
+    marginBottom: spacing.lg,
   },
   status: {
     minHeight: spacing.xl,

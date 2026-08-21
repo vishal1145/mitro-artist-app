@@ -10,6 +10,7 @@ import {
   Screen,
 } from '@components/shared';
 import { GradientButton, Text } from '@components/ui';
+import { useStageNameAvailability } from '@hooks/useStageNameAvailability';
 import { useRegister } from '@screens/auth/register/useRegister';
 import { layout } from '@theme';
 import { authPasswordStrength } from '@utils/validators';
@@ -20,6 +21,8 @@ const RegisterScreen = () => {
     useRegister();
 
   const password = useWatch({ control, name: 'password' }) ?? '';
+  const stageName = useWatch({ control, name: 'username' }) ?? '';
+  const { isChecking, isAvailable } = useStageNameAvailability(stageName);
 
   return (
     <Screen
@@ -40,30 +43,38 @@ const RegisterScreen = () => {
         </View>
 
         <View style={styles.fields}>
-          <FormInput
-            control={control}
-            name="name"
-            placeholder="Enter your display name"
-            autoCapitalize="words"
-            autoComplete="name"
-            returnKeyType="next"
-            maxLength={24}
-            leftIcon="user"
-          />
-
-          <FormInput
-            control={control}
-            name="username"
-            placeholder="Choose your stage name"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="username-new"
-            returnKeyType="next"
-            maxLength={20}
-            leftIcon="at-sign"
-            // Strip spaces and force lowercase as the user types.
-            transform={(v) => v.replace(/\s+/g, '').toLowerCase()}
-          />
+          {/* No display-name field: the register endpoint accepts only
+              phone, stageName and password. Display name is set later from
+              Settings -> Public details. */}
+          <View>
+            <FormInput
+              control={control}
+              name="username"
+              placeholder="Choose your stage name"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username-new"
+              returnKeyType="next"
+              maxLength={20}
+              leftIcon="at-sign"
+              // Strip spaces and force lowercase as the user types.
+              transform={(v) => v.replace(/\s+/g, '').toLowerCase()}
+            />
+            {/* Advisory only — the server still has the final say on submit. */}
+            {isChecking ? (
+              <Text variant="bodySm" color="textSecondary" style={styles.availability}>
+                Checking availability…
+              </Text>
+            ) : isAvailable === true ? (
+              <Text variant="bodySm" color="success" style={styles.availability}>
+                {stageName} is available
+              </Text>
+            ) : isAvailable === false ? (
+              <Text variant="bodySm" color="error" style={styles.availability}>
+                {stageName} is taken
+              </Text>
+            ) : null}
+          </View>
 
           <FormInput
             control={control}
@@ -163,6 +174,9 @@ const styles = StyleSheet.create({
   fields: {
     gap: 14,
     marginTop: 32,
+  },
+  availability: {
+    marginTop: 8,
   },
   meter: {
     marginTop: 8,

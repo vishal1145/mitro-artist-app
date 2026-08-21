@@ -2,51 +2,108 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
-import { PageHeader, RingAvatar, Screen, SectionLabel } from '@components/shared';
+import {
+  AddRewardDialog,
+  AvatarPreview,
+  LabeledField,
+  LoadFailed,
+  PageHeader,
+  RingAvatar,
+  Screen,
+  SectionLabel,
+  Skeleton,
+  SkeletonListRow,
+  TextPromptDialog,
+} from '@components/shared';
 import { Text } from '@components/ui';
+import {
+  useCreateActivityMutation,
+  useCreateRewardMutation,
+  useFunWheel,
+  useRewardMenu,
+} from '@hooks/useCreatorSettings';
+import { SETTINGS_LIMITS } from '@screens/profile/settings/schema';
+import { useSettings } from '@screens/profile/settings/useSettings';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { getErrorMessage } from '@utils/errorHandler';
 import { rf } from '@utils/responsive';
-
-interface Reward {
-  id: string;
-  title: string;
-  sub: string;
-  price: number;
-  on: boolean;
-}
-
-const INITIAL_REWARDS: Reward[] = [
-  { id: 'r1', title: 'Say My Name', sub: 'Shoutout during your live show', price: 20, on: true },
-  { id: 'r2', title: 'Read My Message', sub: "Read the fan's note on stream", price: 25, on: true },
-  { id: 'r3', title: 'Dance Request', sub: 'Hidden while off', price: 40, on: false },
-];
-
-const INITIAL_ACTIVITIES = [
-  'Dance for 10 Seconds',
-  'Free Shoutout',
-  '10 Bonus Tokens',
-  'Blow a Kiss',
-  'Better Luck Next Time',
-  'Song Request',
-];
 
 const SettingsScreen = () => {
   const router = useRouter();
 
-  const [displayName, setDisplayName] = useState('yash_7247');
-  const [city, setCity] = useState('');
-  const [bio, setBio] = useState('');
-  const [rewards, setRewards] = useState(INITIAL_REWARDS);
-  const [wheelOn, setWheelOn] = useState(true);
-  const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
+  const {
+    profile,
+    isLoading,
+    loadError,
+    retry,
+    control,
+    isDirty,
+    isValid,
+    isSaving,
+    saveError,
+    isSaved,
+    save,
+    avatarUrl,
+    isUploadingAvatar,
+    avatarError,
+    changeAvatar,
+    pendingAvatarUri,
+    confirmAvatar,
+    cancelAvatar,
+    openChangePassword,
+    openChangeNumber,
+  } = useSettings();
 
-  const toggleReward = (id: string) =>
-    setRewards((prev) => prev.map((r) => (r.id === id ? { ...r, on: !r.on } : r)));
+  // Rewards can be added; toggling and deleting have no endpoint yet, and the
+  // wheel is read-only entirely.
+  const { data: rewards, isLoading: loadingRewards } = useRewardMenu();
+  const { data: wheel, isLoading: loadingWheel } = useFunWheel();
 
-  const removeActivity = (index: number) =>
-    setActivities((prev) => prev.filter((_, i) => i !== index));
+  const { mutateAsync: createReward, isPending: isCreatingReward } =
+    useCreateRewardMutation();
+  const [addingReward, setAddingReward] = useState(false);
+  const [rewardError, setRewardError] = useState<string | null>(null);
+
+  const submitReward = async (rewardName: string, rewardTokens: number) => {
+    setRewardError(null);
+    try {
+      // description goes as null — the server fills it with the name.
+      await createReward({ rewardName, rewardTokens, description: null });
+      setAddingReward(false);
+    } catch (error) {
+      // Dialog stays open so the artist doesn't retype it.
+      setRewardError(getErrorMessage(error));
+    }
+  };
+
+  const { mutateAsync: createActivity, isPending: isCreatingActivity } =
+    useCreateActivityMutation();
+  const [addingActivity, setAddingActivity] = useState(false);
+  const [activityError, setActivityError] = useState<string | null>(null);
+
+  /*
+   * Local-only until the endpoints land.
+   *
+   * The reward toggle and the activity × both move the UI but send nothing —
+   * there's no PUT for a reward's isActive and no DELETE for an activity yet.
+   * Both reset on reload, which is the honest behaviour for a control that
+   * can't persist. When the endpoints arrive these two pieces of state are
+   * what get replaced by mutations.
+   */
+  const [rewardToggles, setRewardToggles] = useState<Record<string, boolean>>({});
+  const [hiddenActivities, setHiddenActivities] = useState<string[]>([]);
+
+  const submitActivity = async (activityName: string) => {
+    setActivityError(null);
+    try {
+      await createActivity({ activityName });
+      setAddingActivity(false);
+    } catch (error) {
+      setActivityError(getErrorMessage(error));
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -74,116 +131,224 @@ const SettingsScreen = () => {
         {/* Identity */}
         <SectionLabel style={styles.sectionLabel}>IDENTITY</SectionLabel>
 
-        <View style={styles.identity}>
-          <RingAvatar initials="Y7" size={62} ring={2} />
-          <View style={styles.identityText}>
-            <Text variant="bodyLg" color="textPrimary" style={styles.handle}>
-              @yash_7247
-            </Text>
-            <View style={styles.verified}>
-              <Feather name="check-circle" size={rf(11)} color={colors.green} />
-              <Text variant="label" color="green">
-                VERIFIED CREATOR
+        {isLoading ? (
+          <SkeletonListRow />
+        ) : loadError ? (
+          <LoadFailed message={loadError} onRetry={retry} />
+        ) : (
+          <>
+            <View style={styles.identity}>
+              <Pressable
+                onPress={changeAvatar}
+                disabled={isUploadingAvatar}
+                accessibilityRole="button"
+                accessibilityLabel="Change profile picture"
+              >
+                <RingAvatar
+                  initials={(profile?.stageName ?? '?').slice(0, 2).toUpperCase()}
+                  imageUrl={avatarUrl}
+                  size={62}
+                  ring={2}
+                />
+              </Pressable>
+
+              <View style={styles.identityText}>
+                <Text variant="bodyLg" color="textPrimary" style={styles.handle}>
+                  @{profile?.stageName ?? ''}
+                </Text>
+                {profile?.approvalStatus === 'approved' ? (
+                  <View style={styles.verified}>
+                    <Feather name="check-circle" size={rf(11)} color={colors.green} />
+                    <Text variant="label" color="green">
+                      VERIFIED CREATOR
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.pending}>
+                    <Feather name="clock" size={rf(11)} color={colors.gold} />
+                    <Text variant="label" color="gold">
+                      {(profile?.approvalStatus ?? 'pending').toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <Text variant="bodySm" color="textMuted">
+                  {isUploadingAvatar ? 'Uploading…' : 'Tap your picture to change it'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Permission errors happen before anything is picked, so they
+                surface here; upload errors show inside the preview instead. */}
+            {avatarError && !pendingAvatarUri ? (
+              <Text variant="bodySm" color="error" style={styles.inlineError}>
+                {avatarError}
+              </Text>
+            ) : null}
+
+            {profile?.rejectedReason ? (
+              <Text variant="bodySm" color="error" style={styles.inlineError}>
+                {profile.rejectedReason}
+              </Text>
+            ) : null}
+
+            <View style={styles.fieldRow}>
+              <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
+                MOBILE
+              </Text>
+              <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
+                +91 {profile?.phone ?? ''}
+              </Text>
+              <Text variant="label" color="pink" onPress={openChangeNumber}>
+                EDIT
               </Text>
             </View>
-          </View>
-        </View>
 
-        <View style={styles.fieldRow}>
-          <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
-            MOBILE
-          </Text>
-          <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
-            +91 98765 43210
-          </Text>
-          <Text variant="label" color="pink" onPress={() => undefined}>
-            EDIT
-          </Text>
-        </View>
+            <View style={styles.fieldRow}>
+              <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
+                PASSWORD
+              </Text>
+              <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
+                ••••••••
+              </Text>
+              <Text variant="label" color="pink" onPress={openChangePassword}>
+                CHANGE
+              </Text>
+            </View>
 
-        <View style={styles.fieldRow}>
-          <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
-            PASSWORD
-          </Text>
-          <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
-            ••••••••
-          </Text>
-          <Text variant="label" color="pink" onPress={() => undefined}>
-            CHANGE
-          </Text>
-        </View>
+            {profile?.categoryName ? (
+              <View style={styles.fieldRow}>
+                <Text variant="label" color="textMuted" style={styles.fieldRowLabel}>
+                  CATEGORY
+                </Text>
+                <Text variant="bodyLg" color="textPrimary" style={styles.fieldRowValue}>
+                  {profile.categoryName}
+                </Text>
+              </View>
+            ) : null}
+          </>
+        )}
 
         {/* Public details */}
         <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
           PUBLIC DETAILS
         </SectionLabel>
 
-        <Text variant="label" color="textMuted" style={styles.inputLabel}>
-          DISPLAY NAME
-        </Text>
-        <TextInput
-          value={displayName}
-          onChangeText={setDisplayName}
-          style={styles.input}
-          accessibilityLabel="Display name"
-        />
+        {/* Skeleton the whole form, not just the identity block — otherwise
+            the fields render empty and visibly fill when the profile lands. */}
+        {isLoading ? (
+          <View style={styles.formSkeleton}>
+            <Skeleton height={54} round={radius.input} />
+            <Skeleton height={54} round={radius.input} />
+            <Skeleton height={96} round={radius.input} />
+          </View>
+        ) : (
+          <>
+            {/* Stage name has its own endpoint, not the profile update — see
+                useSettings. It's the handle fans search for, hence the rename. */}
+            <LabeledField
+              control={control}
+              name="stageName"
+              label="STAGE NAME"
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={20}
+              transform={(v) => v.replace(/\s+/g, '').toLowerCase()}
+            />
 
-        <Text variant="label" color="textMuted" style={styles.inputLabel}>
-          CITY / REGION
-        </Text>
-        <TextInput
-          value={city}
-          onChangeText={setCity}
-          placeholder="e.g. Mumbai, India"
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          accessibilityLabel="City or region"
-        />
+            <LabeledField
+              control={control}
+              name="bio"
+              label="BIO"
+              placeholder="A line fans see under your name"
+              maxLength={SETTINGS_LIMITS.bio}
+              counter={SETTINGS_LIMITS.bio}
+            />
 
-        <Text variant="label" color="textMuted" style={styles.inputLabel}>
-          BIO
-        </Text>
-        <TextInput
-          value={bio}
-          onChangeText={setBio}
-          placeholder="Tell your fans a bit about yourself..."
-          placeholderTextColor={colors.textMuted}
-          style={[styles.input, styles.textarea]}
-          multiline
-          accessibilityLabel="Bio"
-        />
+            <LabeledField
+              control={control}
+              name="aboutMe"
+              label="ABOUT ME"
+              placeholder="Tell your fans a bit about yourself..."
+              multiline
+              maxLength={SETTINGS_LIMITS.aboutMe}
+              counter={SETTINGS_LIMITS.aboutMe}
+            />
+
+            {/* Rates */}
+            <SectionLabel divider style={styles.sectionLabel}>
+              YOUR RATES
+            </SectionLabel>
+
+            <View style={styles.rates}>
+              <View style={styles.rate}>
+                <LabeledField
+                  control={control}
+                  name="privateRate"
+                  label="PRIVATE / MIN"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  transform={(v) => v.replace(/\D/g, '')}
+                />
+              </View>
+
+              <View style={styles.rate}>
+                <LabeledField
+                  control={control}
+                  name="groupRate"
+                  label="GROUP / MIN"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  transform={(v) => v.replace(/\D/g, '')}
+                />
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Reward menu */}
         <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
           REWARD MENU
         </SectionLabel>
 
-        {rewards.map((r, i) => (
-          <View key={r.id} style={[styles.reward, i === 0 ? null : styles.rowDivider]}>
-            <View style={styles.rewardText}>
-              <Text variant="bodyLg" color="textPrimary" style={styles.rewardTitle}>
-                {r.title}
-              </Text>
-              <Text variant="bodySm" color="textMuted">
-                {r.sub}
-              </Text>
-            </View>
-
-            <Text variant="bodyLg" color="gold" style={styles.rewardPrice}>
-              {r.price}
-            </Text>
-
-            <Switch
-              value={r.on}
-              onValueChange={() => toggleReward(r.id)}
-              trackColor={{ false: colors.cardRaised, true: colors.pink }}
-              thumbColor={colors.white}
-              accessibilityLabel={`${r.title} reward`}
-            />
+        {loadingRewards ? (
+          <View style={styles.listSkeleton}>
+            <Skeleton height={40} round={radius.md} />
+            <Skeleton height={40} round={radius.md} />
+            <Skeleton height={40} round={radius.md} />
           </View>
-        ))}
+        ) : (
+          (rewards ?? []).map((r, i) => (
+            <View key={r.id} style={[styles.reward, i === 0 ? null : styles.rowDivider]}>
+              <View style={styles.rewardText}>
+                <Text variant="bodyLg" color="textPrimary" style={styles.rewardTitle}>
+                  {r.rewardName}
+                </Text>
+                {r.description ? (
+                  <Text variant="bodySm" color="textMuted">
+                    {r.description}
+                  </Text>
+                ) : null}
+              </View>
+
+              <Text variant="bodyLg" color="gold" style={styles.rewardPrice}>
+                {r.rewardTokens}
+              </Text>
+
+              <Switch
+                value={rewardToggles[r.id] ?? r.isActive}
+                onValueChange={(next) =>
+                  setRewardToggles((prev) => ({ ...prev, [r.id]: next }))
+                }
+                trackColor={{ false: colors.cardRaised, true: colors.pink }}
+                thumbColor={colors.white}
+                accessibilityLabel={`${r.rewardName} reward`}
+              />
+            </View>
+          ))
+        )}
 
         <Pressable
+          onPress={() => setAddingReward(true)}
           style={styles.dashedBtn}
           accessibilityRole="button"
           accessibilityLabel="Add a reward"
@@ -199,59 +364,71 @@ const SettingsScreen = () => {
             FUN WHEEL
           </SectionLabel>
           <Switch
-            value={wheelOn}
-            onValueChange={setWheelOn}
+            value={wheel?.isActive ?? false}
+            disabled
             trackColor={{ false: colors.cardRaised, true: colors.pink }}
             thumbColor={colors.white}
             accessibilityLabel="Fun wheel enabled"
           />
         </View>
 
-        <View style={styles.wheelRow}>
-          <LinearGradient
-            colors={gradients.ring}
-            start={gradientDirection.diagonal.start}
-            end={gradientDirection.diagonal.end}
-            style={styles.wheelDisc}
-          />
-          <Text variant="bodyLg" color="textPrimary" style={styles.wheelText}>
-            Spin &amp; Win · 25 coins per spin
-          </Text>
-        </View>
-
-        <SectionLabel style={styles.sectionLabel}>
-          {`ACTIVITIES (${activities.length}–20)`}
-        </SectionLabel>
-
-        {activities.map((a, i) => (
-          <View key={a} style={[styles.activity, i === 0 ? null : styles.rowDivider]}>
-            <Text variant="bodySm" color="textMuted" style={styles.activityIndex}>
-              {i + 1}
-            </Text>
-            <Text variant="bodyLg" color="textPrimary" style={styles.activityTitle}>
-              {a}
-            </Text>
-            <Pressable
-              onPress={() => removeActivity(i)}
-              hitSlop={8}
-              style={styles.removeBtn}
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${a}`}
-            >
-              <Feather name="x" size={rf(14)} color={colors.red} />
-            </Pressable>
+        {loadingWheel ? (
+          <View style={styles.listSkeleton}>
+            <Skeleton height={34} round={radius.md} />
+            <Skeleton height={40} round={radius.md} />
+            <Skeleton height={40} round={radius.md} />
           </View>
-        ))}
+        ) : (
+          <>
+            <View style={styles.wheelRow}>
+              <LinearGradient
+                colors={gradients.ring}
+                start={gradientDirection.diagonal.start}
+                end={gradientDirection.diagonal.end}
+                style={styles.wheelDisc}
+              />
+              <Text variant="bodyLg" color="textPrimary" style={styles.wheelText}>
+                {wheel
+                  ? `${wheel.wheelName} · ${wheel.pricePerSpin} coins per spin`
+                  : 'No wheel set up'}
+              </Text>
+            </View>
 
-        <Pressable
-          style={styles.dashedBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Add an activity"
-        >
-          <Text variant="bodyLg" color="textMuted">
-            + Add activity
-          </Text>
-        </Pressable>
+            <SectionLabel style={styles.sectionLabel}>
+              {`ACTIVITIES (${wheel?.activities.length ?? 0})`}
+            </SectionLabel>
+
+            {(wheel?.activities ?? [])
+              .filter((a) => !hiddenActivities.includes(a.id))
+              .map((a, i) => (
+                <View key={a.id} style={[styles.activity, i === 0 ? null : styles.rowDivider]}>
+                  <Text variant="bodyLg" color="textPrimary" style={styles.activityTitle}>
+                    {a.activityName}
+                  </Text>
+                  <Pressable
+                    onPress={() => setHiddenActivities((prev) => [...prev, a.id])}
+                    hitSlop={8}
+                    style={styles.removeBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${a.activityName}`}
+                  >
+                    <Feather name="x" size={rf(14)} color={colors.red} />
+                  </Pressable>
+                </View>
+              ))}
+
+            <Pressable
+              onPress={() => setAddingActivity(true)}
+              style={styles.dashedBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Add an activity"
+            >
+              <Text variant="bodyLg" color="textMuted">
+                + Add activity
+              </Text>
+            </Pressable>
+          </>
+        )}
 
         {/* KYC shortcut */}
         <Pressable
@@ -286,8 +463,21 @@ const SettingsScreen = () => {
 
       {/* Sticky save — the form is long, so the action follows the scroll. */}
       <View style={styles.saveDock} pointerEvents="box-none">
+        {saveError ? (
+          <Text variant="bodySm" color="error" align="center" style={styles.saveError}>
+            {saveError}
+          </Text>
+        ) : null}
+
         <Pressable
-          style={styles.saveBtn}
+          onPress={save}
+          // Nothing to send when the draft matches the server, and nothing
+          // worth sending while a field is failing validation.
+          disabled={!isDirty || !isValid || isSaving}
+          style={[
+            styles.saveBtn,
+            !isDirty || !isValid || isSaving ? styles.saveBtnIdle : null,
+          ]}
           accessibilityRole="button"
           accessibilityLabel="Save all changes"
         >
@@ -297,10 +487,49 @@ const SettingsScreen = () => {
             end={gradientDirection.horizontal.end}
             style={styles.saveFill}
           >
-            <Text style={styles.saveLabel}>Save All Changes</Text>
+            <Text style={styles.saveLabel}>
+              {isSaving ? 'Saving…' : isSaved && !isDirty ? 'Saved' : 'Save All Changes'}
+            </Text>
           </LinearGradient>
         </Pressable>
       </View>
+
+      <AddRewardDialog
+        visible={addingReward}
+        isSaving={isCreatingReward}
+        error={rewardError}
+        onSubmit={(name, tokens) => void submitReward(name, tokens)}
+        onCancel={() => {
+          setAddingReward(false);
+          setRewardError(null);
+        }}
+      />
+
+      <TextPromptDialog
+        visible={addingActivity}
+        title="Add activity"
+        label="ACTIVITY NAME"
+        placeholder="e.g. Jackpot"
+        confirmLabel="Add activity"
+        isSaving={isCreatingActivity}
+        error={activityError}
+        onSubmit={(name) => void submitActivity(name)}
+        onCancel={() => {
+          setAddingActivity(false);
+          setActivityError(null);
+        }}
+      />
+
+      {/* Our own confirm step, in place of the OS crop screen. */}
+      <AvatarPreview
+        visible={Boolean(pendingAvatarUri)}
+        uri={pendingAvatarUri}
+        isUploading={isUploadingAvatar}
+        error={avatarError}
+        onConfirm={confirmAvatar}
+        onChooseAnother={changeAvatar}
+        onCancel={cancelAvatar}
+      />
     </View>
   );
 };
@@ -344,6 +573,36 @@ const styles = StyleSheet.create({
   },
   handle: {
     fontFamily: fontFamily.bold,
+  },
+  inlineError: {
+    marginTop: 10,
+  },
+  formSkeleton: {
+    gap: 18,
+    marginBottom: 18,
+  },
+  listSkeleton: {
+    gap: 14,
+    marginBottom: 8,
+  },
+  rates: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  rate: {
+    flex: 1,
+  },
+  pending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.borderGold,
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
   verified: {
     flexDirection: 'row',
@@ -510,6 +769,13 @@ const styles = StyleSheet.create({
     left: layout.screenPadding,
     right: layout.screenPadding,
     bottom: 108,
+  },
+  saveError: {
+    marginBottom: 10,
+  },
+  // Dimmed rather than hidden, so the button doesn't jump around the screen.
+  saveBtnIdle: {
+    opacity: 0.45,
   },
   saveBtn: {
     height: 54,

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -8,6 +9,11 @@ import { rf } from '@utils/responsive';
 
 export interface RingAvatarProps {
   initials: string;
+  /**
+   * Uploaded profile picture. Falls back to initials when absent, so a
+   * not-yet-set avatar and a failed load look the same rather than blank.
+   */
+  imageUrl?: string | null;
   /** Outer diameter including the ring. */
   size?: number;
   /** Ring thickness. */
@@ -23,6 +29,7 @@ export interface RingAvatarProps {
  */
 const RingAvatarComponent = ({
   initials,
+  imageUrl,
   size = 96,
   ring = 3,
   badge,
@@ -44,7 +51,17 @@ const RingAvatarComponent = ({
           end={gradientDirection.diagonal.end}
           style={[styles.inner, { width: inner, height: inner, borderRadius: inner / 2 }]}
         >
-          <Text style={[styles.initials, { fontSize: inner * 0.34 }]}>{initials}</Text>
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={{ width: inner, height: inner, borderRadius: inner / 2 }}
+              contentFit="cover"
+              transition={150}
+              accessibilityLabel="Profile picture"
+            />
+          ) : (
+            <Text style={[styles.initials, { fontSize: inner * 0.34 }]}>{initials}</Text>
+          )}
         </LinearGradient>
       </LinearGradient>
 

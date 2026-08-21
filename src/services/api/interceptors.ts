@@ -6,7 +6,7 @@ import {
 
 import { API_CONFIG, REGEX, SECURE_KEYS, TIMING } from '@constants';
 import { secureStorage } from '@services/storage';
-import type { ApiResponse, AuthTokens, RefreshTokenPayload } from '@app-types/api';
+import type { AuthTokens, RefreshResponse } from '@app-types/api';
 import { logger } from '@utils/logger';
 
 import { api, refreshClient } from './client';
@@ -39,22 +39,22 @@ export const registerAuthHandlers = (handlers: {
 // --- Single-flight refresh coordination ---
 let refreshPromise: Promise<string | null> | null = null;
 
+/**
+ * Renew the access token.
+ *
+ * The server keeps the refresh credential in an httpOnly `myartist_art_rt`
+ * cookie, so this call carries no body and reads nothing from storage — the
+ * platform's cookie jar supplies it. A missing or expired cookie comes back
+ * 401, which lands in the catch and ends the session.
+ */
 const performRefresh = async (): Promise<string | null> => {
-  const refreshToken = await secureStorage.get(SECURE_KEYS.refreshToken);
-  if (!refreshToken) {
-    return null;
-  }
-
   try {
-    const payload: RefreshTokenPayload = { refreshToken };
-    const response = await refreshClient.post<ApiResponse<AuthTokens>>(
+    const response = await refreshClient.post<RefreshResponse>(
       ENDPOINTS.auth.refresh,
-      payload,
     );
-    const tokens = response.data.data;
+    const tokens: AuthTokens = { accessToken: response.data.accessToken };
 
     await secureStorage.set(SECURE_KEYS.accessToken, tokens.accessToken);
-    await secureStorage.set(SECURE_KEYS.refreshToken, tokens.refreshToken);
     onTokensRefreshed?.(tokens);
 
     return tokens.accessToken;
@@ -71,8 +71,10 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
 export const attachInterceptors = (): void => {
   api.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
+      // Release builds refuse plaintext outright. Dev builds are allowed to
+      // talk to a local API over http:// — see the matching guard in client.ts.
       const url = `${config.baseURL ?? API_CONFIG.baseUrl}${config.url ?? ''}`;
-      if (!REGEX.httpsOnly.test(url)) {
+      if (!REGEX.httpsOnly.test(url) && !__DEV__) {
         return Promise.reject(
           new Error('Blocked non-HTTPS request. HTTPS is required.'),
         );

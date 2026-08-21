@@ -3,18 +3,21 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 
-import { authApi } from '@services/api';
+import { useSendPasswordResetOtpMutation } from '@hooks/useAuthMutations';
+import { setOtpHint } from '@screens/auth/otp/otpHint';
+import { getErrorMessage } from '@utils/errorHandler';
 import { logger } from '@utils/logger';
 
-import {
-  forgotPasswordSchema,
-  type ForgotPasswordFormValues,
-} from './schema';
+import { forgotPasswordSchema, type ForgotPasswordFormValues } from './schema';
 import type { UseForgotPasswordResult } from './types';
 
-/** Forgot-password logic. On success, routes to OTP verification. */
+/**
+ * Password reset step 1 — request the code, then hand off to the shared OTP
+ * screen. Step 2 verifies, step 3 sets the new password.
+ */
 export const useForgotPassword = (): UseForgotPasswordResult => {
   const router = useRouter();
+  const { mutateAsync: sendOtp, isPending } = useSendPasswordResetOtpMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
@@ -30,26 +33,28 @@ export const useForgotPassword = (): UseForgotPasswordResult => {
   const onSubmit = useCallback<SubmitHandler<ForgotPasswordFormValues>>(
     async (values) => {
       setSubmitError(null);
-      const result = await authApi.forgotPassword(values);
+      const phone = values.mobile.trim();
 
-      if (!result.success) {
-        setSubmitError(result.error);
-        return;
+      try {
+        const sent = await sendOtp({ phone });
+        setOtpHint(sent.otp);
+
+        logger.info('Password reset code requested');
+        router.push({
+          pathname: '/(auth)/otp-verify',
+          params: { mobile: phone, origin: 'forgot-password' },
+        });
+      } catch (error) {
+        setSubmitError(getErrorMessage(error));
       }
-
-      logger.info('Password reset code requested');
-      router.push({
-        pathname: '/(auth)/otp-verify',
-        params: { mobile: values.mobile, origin: 'forgot-password' },
-      });
     },
-    [router],
+    [router, sendOtp],
   );
 
   return {
     control,
     isValid,
-    isSubmitting,
+    isSubmitting: isSubmitting || isPending,
     submitError,
     handleSubmit: handleSubmit(onSubmit),
     goBack: () => router.back(),

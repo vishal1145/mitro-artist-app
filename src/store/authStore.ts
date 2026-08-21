@@ -28,7 +28,14 @@ interface AuthState {
 
 const persistSession = async (session: AuthSession): Promise<void> => {
   await secureStorage.set(SECURE_KEYS.accessToken, session.tokens.accessToken);
-  await secureStorage.set(SECURE_KEYS.refreshToken, session.tokens.refreshToken);
+  // The artist API issues an access token only. Clear any stale refresh token
+  // rather than writing `undefined`, so the interceptor doesn't try to renew
+  // with a token from a previous session.
+  if (session.tokens.refreshToken) {
+    await secureStorage.set(SECURE_KEYS.refreshToken, session.tokens.refreshToken);
+  } else {
+    await secureStorage.remove(SECURE_KEYS.refreshToken);
+  }
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
