@@ -24,6 +24,21 @@ export const API_CONFIG = {
   ),
 } as const;
 
+/**
+ * Escape hatch for internal test APKs that need to reach a plaintext LAN
+ * server (e.g. http://192.168.x.x:8081).
+ *
+ * Release builds normally refuse to send anything over http://. Setting
+ * EXPO_PUBLIC_ALLOW_INSECURE=true lifts that, and pairs with the Android
+ * `usesCleartextTraffic` permission in app.json — both are needed, since the
+ * OS blocks cleartext independently of our own guard.
+ *
+ * Opt-in and explicit precisely so it can't happen by accident: it must be
+ * false for any build that goes to the Play Store.
+ */
+export const ALLOW_INSECURE_HTTP: boolean =
+  process.env.EXPO_PUBLIC_ALLOW_INSECURE === 'true';
+
 /** Keys used with the secure (encrypted) store. Tokens ONLY. */
 export const SECURE_KEYS = {
   accessToken: 'mitro.auth.accessToken',

@@ -4,9 +4,10 @@ import {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
-import { API_CONFIG, REGEX, SECURE_KEYS, TIMING } from '@constants';
+import { ALLOW_INSECURE_HTTP, API_CONFIG, REGEX, SECURE_KEYS, TIMING } from '@constants';
 import { secureStorage } from '@services/storage';
 import type { AuthTokens, RefreshResponse } from '@app-types/api';
+import { AuthError } from '@utils/errorHandler';
 import { logger } from '@utils/logger';
 
 import { api, refreshClient } from './client';
@@ -74,9 +75,16 @@ export const attachInterceptors = (): void => {
       // Release builds refuse plaintext outright. Dev builds are allowed to
       // talk to a local API over http:// — see the matching guard in client.ts.
       const url = `${config.baseURL ?? API_CONFIG.baseUrl}${config.url ?? ''}`;
-      if (!REGEX.httpsOnly.test(url) && !__DEV__) {
+      if (!REGEX.httpsOnly.test(url) && !__DEV__ && !ALLOW_INSECURE_HTTP) {
+        // AuthError, not Error: its message passes through normalizeError
+        // untouched. A plain Error here became "Something went wrong. Please
+        // try again." on every screen of a release build — which hid the fact
+        // that the app was configured with a plaintext API URL and never made
+        // a single request.
         return Promise.reject(
-          new Error('Blocked non-HTTPS request. HTTPS is required.'),
+          new AuthError(
+            'This build can only connect over HTTPS. Rebuild with an https:// API URL.',
+          ),
         );
       }
 

@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 
-import { API_CONFIG, REGEX } from '@constants/app';
+import { ALLOW_INSECURE_HTTP, API_CONFIG, REGEX } from '@constants/app';
 import { logger } from '@utils/logger';
 
 /**
@@ -22,9 +22,10 @@ import { logger } from '@utils/logger';
  * failure is visible where it can be read.
  */
 if (!REGEX.httpsOnly.test(API_CONFIG.baseUrl)) {
-  if (__DEV__) {
-    logger.warn('API base URL is not HTTPS — allowed in dev only', {
+  if (__DEV__ || ALLOW_INSECURE_HTTP) {
+    logger.warn('API base URL is not HTTPS', {
       baseUrl: API_CONFIG.baseUrl,
+      allowedBy: __DEV__ ? 'dev build' : 'EXPO_PUBLIC_ALLOW_INSECURE',
     });
   } else {
     logger.error(

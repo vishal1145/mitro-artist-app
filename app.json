@@ -49,6 +49,14 @@
         }
       ],
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./src/static/images/splash-icon.png",
@@ -56,7 +64,8 @@
           "resizeMode": "contain",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true
