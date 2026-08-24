@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { SECURE_KEYS } from '@constants';
 import { authApi, registerAuthHandlers } from '@services/api';
+import { queryClient } from '@services/queryClient';
 import { secureStorage } from '@services/storage';
 import type { AuthSession, AuthTokens, User } from '@app-types/api';
 import { logger } from '@utils/logger';
@@ -60,6 +61,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   authenticate: async (session) => {
     await persistSession(session);
+    // Drop anything cached for a previous account before the new one's screens
+    // mount, so a fresh login never renders the last user's data.
+    queryClient.clear();
     set({
       token: session.tokens.accessToken,
       user: session.user,
@@ -72,12 +76,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    // Best-effort server logout; local cleanup happens regardless.
-    await authApi.logout();
+    // Best-effort server logout; local cleanup happens regardless, even if the
+    // network call fails.
+    try {
+      await authApi.logout();
+    } catch (error) {
+      logger.warn('Server logout failed; clearing local session anyway', {
+        error: String(error),
+      });
+    }
     await secureStorage.removeMany([
       SECURE_KEYS.accessToken,
       SECURE_KEYS.refreshToken,
     ]);
+    // Wipe every cached query so the next account can't see this user's
+    // profile, earnings, or transactions. Without this the stale cache shows
+    // until something happens to refetch it (e.g. changing the avatar).
+    queryClient.clear();
     set({ token: null, user: null, status: 'unauthenticated' });
   },
 }));

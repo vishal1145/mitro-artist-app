@@ -17,7 +17,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -29,6 +29,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppErrorBoundary } from '@components/shared';
 import { attachInterceptors } from '@services/api';
+import { queryClient } from '@services/queryClient';
 import {
   connectAuthInterceptors,
   useAppStore,
@@ -65,16 +66,6 @@ const navigationTheme = {
     notification: colors.error,
   },
 };
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30_000,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 /** Redirects between the (auth) and (app) groups based on auth + onboarding. */
 const useAuthGuard = (): void => {
