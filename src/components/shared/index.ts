@@ -18,6 +18,8 @@ export type { SocialButtonProps, SocialProvider } from './SocialButton';
 export { GlassCard } from './GlassCard';
 export type { GlassCardProps } from './GlassCard';
 export { AuthBackground } from './AuthBackground';
+export { AppErrorBoundary } from './AppErrorBoundary';
+export type { AppErrorBoundaryProps } from './AppErrorBoundary';
 export { AddRewardDialog } from './AddRewardDialog';
 export type { AddRewardDialogProps } from './AddRewardDialog';
 export { AvatarPreview } from './AvatarPreview';

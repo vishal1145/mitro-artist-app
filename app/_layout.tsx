@@ -27,6 +27,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppErrorBoundary } from '@components/shared';
 import { attachInterceptors } from '@services/api';
 import {
   connectAuthInterceptors,
@@ -37,6 +38,16 @@ import { colors } from '@theme';
 import { logger } from '@utils/logger';
 
 void SplashScreen.preventAutoHideAsync();
+
+/**
+ * expo-router renders this instead of unmounting the app when a screen throws.
+ *
+ * Named `ErrorBoundary` because that's the export expo-router looks for.
+ * Exported from the root layout so it covers every route: a render crash on
+ * any screen now shows the message and stack on the device rather than closing
+ * the APK with no trace.
+ */
+export { AppErrorBoundary as ErrorBoundary };
 
 /**
  * Navigation theme. Without this React Navigation falls back to its light

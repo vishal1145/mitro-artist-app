@@ -395,7 +395,7 @@ const SettingsScreen = () => {
             </View>
 
             <SectionLabel style={styles.sectionLabel}>
-              {`ACTIVITIES (${wheel?.activities.length ?? 0})`}
+              {`ACTIVITIES (${wheel?.activities?.length ?? 0})`}
             </SectionLabel>
 
             {(wheel?.activities ?? [])
