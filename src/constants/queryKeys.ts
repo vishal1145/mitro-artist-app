@@ -23,6 +23,8 @@ export const queryKeys = {
   earnings: {
     all: ['earnings'] as const,
     summary: () => [...queryKeys.earnings.all, 'summary'] as const,
+    transactions: (take: number, skip: number) =>
+      [...queryKeys.earnings.all, 'transactions', take, skip] as const,
   },
   broadcast: {
     all: ['broadcast'] as const,

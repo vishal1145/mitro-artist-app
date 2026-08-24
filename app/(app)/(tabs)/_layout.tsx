@@ -77,17 +77,19 @@ const FloatingTabBar = ({ state, navigation }: BottomTabBarProps) => {
                 return;
               }
 
-              if (!focused) {
-                navigation.navigate(route.name);
-                return;
-              }
-
-              // Re-pressing the active tab returns its stack to the root, the
-              // way every native tab bar behaves. Without this a screen pushed
-              // inside a tab stays there for the rest of the session.
+              // Tapping a tab always returns it to its root screen — switching
+              // to it or re-pressing it both reset the nested stack, so a screen
+              // pushed inside a tab (e.g. Business → Transactions) never sticks
+              // around as the tab's landing page. `nestedKey` is undefined until
+              // the tab has mounted once, in which case there's nothing to pop
+              // and a fresh navigate already lands on the root.
               const nestedKey = route.state?.key;
               if (nestedKey) {
                 navigation.dispatch({ ...StackActions.popToTop(), target: nestedKey });
+              }
+
+              if (!focused) {
+                navigation.navigate(route.name);
               }
             };
 

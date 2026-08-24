@@ -71,7 +71,13 @@ export const useAvatarPicker = (): AvatarPickerResult => {
 
     try {
       const url = await upload(pendingUri);
-      setAvatarUrl(url);
+      // The server keys avatar storage by artist id, so a re-upload overwrites
+      // the bytes but hands back the same public URL every time. expo-image
+      // caches by URI, so an identical URL shows the previous picture from
+      // cache — the change appears to "work once" then never again. A unique
+      // query param makes each upload a fresh URI so the new image is fetched.
+      const freshUrl = `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+      setAvatarUrl(freshUrl);
       setPendingUri(null);
       logger.info('Avatar updated');
     } catch (uploadError) {

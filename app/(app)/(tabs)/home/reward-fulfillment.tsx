@@ -3,9 +3,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Header, Screen, SegmentedControl } from '@components/shared';
-import { Avatar, Card, Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { EarningsBar, Screen, SegmentedControl } from '@components/shared';
+import { Avatar, Text } from '@components/ui';
+import { colors, fontFamily, layout, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
@@ -98,16 +98,22 @@ const RewardFulfillmentScreen = () => {
   }, [tab, delivered]);
 
   return (
-    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
-      <Header title="Reward Deliveries" onBack={() => router.back()} />
-
-      {/* Urgency banner */}
-      <View style={styles.banner}>
-        <Feather name="alert-triangle" size={rf(17)} color={colors.warning} />
-        <Text variant="caption" color="textSecondary" style={styles.bannerText}>
-          Fulfil rewards promptly — fans notice when a shoutout or song request never arrives, and that erodes trust.
-        </Text>
-      </View>
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
+      <Text variant="h1" style={styles.title}>
+        Reward Deliveries
+      </Text>
 
       <SegmentedControl
         options={['To Fulfil (3)', 'Delivered', 'Expired']}
@@ -117,7 +123,7 @@ const RewardFulfillmentScreen = () => {
       />
 
       {/* Summary strip */}
-      <Card style={styles.summary}>
+      <View style={styles.summary}>
         {SUMMARY.map((s, i) => (
           <View key={s.label} style={styles.summaryCell}>
             {i > 0 ? <View style={styles.summaryDivider} /> : null}
@@ -129,14 +135,21 @@ const RewardFulfillmentScreen = () => {
             </Text>
           </View>
         ))}
-      </Card>
+      </View>
 
-      {/* Reward cards */}
-      {rows.map((r) => {
+      {/* Reward rows */}
+      {rows.map((r, i) => {
         const isDone = r.status === 'delivered' || delivered.includes(r.id);
 
         return (
-          <Card key={r.id} style={[styles.reward, isDone ? styles.rewardDone : null]}>
+          <View
+            key={r.id}
+            style={[
+              styles.reward,
+              i > 0 ? styles.rewardDivider : null,
+              isDone ? styles.rewardDone : null,
+            ]}
+          >
             <View style={styles.rewardHead}>
               <View style={[styles.rewardIcon, { backgroundColor: r.tintBg }]}>
                 <Feather name={r.icon} size={rf(18)} color={r.tint} />
@@ -223,7 +236,7 @@ const RewardFulfillmentScreen = () => {
                 </Pressable>
               </View>
             ) : null}
-          </Card>
+          </View>
         );
       })}
 
@@ -238,20 +251,13 @@ const RewardFulfillmentScreen = () => {
 
 const styles = StyleSheet.create({
   content: {
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
-  banner: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderLeftWidth: wp(1),
-    borderLeftColor: colors.warning,
-    padding: spacing.md,
-  },
-  bannerText: {
-    flex: 1,
+  title: {
+    marginTop: 12,
+    marginBottom: spacing.xs,
   },
   summary: {
     flexDirection: 'row',
@@ -276,6 +282,11 @@ const styles = StyleSheet.create({
 
   reward: {
     gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  rewardDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   rewardDone: {
     opacity: 0.7,
@@ -317,18 +328,17 @@ const styles = StyleSheet.create({
   },
   quote: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    overflow: 'hidden',
+    gap: spacing.sm,
   },
   quoteBar: {
     width: wp(1),
+    borderRadius: 1,
     backgroundColor: colors.primary,
   },
   quoteText: {
     flex: 1,
     fontStyle: 'italic',
-    padding: spacing.md,
+    paddingVertical: spacing.xxs,
   },
   actions: {
     flexDirection: 'row',

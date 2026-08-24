@@ -23,6 +23,18 @@ export const compactCount = (value: number): string => {
 export const formatTokens = (value: number): string =>
   `${compactCount(value)} tk`;
 
+/**
+ * Full number with thousands separators: 18552 → "18,552".
+ *
+ * Used where the exact figure matters (earnings totals, per-source breakdown)
+ * rather than the compact `1.2k` form. Locale-independent so the grouping
+ * reads the same on every device regardless of Hermes' Intl support.
+ */
+export const grouped = (value: number): string =>
+  Math.round(value)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
 /** Two-letter monogram for an avatar fallback. */
 export const initialsFrom = (name: string | undefined | null): string =>
   (name ?? '?').slice(0, 2).toUpperCase();
@@ -38,6 +50,20 @@ export const shortDate = (iso: string): string => {
     return '';
   }
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+/** ISO timestamp → "Aug 17, 1:18 PM", in the device's timezone. */
+export const shortDateTime = (iso: string): string => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const day = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const time = date.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${day}, ${time}`;
 };
 
 /**

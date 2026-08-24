@@ -47,6 +47,8 @@ export const ENDPOINTS = {
   },
   earnings: {
     summary: '/api/artist/earnings/summary',
+    /** The full coin ledger, newest first. Paged with `?take=&skip=`. */
+    transactions: '/api/artist/earnings/transactions',
   },
   broadcast: {
     /** Paged with `?take=&skip=`. */

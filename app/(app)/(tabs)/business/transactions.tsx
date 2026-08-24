@@ -1,148 +1,165 @@
-import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Header, InfoCallout, ListRow, Screen, SegmentedControl, StatTile } from '@components/shared';
-import { Badge, Card, Text, type BadgeTone } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { rf } from '@utils/responsive';
-
-type FeatherIconName = keyof typeof Feather.glyphMap;
-type TxnStatus = 'Pending' | 'Settled';
-
-interface Txn {
-  icon: FeatherIconName;
-  title: string;
-  sub: string;
-  amount: string;
-  status: TxnStatus;
-}
-
-const TXNS: Txn[] = [
-  { icon: 'shuffle', title: 'Fun Wheel from vishal_9953', sub: 'Fun-wheel spin in group call · 8/17/2026', amount: '+25 tk', status: 'Pending' },
-  { icon: 'star', title: 'Rewards from vishal_9953', sub: "Reward 'Say My Name' · 8/17/2026", amount: '+20 tk', status: 'Pending' },
-  { icon: 'message-circle', title: 'Highlight from user_12x', sub: 'Highlighted message · 8/16/2026', amount: '+10 tk', status: 'Settled' },
-];
+import {
+  EarningsBar,
+  ListRow,
+  LoadFailed,
+  Screen,
+  SectionLabel,
+  SegmentedControl,
+  Skeleton,
+  StatTile,
+} from '@components/shared';
+import { Badge, Text } from '@components/ui';
+import { useEarningsSummary, useEarningsTransactions } from '@hooks/useInsights';
+import { colors, layout, radius, spacing } from '@theme';
+import { sourceIcon, sourceLabel } from '@utils/earnings';
+import { getErrorMessage } from '@utils/errorHandler';
+import { grouped, shortDateTime } from '@utils/format';
 
 const FILTERS = ['All', 'Pending', 'Settled'] as const;
 
-const STATUS_TONE: Record<TxnStatus, BadgeTone> = { Pending: 'warning', Settled: 'success' };
+/** Anything the server hasn't cleared reads as pending; everything else settled. */
+const isPending = (status: string): boolean => status.toLowerCase() === 'pending';
 
 const TransactionsScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState<string>('All');
 
-  const rows = useMemo(
-    () => (filter === 'All' ? TXNS : TXNS.filter((t) => t.status === filter)),
-    [filter],
-  );
+  const {
+    data: summary,
+    isLoading: loadingSummary,
+  } = useEarningsSummary();
+  const {
+    data: transactions,
+    isLoading: loadingTxns,
+    error,
+    refetch,
+  } = useEarningsTransactions();
+
+  // Totals come from the summary so they reflect the whole ledger, not just
+  // the page of rows fetched below.
+  const settledTokens =
+    (summary?.availableTokens ?? 0) + (summary?.paidOutTokens ?? 0);
+
+  const rows = useMemo(() => {
+    const all = transactions ?? [];
+    if (filter === 'Pending') {
+      return all.filter((t) => isPending(t.status));
+    }
+    if (filter === 'Settled') {
+      return all.filter((t) => !isPending(t.status));
+    }
+    return all;
+  }, [transactions, filter]);
 
   return (
-    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
-      <Header title="Transaction History" onBack={() => router.back()} />
-
-      <View style={styles.heading}>
-        <Text variant="h2">Transaction History</Text>
-        <Text variant="caption" color="textSecondary">
-          Every paid highlighted message, reaction, reward, and fun-wheel spin viewers have sent you.
-        </Text>
-      </View>
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
+      header={
+        <EarningsBar
+          brand
+          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          unread
+        />
+      }
+    >
+      <Text variant="h1" style={styles.title}>
+        Transaction History
+      </Text>
 
       <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} />
 
-      <InfoCallout tone="success" icon="info" linkLabel="Learn more about your ledger">
-        <Text variant="caption" color="textSecondary">
-          This is your full{' '}
-          <Text variant="caption" color="onSurface" style={styles.bold}>
-            coin ledger
-          </Text>{' '}
-          — every credit fans send you (reactions, fun-wheel spins, highlighted messages, group-call entries, reward-menu purchases) alongside every debit whenever you withdraw earnings to your bank account.
-        </Text>
-      </InfoCallout>
-
       <View style={styles.grid}>
-        <StatTile icon="clock" label="PENDING" value="819" unit="tk" tint={colors.warning} />
-        <StatTile icon="check-circle" label="SETTLED" value="0" unit="tk" tint={colors.success} />
+        <StatTile
+          icon="clock"
+          label="PENDING"
+          value={loadingSummary ? '—' : grouped(summary?.pendingTokens ?? 0)}
+          unit="tk"
+          tint={colors.warning}
+        />
+        <StatTile
+          icon="check-circle"
+          label="SETTLED"
+          value={loadingSummary ? '—' : grouped(settledTokens)}
+          unit="tk"
+          tint={colors.success}
+        />
       </View>
 
-      <Card style={styles.ledger}>
-        <View style={styles.ledgerBadge}>
-          <Feather name="link" size={rf(13)} color={colors.warning} />
-          <Text variant="label" color="warning">
-            LEDGER
-          </Text>
-        </View>
-        <Text variant="h3">Recent Activity</Text>
+      <SectionLabel divider style={styles.sectionLabel}>
+        RECENT ACTIVITY
+      </SectionLabel>
 
-        <InfoCallout tone="warning" icon="info">
-          <Text variant="caption" color="textSecondary">
-            <Text variant="caption" color="onSurface" style={styles.bold}>
-              Pending
-            </Text>{' '}
-            means a fan&apos;s coins have been sent but are still in the platform&apos;s hold window before they&apos;re released to your balance — this usually clears within 24-48 hours.
-          </Text>
-        </InfoCallout>
-
+      {error ? (
+        <LoadFailed message={getErrorMessage(error)} onRetry={() => void refetch()} />
+      ) : loadingTxns ? (
         <View style={styles.rows}>
-          {rows.map((t, i) => (
-            <ListRow
-              key={`${t.title}-${i}`}
-              icon={t.icon}
-              iconTint={colors.primary}
-              title={t.title}
-              subtitle={t.sub}
-              right={
-                <View style={styles.rowMeta}>
-                  <Text variant="link" color="warning">
-                    {t.amount}
-                  </Text>
-                  <Badge label={t.status.toUpperCase()} tone={STATUS_TONE[t.status]} />
-                </View>
-              }
-            />
-          ))}
+          <Skeleton height={56} round={radius.md} />
+          <Skeleton height={56} round={radius.md} />
+          <Skeleton height={56} round={radius.md} />
+        </View>
+      ) : (
+        <View>
+          {rows.map((t, i) => {
+            const pending = isPending(t.status);
+
+            return (
+              <ListRow
+                key={t.id}
+                divider={i > 0}
+                icon={sourceIcon(t.sourceType)}
+                iconTint={colors.primary}
+                title={`${sourceLabel(t.sourceType)} from ${t.fromDisplayName}`}
+                subtitle={`${t.description} · ${shortDateTime(t.createdAtUtc)}`}
+                right={
+                  <View style={styles.rowMeta}>
+                    <Text variant="link" color={pending ? 'warning' : 'success'}>
+                      +{grouped(t.amountTokens)} tk
+                    </Text>
+                    <Badge
+                      label={pending ? 'PENDING' : 'SETTLED'}
+                      tone={pending ? 'warning' : 'success'}
+                    />
+                  </View>
+                }
+              />
+            );
+          })}
           {rows.length === 0 ? (
             <Text variant="caption" color="textMuted" align="center" style={styles.empty}>
               No {filter.toLowerCase()} transactions yet.
             </Text>
           ) : null}
         </View>
-      </Card>
+      )}
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
-  heading: {
-    gap: spacing.xs,
-  },
-  bold: {
-    fontFamily: fontFamily.bodySemibold,
+  title: {
+    marginTop: 12,
   },
   grid: {
     flexDirection: 'row',
     gap: spacing.md,
   },
-  ledger: {
-    gap: spacing.md,
-  },
-  ledgerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: spacing.xs,
-    backgroundColor: colors.warningChip,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    borderRadius: radius.sm,
+  sectionLabel: {
+    marginTop: spacing.xs,
   },
   rows: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   rowMeta: {
     alignItems: 'flex-end',

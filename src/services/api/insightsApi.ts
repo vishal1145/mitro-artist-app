@@ -2,6 +2,8 @@ import type {
   BroadcastHistoryItem,
   BroadcastHistoryQuery,
   EarningsSummary,
+  EarningsTransaction,
+  EarningsTransactionsQuery,
   Result,
 } from '@app-types/api';
 import { getErrorMessage } from '@utils/errorHandler';
@@ -18,6 +20,21 @@ export const insightsApi = {
   async getEarningsSummary(): Promise<Result<EarningsSummary>> {
     try {
       const res = await api.get<EarningsSummary>(ENDPOINTS.earnings.summary);
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** The coin ledger, newest first. Bare array — no envelope. */
+  async getEarningsTransactions(
+    query: EarningsTransactionsQuery,
+  ): Promise<Result<EarningsTransaction[]>> {
+    try {
+      const res = await api.get<EarningsTransaction[]>(
+        ENDPOINTS.earnings.transactions,
+        { params: query },
+      );
       return { success: true, data: res.data };
     } catch (error) {
       return { success: false, error: getErrorMessage(error) };

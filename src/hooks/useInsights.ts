@@ -2,7 +2,11 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { queryKeys } from '@constants/queryKeys';
 import { insightsApi } from '@services/api';
-import type { BroadcastHistoryItem, EarningsSummary } from '@app-types/api';
+import type {
+  BroadcastHistoryItem,
+  EarningsSummary,
+  EarningsTransaction,
+} from '@app-types/api';
 import { AuthError } from '@utils/errorHandler';
 
 /**
@@ -17,6 +21,24 @@ export const useEarningsSummary = (): UseQueryResult<EarningsSummary, Error> =>
     queryKey: queryKeys.earnings.summary(),
     queryFn: async () => {
       const result = await insightsApi.getEarningsSummary();
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    staleTime: 30_000,
+    retry: false,
+  });
+
+/** The coin ledger, newest first. Drives the Transactions screen. */
+export const useEarningsTransactions = (
+  take = 100,
+  skip = 0,
+): UseQueryResult<EarningsTransaction[], Error> =>
+  useQuery({
+    queryKey: queryKeys.earnings.transactions(take, skip),
+    queryFn: async () => {
+      const result = await insightsApi.getEarningsTransactions({ take, skip });
       if (!result.success) {
         throw new AuthError(result.error);
       }

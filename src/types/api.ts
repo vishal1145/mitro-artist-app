@@ -345,6 +345,38 @@ export interface EarningsSummary {
   last7Days: EarningsDay[];
 }
 
+/**
+ * One credit in the coin ledger, as `GET /api/artist/earnings/transactions`
+ * returns it. Newest first. Bare array — no envelope.
+ *
+ * `reaction*` / `groupCall*` are only populated for their matching
+ * `sourceType`; everything else leaves them null.
+ */
+export interface EarningsTransaction {
+  id: string;
+  /** Same vocabulary as `EarningsSource.sourceType`. */
+  sourceType: string;
+  /** The call / message / spin the credit came from. */
+  sourceId: string;
+  amountTokens: number;
+  /** e.g. "pending" | "available" | "paid_out". */
+  status: string;
+  createdAtUtc: string;
+  fromUserId: string;
+  fromDisplayName: string;
+  /** Human-readable line the server already composed, e.g. "Private call — minute 17". */
+  description: string;
+  reactionIconUrl: string | null;
+  reactionName: string | null;
+  groupCallId: string | null;
+  groupCallTitle: string | null;
+}
+
+export interface EarningsTransactionsQuery {
+  take: number;
+  skip?: number;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Broadcasts                                                                */
 /* -------------------------------------------------------------------------- */

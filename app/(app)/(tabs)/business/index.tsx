@@ -1,31 +1,42 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EarningsBar, Screen, SectionLabel, TimelineRow } from '@components/shared';
+import {
+  EarningsBar,
+  LoadFailed,
+  Screen,
+  SectionLabel,
+  Skeleton,
+  TimelineRow,
+} from '@components/shared';
 import { Text } from '@components/ui';
+import { useEarningsSummary } from '@hooks/useInsights';
+import type { EarningsSource } from '@app-types/api';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { sourceLabel } from '@utils/earnings';
+import { getErrorMessage } from '@utils/errorHandler';
+import { grouped, shortWeekday } from '@utils/format';
 import { rf } from '@utils/responsive';
 
-/** Where the tokens came from. Values are absolute, shares are derived. */
-const SOURCES = [
-  { label: 'Highlighted msgs', value: 420, color: colors.pink },
-  { label: 'Rewards', value: 380, color: colors.gold },
-  { label: 'Reactions', value: 260, color: colors.cyan },
-  { label: 'Fun wheel', value: 180, color: colors.violet },
-];
+// Stable colour rotation for the stacked bar and legend. Ordered by the
+// server's own descending-tokens sort, so the biggest source is always pink.
+const SOURCE_COLORS = [
+  colors.pink,
+  colors.gold,
+  colors.cyan,
+  colors.violet,
+  colors.green,
+  colors.purple,
+] as const;
 
-const TREND = [
-  { day: 'Mon', value: 40 },
-  { day: 'Tue', value: 85 },
-  { day: 'Wed', value: 120 },
-  { day: 'Thu', value: 95 },
-  { day: 'Fri', value: 210 },
-  { day: 'Sat', value: 145 },
-  { day: 'Sun', value: 320 },
-];
+const sourceColor = (index: number): string =>
+  SOURCE_COLORS[index % SOURCE_COLORS.length];
 
+// Payouts aren't part of the earnings-summary API, so this stays illustrative
+// until a payouts endpoint exists.
 const PAYOUTS = [
   {
     id: 'po_1',
@@ -41,11 +52,33 @@ const PAYOUTS = [
   },
 ];
 
-const PEAK = Math.max(...TREND.map((t) => t.value));
-
 /** Business tab root — lifetime earnings, their sources, trend and payouts. */
 const EarningsScreen = () => {
   const router = useRouter();
+  const { data, isLoading, error, refetch } = useEarningsSummary();
+
+  // Server sends oldest-first with all seven days present; map to the axis
+  // labels the chart draws. PEAK guards the height maths against an all-zero
+  // week, where every bar is empty rather than NaN.
+  const trend = useMemo(
+    () =>
+      (data?.last7Days ?? []).map((d) => ({
+        day: shortWeekday(d.date),
+        value: d.tokens,
+      })),
+    [data],
+  );
+  const peak = useMemo(() => Math.max(0, ...trend.map((t) => t.value)), [trend]);
+
+  const sources: (EarningsSource & { label: string; color: string })[] = useMemo(
+    () =>
+      (data?.bySource ?? []).map((s, i) => ({
+        ...s,
+        label: sourceLabel(s.sourceType),
+        color: sourceColor(i),
+      })),
+    [data],
+  );
 
   return (
     <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
@@ -62,134 +95,181 @@ const EarningsScreen = () => {
         Earnings
       </Text>
 
-      {/* All-time hero */}
-      <LinearGradient
-        colors={gradients.cta}
-        start={gradientDirection.diagonal.start}
-        end={gradientDirection.diagonal.end}
-        style={styles.hero}
-      >
-        <Pressable
-          style={styles.heroChip}
-          onPress={() => router.push('/(app)/(tabs)/business/transactions')}
-          accessibilityRole="button"
-          accessibilityLabel="Transaction history"
-        >
-          <Feather name="file-text" size={rf(17)} color={colors.screen} />
-        </Pressable>
+      {error ? (
+        <LoadFailed message={getErrorMessage(error)} onRetry={() => void refetch()} />
+      ) : (
+        <>
+          {/* All-time hero */}
+          <LinearGradient
+            colors={gradients.cta}
+            start={gradientDirection.diagonal.start}
+            end={gradientDirection.diagonal.end}
+            style={styles.hero}
+          >
+            <Pressable
+              style={styles.heroChip}
+              onPress={() => router.push('/(app)/(tabs)/business/transactions')}
+              accessibilityRole="button"
+              accessibilityLabel="Transaction history"
+            >
+              <Feather name="file-text" size={rf(17)} color={colors.screen} />
+            </Pressable>
 
-        <Text style={styles.heroLabel}>ALL-TIME EARNED</Text>
+            <Text style={styles.heroLabel}>ALL-TIME EARNED</Text>
 
-        <View style={styles.heroValueRow}>
-          <Text style={styles.heroValue}>1,240</Text>
-          <Text style={styles.heroUnit}>tokens</Text>
-        </View>
-
-        <View style={styles.heroPills}>
-          <View style={styles.heroPill}>
-            <Text style={styles.heroPillText}>674 PENDING</Text>
-          </View>
-          <View style={styles.heroPill}>
-            <Text style={styles.heroPillText}>0 AVAILABLE</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <Text variant="bodySm" color="gold" align="center" style={styles.kycNote}>
-        Withdrawals need KYC.{' '}
-        <Text
-          variant="bodySm"
-          color="white"
-          style={styles.kycLink}
-          onPress={() => router.push('/(app)/(tabs)/me/kyc-payouts')}
-        >
-          Complete KYC
-        </Text>
-      </Text>
-
-      {/* Nothing is withdrawable until KYC clears, so the CTA stays inert. */}
-      <View style={styles.withdraw}>
-        <LinearGradient
-          colors={gradients.ctaMuted}
-          start={gradientDirection.horizontal.start}
-          end={gradientDirection.horizontal.end}
-          style={styles.withdrawFill}
-        >
-          <Text style={styles.withdrawLabel}>Withdraw Tokens</Text>
-        </LinearGradient>
-      </View>
-
-      <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
-        WHERE IT CAME FROM
-      </SectionLabel>
-
-      {/* Single stacked bar — each segment is that source's share of the total */}
-      <View style={styles.stack}>
-        {SOURCES.map((s) => (
-          <View
-            key={s.label}
-            style={[styles.stackSeg, { flex: s.value, backgroundColor: s.color }]}
-          />
-        ))}
-      </View>
-
-      <View style={styles.legend}>
-        {SOURCES.map((s) => (
-          <View key={s.label} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: s.color }]} />
-            <Text variant="bodySm" color="textSecondary" style={styles.legendLabel}>
-              {s.label}
-            </Text>
-            <Text variant="bodySm" color="textPrimary" style={styles.legendValue}>
-              {s.value}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <SectionLabel style={styles.sectionLabel}>EARNINGS TREND — LAST 7 DAYS</SectionLabel>
-
-      <View style={styles.chart}>
-        {TREND.map((t) => {
-          const best = t.value === PEAK;
-
-          return (
-            <View key={t.day} style={styles.barCol}>
-              <Text
-                variant="bodySm"
-                color={best ? 'pink' : 'textMuted'}
-                style={styles.barValue}
-              >
-                {t.value}
-              </Text>
-              <View style={styles.barTrack}>
-                <LinearGradient
-                  colors={gradients.cta}
-                  start={{ x: 0, y: 1 }}
-                  end={{ x: 0, y: 0 }}
-                  style={[styles.bar, { height: `${(t.value / PEAK) * 100}%` }]}
-                />
+            {isLoading ? (
+              <View style={styles.heroValueRow}>
+                <Skeleton width={150} height={38} round={radius.sm} />
               </View>
-              <Text variant="bodySm" color={best ? 'textPrimary' : 'textMuted'}>
-                {t.day}
-              </Text>
+            ) : (
+              <View style={styles.heroValueRow}>
+                <Text style={styles.heroValue}>{grouped(data?.totalTokens ?? 0)}</Text>
+                <Text style={styles.heroUnit}>tokens</Text>
+              </View>
+            )}
+
+            <View style={styles.heroPills}>
+              <View style={styles.heroPill}>
+                <Text style={styles.heroPillText}>
+                  {grouped(data?.pendingTokens ?? 0)} PENDING
+                </Text>
+              </View>
+              <View style={styles.heroPill}>
+                <Text style={styles.heroPillText}>
+                  {grouped(data?.availableTokens ?? 0)} AVAILABLE
+                </Text>
+              </View>
             </View>
-          );
-        })}
-      </View>
+          </LinearGradient>
 
-      <SectionLabel style={styles.sectionLabel}>RECENT PAYOUTS</SectionLabel>
+          <Text variant="bodySm" color="gold" align="center" style={styles.kycNote}>
+            Withdrawals need KYC.{' '}
+            <Text
+              variant="bodySm"
+              color="white"
+              style={styles.kycLink}
+              onPress={() => router.push('/(app)/(tabs)/me/kyc-payouts')}
+            >
+              Complete KYC
+            </Text>
+          </Text>
 
-      {PAYOUTS.map((p, i) => (
-        <TimelineRow
-          key={p.id}
-          title={p.title}
-          meta={p.meta}
-          dotColor={p.dot}
-          last={i === PAYOUTS.length - 1}
-          onPress={() => router.push('/(app)/(tabs)/business/transactions')}
-        />
-      ))}
+          {/* Nothing is withdrawable until KYC clears, so the CTA stays inert. */}
+          <View style={styles.withdraw}>
+            <LinearGradient
+              colors={gradients.ctaMuted}
+              start={gradientDirection.horizontal.start}
+              end={gradientDirection.horizontal.end}
+              style={styles.withdrawFill}
+            >
+              <Text style={styles.withdrawLabel}>Withdraw Tokens</Text>
+            </LinearGradient>
+          </View>
+
+          <SectionLabel divider style={styles.sectionLabel} onHelp={() => undefined}>
+            WHERE IT CAME FROM
+          </SectionLabel>
+
+          {isLoading ? (
+            <View style={styles.blockSkeleton}>
+              <Skeleton height={12} round={6} />
+              <Skeleton height={64} round={radius.md} />
+            </View>
+          ) : sources.length === 0 ? (
+            <Text variant="bodySm" color="textMuted" style={styles.emptyNote}>
+              No earnings yet.
+            </Text>
+          ) : (
+            <>
+              {/* Single stacked bar — each segment is that source's share. */}
+              <View style={styles.stack}>
+                {sources.map((s) => (
+                  <View
+                    key={s.sourceType}
+                    style={[styles.stackSeg, { flex: s.tokens, backgroundColor: s.color }]}
+                  />
+                ))}
+              </View>
+
+              <View style={styles.legend}>
+                {sources.map((s) => (
+                  <View key={s.sourceType} style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: s.color }]} />
+                    <Text
+                      variant="bodySm"
+                      color="textSecondary"
+                      style={styles.legendLabel}
+                      numberOfLines={1}
+                    >
+                      {s.label}
+                    </Text>
+                    <Text variant="bodySm" color="textPrimary" style={styles.legendValue}>
+                      {grouped(s.tokens)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
+          <SectionLabel divider style={styles.sectionLabel}>
+            EARNINGS TREND — LAST 7 DAYS
+          </SectionLabel>
+
+          {isLoading ? (
+            <View style={styles.blockSkeleton}>
+              <Skeleton height={170} round={radius.md} />
+            </View>
+          ) : (
+            <View style={styles.chart}>
+              {trend.map((t, i) => {
+                const best = peak > 0 && t.value === peak;
+
+                return (
+                  <View key={`${t.day}-${i}`} style={styles.barCol}>
+                    <Text
+                      variant="bodySm"
+                      color={best ? 'pink' : 'textMuted'}
+                      style={styles.barValue}
+                    >
+                      {grouped(t.value)}
+                    </Text>
+                    <View style={styles.barTrack}>
+                      <LinearGradient
+                        colors={gradients.cta}
+                        start={{ x: 0, y: 1 }}
+                        end={{ x: 0, y: 0 }}
+                        style={[
+                          styles.bar,
+                          { height: peak > 0 ? `${(t.value / peak) * 100}%` : 0 },
+                        ]}
+                      />
+                    </View>
+                    <Text variant="bodySm" color={best ? 'textPrimary' : 'textMuted'}>
+                      {t.day}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          <SectionLabel divider style={styles.sectionLabel}>
+            RECENT PAYOUTS
+          </SectionLabel>
+
+          {PAYOUTS.map((p, i) => (
+            <TimelineRow
+              key={p.id}
+              title={p.title}
+              meta={p.meta}
+              dotColor={p.dot}
+              last={i === PAYOUTS.length - 1}
+              onPress={() => router.push('/(app)/(tabs)/business/transactions')}
+            />
+          ))}
+        </>
+      )}
     </Screen>
   );
 };
@@ -286,8 +366,16 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    marginTop: 12,
-    marginBottom: 14,
+    marginTop: 30,
+    marginBottom: 18,
+  },
+
+  blockSkeleton: {
+    gap: 14,
+    marginBottom: 4,
+  },
+  emptyNote: {
+    marginBottom: 4,
   },
 
   stack: {
