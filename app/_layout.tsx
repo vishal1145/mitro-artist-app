@@ -27,8 +27,9 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AppErrorBoundary } from '@components/shared';
+import { AppErrorBoundary, NotificationToastHost } from '@components/shared';
 import { attachInterceptors } from '@services/api';
+import { pushNotifications } from '@services/push/pushNotifications';
 import { queryClient } from '@services/queryClient';
 import {
   connectAuthInterceptors,
@@ -138,6 +139,11 @@ const RootLayout = () => {
     void bootstrap();
   }, []);
 
+  // Independent of auth: a push tapped from a quit state has to deep-link
+  // even before the auth store finishes hydrating. Wired once for the app's
+  // whole lifetime, so the cleanup return is never actually invoked.
+  useEffect(() => pushNotifications.setupListeners(), []);
+
   useEffect(() => {
     if (appReady) {
       void SplashScreen.hideAsync();
@@ -167,6 +173,8 @@ const RootLayout = () => {
               <Stack.Screen name="(app)" />
               <Stack.Screen name="+not-found" options={{ animation: 'fade' }} />
             </Stack>
+            {/* Renders above every screen — toast-on-receipt for hub/push notifications. */}
+            <NotificationToastHost />
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>

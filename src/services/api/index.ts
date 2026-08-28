@@ -5,5 +5,6 @@ export { authApi } from './authApi';
 export { profileApi } from './profileApi';
 export { insightsApi } from './insightsApi';
 export { settingsApi } from './settingsApi';
+export { notificationApi } from './notificationApi';
 export { contentTypeFor, fileNameFor, putFileToSignedUrl } from './uploadFile';
 export { USE_MOCK, mocked, mockedError } from './mock';

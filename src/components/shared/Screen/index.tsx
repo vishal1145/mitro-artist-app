@@ -1,9 +1,10 @@
-import { memo, type ReactNode } from 'react';
+import { memo, type ReactElement, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   View,
+  type RefreshControlProps,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -33,6 +34,8 @@ export interface ScreenProps {
    * inside the tabs, otherwise the last row is clipped behind the nav pill.
    */
   tabBarSpacing?: boolean;
+  /** Pull-to-refresh — forwarded straight to the ScrollView. Requires `scrollable`. */
+  refreshControl?: ReactElement<RefreshControlProps>;
 }
 
 /**
@@ -49,6 +52,7 @@ const ScreenComponent = ({
   background,
   header,
   tabBarSpacing = false,
+  refreshControl,
 }: ScreenProps) => {
   const body = padded ? styles.padded : undefined;
   const tabSpace = useTabBarSpace();
@@ -89,6 +93,7 @@ const ScreenComponent = ({
             // Swipe the keyboard away instead of hunting for a blank spot.
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
           >
             {children}
           </ScrollView>

@@ -416,3 +416,46 @@ export interface ArtistPhoto {
   photoUrl: string;
   createdAtUtc?: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Notifications                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `GET /api/artist/notifications` and the SignalR `NotificationReceived`
+ * payload — identical shape either way.
+ *
+ * `type` is deliberately a bare string, not a union: the server can add new
+ * kinds (today it sends "private_call_request", "new_follower", "system")
+ * without a client release, so nothing here should switch exhaustively on it.
+ */
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  /** App-relative path the notification should deep-link to, if any. */
+  actionUrl: string | null;
+  isRead: boolean;
+  createdAtUtc: string;
+}
+
+/** `GET .../unread-count`, and the same shape `read` / `read-all` answer with. */
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+
+export type DevicePlatform = 'ios' | 'android';
+
+/** `POST /api/artist/devices/register`. */
+export interface RegisterDevicePayload {
+  fcmToken: string;
+  platform: DevicePlatform;
+}
+
+/** `POST /api/artist/devices/unregister`. */
+export interface UnregisterDevicePayload {
+  fcmToken: string;
+}

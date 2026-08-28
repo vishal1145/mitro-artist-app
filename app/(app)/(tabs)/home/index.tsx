@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { EarningsBar, EmptyState, Screen, Skeleton } from '@components/shared';
 import { Card, Text } from '@components/ui';
 import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
+import { useNotificationStore } from '@store';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { compactCount, duration, formatTokens, shortDate, shortWeekday } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -66,6 +67,7 @@ const ALERTS: {
 
 const HomeScreen = () => {
   const router = useRouter();
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
 
   const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
   const { data: broadcasts, isLoading: loadingBroadcasts } =
@@ -112,7 +114,7 @@ const HomeScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >

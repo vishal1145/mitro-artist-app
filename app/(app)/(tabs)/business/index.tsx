@@ -14,6 +14,7 @@ import {
 } from '@components/shared';
 import { Text } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
+import { useNotificationStore } from '@store';
 import type { EarningsSource } from '@app-types/api';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { sourceLabel } from '@utils/earnings';
@@ -55,6 +56,7 @@ const PAYOUTS = [
 /** Business tab root — lifetime earnings, their sources, trend and payouts. */
 const EarningsScreen = () => {
   const router = useRouter();
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
   const { data, isLoading, error, refetch } = useEarningsSummary();
 
   // Server sends oldest-first with all seven days present; map to the axis
@@ -86,7 +88,7 @@ const EarningsScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >

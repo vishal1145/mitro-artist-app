@@ -81,6 +81,34 @@ export const duration = (seconds: number): string => {
   return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
+/**
+ * ISO timestamp → a compact age stamp: "NOW" / "5M" / "3H" / "2D", falling
+ * back to `shortDate` past a week. Used on notification rows, where the full
+ * `shortDateTime` is too wide for the trailing column.
+ */
+export const relativeShort = (iso: string): string => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60_000);
+  if (minutes < 1) {
+    return 'NOW';
+  }
+  if (minutes < 60) {
+    return `${minutes}M`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}H`;
+  }
+  const days = Math.floor(hours / 24);
+  if (days < 7) {
+    return `${days}D`;
+  }
+  return shortDate(iso);
+};
+
 /** Weekday initial-cap short name for a chart axis: "2026-08-17" → "Mon". */
 export const shortWeekday = (iso: string): string => {
   const date = new Date(iso);

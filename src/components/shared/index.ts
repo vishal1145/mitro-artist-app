@@ -85,3 +85,4 @@ export type {
 } from './Skeleton';
 export { ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps, ConfirmTone } from './ConfirmDialog';
+export { NotificationToastHost, toastConfig } from './Toast';

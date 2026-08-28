@@ -54,6 +54,19 @@ export const ENDPOINTS = {
     /** Paged with `?take=&skip=`. */
     history: '/api/artist/broadcast/history',
   },
+  /** In-app notifications. The hub itself lives at NOTIFICATIONS.hubPath. */
+  notifications: {
+    /** `?take=` — newest first. */
+    list: '/api/artist/notifications',
+    unreadCount: '/api/artist/notifications/unread-count',
+    read: (id: string) => `/api/artist/notifications/${id}/read`,
+    readAll: '/api/artist/notifications/read-all',
+  },
+  /** FCM device registration for push notifications. */
+  devices: {
+    register: '/api/artist/devices/register',
+    unregister: '/api/artist/devices/unregister',
+  },
   user: {
     profile: '/user/profile',
   },

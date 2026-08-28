@@ -1,0 +1,127 @@
+{
+  "project_info": {
+    "project_number": "155650424768",
+    "firebase_url": "https://desiyaar-54c53-default-rtdb.firebaseio.com",
+    "project_id": "desiyaar-54c53",
+    "storage_bucket": "desiyaar-54c53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155650424768:android:275d6d8460968742a89225",
+        "android_client_info": {
+          "package_name": "com.mitro.artist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155650424768-9ck7vja9p930493saklp71jpifiimud8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj5i5ZHAvgHHgZd3XpJE349WBNCyGTfyA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155650424768-9ck7vja9p930493saklp71jpifiimud8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "155650424768-td1pakvi939lblbhp14593b8vh8jd6p7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "desi.Yaar"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155650424768:android:6159f71f3bf24c06a89225",
+        "android_client_info": {
+          "package_name": "com.mitro.user"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155650424768-9ck7vja9p930493saklp71jpifiimud8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj5i5ZHAvgHHgZd3XpJE349WBNCyGTfyA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155650424768-9ck7vja9p930493saklp71jpifiimud8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "155650424768-td1pakvi939lblbhp14593b8vh8jd6p7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "desi.Yaar"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155650424768:android:c2602c23f77f61aca89225",
+        "android_client_info": {
+          "package_name": "desi.Yaar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155650424768-2k2qru77o7lgectn0uiaaaqkbp9cs427.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "desi.Yaar",
+            "certificate_hash": "9bbb3186b2189ef16d8f272bdab59362c395cbb4"
+          }
+        },
+        {
+          "client_id": "155650424768-9ck7vja9p930493saklp71jpifiimud8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj5i5ZHAvgHHgZd3XpJE349WBNCyGTfyA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155650424768-9ck7vja9p930493saklp71jpifiimud8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "155650424768-td1pakvi939lblbhp14593b8vh8jd6p7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "desi.Yaar"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
