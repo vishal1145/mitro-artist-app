@@ -48,6 +48,13 @@
       "expo-secure-store",
       "expo-font",
       [
+        "expo-notifications",
+        {
+          "icon": "./src/static/images/notification-icon.png",
+          "color": "#FF3FAD"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Mitro Artist uses your photos so you can set your profile picture."
