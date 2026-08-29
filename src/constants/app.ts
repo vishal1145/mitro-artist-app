@@ -73,3 +73,13 @@ export const TIMING = {
 export const REGEX = {
   httpsOnly: /^https:\/\//i,
 } as const;
+
+/** In-app notifications: REST paging + the SignalR hub path. */
+export const NOTIFICATIONS = {
+  /** How many notifications the bell/list fetches at a time. */
+  take: 30,
+  /** Relative to API_CONFIG.baseUrl — see services/realtime/notificationHub.ts. */
+  hubPath: '/hubs/notification',
+  /** Event name the hub pushes on `NotificationReceived`. */
+  hubEvent: 'NotificationReceived',
+} as const;

@@ -14,6 +14,7 @@ import {
 } from '@components/shared';
 import { Badge, Text } from '@components/ui';
 import { useEarningsSummary, useEarningsTransactions } from '@hooks/useInsights';
+import { useNotificationStore } from '@store';
 import { colors, layout, radius, spacing } from '@theme';
 import { sourceIcon, sourceLabel } from '@utils/earnings';
 import { getErrorMessage } from '@utils/errorHandler';
@@ -26,6 +27,7 @@ const isPending = (status: string): boolean => status.toLowerCase() === 'pending
 
 const TransactionsScreen = () => {
   const router = useRouter();
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
   const [filter, setFilter] = useState<string>('All');
 
   const {
@@ -65,7 +67,7 @@ const TransactionsScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >

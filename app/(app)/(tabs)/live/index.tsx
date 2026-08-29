@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { EarningsBar, Screen, SectionLabel } from '@components/shared';
 import { Text } from '@components/ui';
+import { useNotificationStore } from '@store';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
@@ -41,6 +42,7 @@ const INITIAL_REWARDS: Reward[] = [
 /** Live tab — the pre-flight check before opening the doors. */
 const GoLiveScreen = () => {
   const router = useRouter();
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
 
   const [title, setTitle] = useState('Late night vibes & requests 🎶');
   const [category, setCategory] = useState('Music');
@@ -60,7 +62,7 @@ const GoLiveScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >

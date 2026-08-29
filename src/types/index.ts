@@ -39,6 +39,11 @@ export type {
   CreateActivityPayload,
   FunWheel,
   FunWheelActivity,
+  NotificationItem,
+  UnreadCountResponse,
+  DevicePlatform,
+  RegisterDevicePayload,
+  UnregisterDevicePayload,
 } from './api';
 export type {
   AuthRoute,

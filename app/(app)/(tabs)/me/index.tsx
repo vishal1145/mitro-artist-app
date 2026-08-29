@@ -17,6 +17,7 @@ import { Text } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
 import { useProfile } from '@hooks/useProfile';
 import { useAuthStore } from '@store/authStore';
+import { useNotificationStore } from '@store/notificationStore';
 import { colors, fontFamily, layout, radius } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { formatTokens, initialsFrom, titleCase } from '@utils/format';
@@ -124,6 +125,7 @@ interface Stat {
 const MeScreen = () => {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   const { data: profile, isLoading, error: profileError } = useProfile();
@@ -200,7 +202,7 @@ const MeScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >

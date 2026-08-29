@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
   CircleFilters,
@@ -9,112 +9,78 @@ import {
   PageHeader,
   Screen,
   SectionLabel,
+  SkeletonRows,
   type CircleFilterOption,
 } from '@components/shared';
 import { Text } from '@components/ui';
+import { useNotificationStore } from '@store';
+import type { NotificationItem } from '@app-types/api';
 import { colors, fontFamily, layout, radius } from '@theme';
+import { relativeShort } from '@utils/format';
+import { navigateToNotification, notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
 
-type FeatherIconName = keyof typeof Feather.glyphMap;
-type Category = 'all' | 'earnings' | 'followers' | 'system';
-type Group = 'TODAY' | 'THIS WEEK';
+type FilterValue = 'all' | 'unread';
+type Group = 'TODAY' | 'EARLIER';
 
-type ActionRoute =
-  | '/(app)/(tabs)/home/broadcast-detail'
-  | '/(app)/(tabs)/business'
-  | '/(app)/(tabs)/calls';
+const isToday = (iso: string): boolean => {
+  const date = new Date(iso);
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+};
 
-interface Note {
-  id: string;
-  group: Group;
-  category: Exclude<Category, 'all'>;
-  icon: FeatherIconName;
-  tint: string;
-  fill: string;
-  title: string;
-  body: string;
-  /** Right-hand marker — "NEW" reads as a badge, anything else as a timestamp. */
-  stamp: string;
-  action?: { label: string; route: ActionRoute };
-  unread?: boolean;
-}
-
-const NOTES: Note[] = [
-  {
-    id: 'n1',
-    group: 'TODAY',
-    category: 'followers',
-    icon: 'eye',
-    tint: colors.pink,
-    fill: colors.pinkSoft,
-    title: 'Your stream crossed 2K viewers',
-    body: 'Acoustic Request Night is trending in Music.',
-    stamp: 'NEW',
-    action: { label: 'View analytics', route: '/(app)/(tabs)/home/broadcast-detail' },
-    unread: true,
-  },
-  {
-    id: 'n2',
-    group: 'TODAY',
-    category: 'earnings',
-    icon: 'credit-card',
-    tint: colors.green,
-    fill: colors.successChip,
-    title: 'Payout ready',
-    body: 'Rs 18,450 available to withdraw.',
-    stamp: '1H',
-    action: { label: 'Go to Business', route: '/(app)/(tabs)/business' },
-    unread: true,
-  },
-  {
-    id: 'n3',
-    group: 'THIS WEEK',
-    category: 'system',
-    icon: 'calendar',
-    tint: colors.violet,
-    fill: colors.violetSoft,
-    title: 'Session reminder',
-    body: 'Creator Q&A starts tomorrow 7:00 PM.',
-    stamp: '1D',
-    action: { label: 'Open Calls', route: '/(app)/(tabs)/calls' },
-    unread: true,
-  },
-  {
-    id: 'n4',
-    group: 'THIS WEEK',
-    category: 'followers',
-    icon: 'users',
-    tint: colors.cyan,
-    fill: colors.cyanSoft,
-    title: '940 new followers',
-    body: 'Live gifts and paid sessions drove most of them.',
-    stamp: '3D',
-  },
-];
-
-const GROUPS: Group[] = ['TODAY', 'THIS WEEK'];
+const groupOf = (item: NotificationItem): Group => (isToday(item.createdAtUtc) ? 'TODAY' : 'EARLIER');
+const GROUPS: Group[] = ['TODAY', 'EARLIER'];
 
 const NotificationsScreen = () => {
   const router = useRouter();
-  const [category, setCategory] = useState<Category>('all');
-  const [read, setRead] = useState<string[]>([]);
+  const [filter, setFilter] = useState<FilterValue>('all');
 
-  const unreadCount = NOTES.filter((n) => n.unread && !read.includes(n.id)).length;
+  const items = useNotificationStore((s) => s.items);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const hydrated = useNotificationStore((s) => s.hydrated);
+  const refreshing = useNotificationStore((s) => s.refreshing);
+  const refresh = useNotificationStore((s) => s.refresh);
+  const markRead = useNotificationStore((s) => s.markRead);
+  const markAllRead = useNotificationStore((s) => s.markAllRead);
 
   const filters: CircleFilterOption[] = [
     { value: 'all', label: 'All', icon: 'bell', badge: unreadCount },
-    { value: 'earnings', label: 'Earnings', icon: 'dollar-sign' },
-    { value: 'followers', label: 'Followers', icon: 'users' },
-    { value: 'system', label: 'System', icon: 'plus' },
+    { value: 'unread', label: 'Unread', icon: 'mail' },
   ];
 
   const visible = useMemo(
-    () => (category === 'all' ? NOTES : NOTES.filter((n) => n.category === category)),
-    [category],
+    () => (filter === 'unread' ? items.filter((item) => !item.isRead) : items),
+    [items, filter],
   );
 
+  const handlePress = (item: NotificationItem): void => {
+    void markRead(item.id);
+    // Only jump the artist somewhere when there's a real destination — most
+    // "system" notifications are informational and belong right where the
+    // artist already is: this list.
+    if (item.actionUrl || item.type === 'private_call_request') {
+      navigateToNotification(item);
+    }
+  };
+
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void refresh()}
+          tintColor={colors.pink}
+        />
+      }
       header={
         <PageHeader
           title="Notifications"
@@ -122,7 +88,7 @@ const NotificationsScreen = () => {
           badge={unreadCount}
           right={
             <Pressable
-              onPress={() => setRead(NOTES.map((n) => n.id))}
+              onPress={() => void markAllRead()}
               style={styles.markAll}
               hitSlop={8}
               accessibilityRole="button"
@@ -134,23 +100,29 @@ const NotificationsScreen = () => {
         />
       }
     >
-      <InsightLine style={styles.insight} lead={`${unreadCount} need your attention`} />
+      <InsightLine
+        style={styles.insight}
+        lead={unreadCount ? `${unreadCount} need your attention` : 'You’re all caught up'}
+      />
 
       <CircleFilters
         style={styles.filters}
         options={filters}
-        value={category}
-        onChange={(v) => setCategory(v as Category)}
+        value={filter}
+        onChange={(v) => setFilter(v as FilterValue)}
       />
 
-      {visible.length === 0 ? (
+      {!hydrated ? <SkeletonRows count={4} style={styles.skeleton} /> : null}
+
+      {hydrated && visible.length === 0 ? (
         <Text variant="bodySm" color="textMuted" align="center" style={styles.empty}>
           Nothing here yet.
         </Text>
       ) : null}
 
-      {GROUPS.map((group) => {
-        const rows = visible.filter((n) => n.group === group);
+      {hydrated &&
+        GROUPS.map((group) => {
+        const rows = visible.filter((item) => groupOf(item) === group);
         if (rows.length === 0) {
           return null;
         }
@@ -159,54 +131,60 @@ const NotificationsScreen = () => {
           <View key={group}>
             <SectionLabel style={styles.sectionLabel}>{group}</SectionLabel>
 
-            {rows.map((n) => {
-              const isUnread = Boolean(n.unread) && !read.includes(n.id);
+            {rows.map((item) => {
+              const visual = notificationVisual(item.type);
+              const hasRoute = Boolean(item.actionUrl) || item.type === 'private_call_request';
 
               return (
                 <Pressable
-                  key={n.id}
+                  key={item.id}
                   style={styles.note}
-                  onPress={() => setRead((prev) => [...prev, n.id])}
+                  onPress={() => handlePress(item)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${n.title}. ${n.body}`}
+                  accessibilityLabel={`${item.title}. ${item.body}`}
                 >
                   {/* Accent bar keeps the row anchored to the left rule. */}
-                  <View style={[styles.accent, { backgroundColor: n.tint }]} />
+                  <View style={[styles.accent, { backgroundColor: visual.tint }]} />
 
-                  <View style={[styles.noteIcon, { backgroundColor: n.fill }]}>
-                    <Feather name={n.icon} size={rf(16)} color={n.tint} />
+                  <View style={[styles.noteIcon, { backgroundColor: visual.fill }]}>
+                    <Feather name={visual.icon} size={rf(16)} color={visual.tint} />
                   </View>
 
                   <View style={styles.noteText}>
                     <View style={styles.noteHead}>
-                      <Text variant="bodyLg" color="textPrimary" style={styles.noteTitle}>
-                        {n.title}
+                      <Text
+                        variant="bodyLg"
+                        color="textPrimary"
+                        style={styles.noteTitle}
+                        numberOfLines={1}
+                      >
+                        {item.title}
                       </Text>
-                      <Text variant="label" color={n.stamp === 'NEW' ? 'pink' : 'textMuted'}>
-                        {n.stamp}
+                      <Text variant="label" color={item.isRead ? 'textMuted' : 'pink'}>
+                        {item.isRead ? relativeShort(item.createdAtUtc) : 'NEW'}
                       </Text>
                     </View>
 
-                    <Text variant="bodySm" color="textMuted">
-                      {n.body}
+                    <Text variant="bodySm" color="textMuted" numberOfLines={2}>
+                      {item.body}
                     </Text>
 
                     {/* Action and unread marker share a row; the dot shows for
                         every unread note, action or not. */}
                     <View style={styles.actionRow}>
-                      {n.action ? (
+                      {hasRoute ? (
                         <Text
                           variant="bodySm"
                           color="pink"
                           style={styles.actionLabel}
-                          onPress={() => router.push(n.action?.route ?? '/(app)/(tabs)/home')}
+                          onPress={() => handlePress(item)}
                         >
-                          {n.action.label}
+                          View
                         </Text>
                       ) : (
                         <View style={styles.actionLabel} />
                       )}
-                      {isUnread ? <View style={styles.unreadDot} /> : null}
+                      {!item.isRead ? <View style={styles.unreadDot} /> : null}
                     </View>
                   </View>
                 </Pressable>
@@ -249,6 +227,9 @@ const styles = StyleSheet.create({
   empty: {
     marginTop: 32,
     lineHeight: rf(17),
+  },
+  skeleton: {
+    marginTop: 24,
   },
 
   note: {

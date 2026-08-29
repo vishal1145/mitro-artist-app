@@ -11,6 +11,7 @@ import {
   SectionLabel,
 } from '@components/shared';
 import { Text } from '@components/ui';
+import { useNotificationStore } from '@store';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
@@ -77,6 +78,7 @@ const UP_NEXT = {
 /** Calls tab root — the hub for sessions, private calls and broadcasts. */
 const CallsHubScreen = () => {
   const router = useRouter();
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
   const seatsLeft = UP_NEXT.total - UP_NEXT.filled;
 
   return (
@@ -85,7 +87,7 @@ const CallsHubScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >

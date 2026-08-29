@@ -2,10 +2,28 @@ import { create } from 'zustand';
 
 import { SECURE_KEYS } from '@constants';
 import { authApi, registerAuthHandlers } from '@services/api';
+import { pushNotifications } from '@services/push/pushNotifications';
 import { queryClient } from '@services/queryClient';
 import { secureStorage } from '@services/storage';
 import type { AuthSession, AuthTokens, User } from '@app-types/api';
 import { logger } from '@utils/logger';
+
+import { useNotificationStore } from './notificationStore';
+
+/**
+ * Notifications piggyback on the auth lifecycle rather than owning their own:
+ * the list/badge/hub connection only make sense for a signed-in artist, and
+ * the push token only belongs on the device while that artist is signed in.
+ */
+const startNotifications = (): void => {
+  void useNotificationStore.getState().init();
+  void pushNotifications.register();
+};
+
+const stopNotifications = (): void => {
+  useNotificationStore.getState().teardown();
+  void pushNotifications.unregister();
+};
 
 /**
  * Auth state (Zustand). Tokens are the source of truth in expo-secure-store
@@ -53,6 +71,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         status: token ? 'authenticated' : 'unauthenticated',
         hydrated: true,
       });
+      // A cold start with an existing session still needs its notifications
+      // loaded and the hub connected — `authenticate` only fires on a fresh
+      // login, not on this resumed one.
+      if (token) {
+        startNotifications();
+      }
     } catch (error) {
       logger.error('Auth bootstrap failed', { error: String(error) });
       set({ token: null, status: 'unauthenticated', hydrated: true });
@@ -69,6 +93,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: session.user,
       status: 'authenticated',
     });
+    startNotifications();
   },
 
   updateTokens: (tokens) => {
@@ -76,6 +101,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    // Unregister the push token and close the hub *before* the access token
+    // is wiped — both still need it to authenticate their last request.
+    stopNotifications();
     // Best-effort server logout; local cleanup happens regardless, even if the
     // network call fails.
     try {

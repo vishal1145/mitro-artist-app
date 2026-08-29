@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EarningsBar, Screen, SegmentedControl } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
+import { useNotificationStore } from '@store';
 import { colors, fontFamily, layout, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
@@ -83,6 +84,7 @@ const SUMMARY = [
 
 const RewardFulfillmentScreen = () => {
   const router = useRouter();
+  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
   const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
   const [tab, setTab] = useState<string>(initialFilter ?? 'To Fulfil (3)');
   const [delivered, setDelivered] = useState<string[]>([]);
@@ -107,7 +109,7 @@ const RewardFulfillmentScreen = () => {
         <EarningsBar
           brand
           onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread
+          unread={hasUnread}
         />
       }
     >
