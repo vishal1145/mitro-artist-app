@@ -54,6 +54,7 @@
           "color": "#FF3FAD"
         }
       ],
+      "./plugins/withNotificationColorMergeFix",
       [
         "expo-image-picker",
         {
