@@ -10,7 +10,7 @@ import {
   type Messaging,
   type RemoteMessage,
 } from '@react-native-firebase/messaging';
-import { Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 import { notificationApi } from '@services/api';
 import { useNotificationStore } from '@store/notificationStore';
@@ -83,15 +83,31 @@ export const pushNotifications = {
     }
 
     try {
-      // requestPermission is deprecated upstream in favor of expo-notifications
-      // or react-native-permissions, but still functional — kept rather than
-      // adding a package this app doesn't otherwise need.
-      const status = await requestPermission(messaging);
-      const granted =
-        status === AuthorizationStatus.AUTHORIZED ||
-        status === AuthorizationStatus.PROVISIONAL;
+      // Permission is platform-specific:
+      //  • Android 13+ (API 33): POST_NOTIFICATIONS is a RUNTIME permission —
+      //    show the explicit system prompt (RNFB's requestPermission alone
+      //    does NOT reliably show it, which is why users had to enable it
+      //    manually in Settings). Android <13: notifications on by default.
+      //  • iOS: RNFB's requestPermission shows the prompt.
+      // (getToken works regardless — the permission only gates the VISIBLE
+      //  notification, not receiving the push / registering the token.)
+      let granted: boolean;
+      if (Platform.OS === 'android') {
+        if (typeof Platform.Version === 'number' && Platform.Version >= 33) {
+          const res = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+          granted = res === PermissionsAndroid.RESULTS.GRANTED;
+        } else {
+          granted = true;
+        }
+      } else {
+        const status = await requestPermission(messaging);
+        granted =
+          status === AuthorizationStatus.AUTHORIZED ||
+          status === AuthorizationStatus.PROVISIONAL;
+      }
+
       if (!granted) {
-        logger.info('Push permission not granted', { status });
+        logger.info('Push permission not granted');
         return;
       }
 

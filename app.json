@@ -37,6 +37,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "softwareKeyboardLayoutMode": "pan",
+      "permissions": ["POST_NOTIFICATIONS"],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
