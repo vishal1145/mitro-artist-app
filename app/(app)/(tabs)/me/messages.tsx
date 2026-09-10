@@ -1,63 +1,64 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { PageHeader, Screen } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
-import { colors, fontFamily, layout, radius } from '@theme';
+import { useConversations } from '@hooks/usePrivateMessages';
+import type { ArtistConversationSummary } from '@app-types/api';
+import { colors, fontFamily, layout } from '@theme';
 import { rf } from '@utils/responsive';
 
-interface Conversation {
-  id: string;
-  name: string;
-  initials: string;
-  color: string;
-  preview: string;
-  /** Fragment of the preview that carries the gift/highlight tint. */
-  previewHighlight?: string;
-  stamp: string;
-  unread?: number;
-  isNew?: boolean;
+const AVATAR_COLORS = [colors.pink, colors.cyan, colors.gold];
+
+function colorFor(id: string): string {
+  let sum = 0;
+  for (let i = 0; i < id.length; i += 1) sum += id.charCodeAt(i);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }
 
-const CONVERSATIONS: Conversation[] = [
-  {
-    id: 'f_riya',
-    name: 'Riya Sharma',
-    initials: 'RS',
-    color: colors.pink,
-    preview: 'For the pizza fund! 🍕 ',
-    previewHighlight: "Can't wait for the Q…",
-    stamp: '11:30 AM',
-    unread: 2,
-  },
-  {
-    id: 'f_kabir',
-    name: 'Kabir Mehta',
-    initials: 'KM',
-    color: colors.cyan,
-    preview: 'Are you doing ',
-    previewHighlight: 'another mixing session this wee…',
-    stamp: 'Yesterday',
-  },
-  {
-    id: 'f_ananya',
-    name: 'Ananya Rao',
-    initials: 'AR',
-    color: colors.gold,
-    preview: 'Just followed — ',
-    previewHighlight: 'loved the last stream!',
-    stamp: 'Aug 16',
-    isNew: true,
-  },
-];
+function initialsFor(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
-/** Fan inbox — every conversation, newest first. */
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'now';
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d`;
+  return new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
+
+/** Fan inbox — every conversation, newest first (live). */
 const MessagesScreen = () => {
   const router = useRouter();
-  const unread = CONVERSATIONS.reduce((n, c) => n + (c.unread ?? 0), 0);
+  const { data, isLoading } = useConversations();
+  const conversations = data ?? [];
+  const unread = conversations.reduce((n, c) => n + (c.unreadCount ?? 0), 0);
+
+  const openThread = (c: ArtistConversationSummary) => {
+    router.push({
+      pathname: '/(app)/(modals)/chat-thread',
+      params: {
+        userId: c.userId,
+        name: c.userDisplayName ?? 'Fan',
+        avatarUrl: c.userAvatarUrl ?? '',
+      },
+    });
+  };
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
       header={
         <PageHeader
           title="Messages"
@@ -72,60 +73,62 @@ const MessagesScreen = () => {
         />
       }
     >
+      {isLoading && conversations.length === 0 ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.pink} />
+        </View>
+      ) : conversations.length === 0 ? (
+        <View style={styles.center}>
+          <Text variant="bodyLg" color="textPrimary" style={styles.emptyTitle}>
+            No messages yet
+          </Text>
+          <Text variant="bodySm" color="textMuted" style={styles.emptyHint}>
+            When a fan messages you, the conversation shows up here.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.list}>
+          {conversations.map((c, i) => {
+            const name = c.userDisplayName ?? 'Fan';
+            const preview = `${c.lastMessageSenderType === 'artist' ? 'You: ' : ''}${c.lastMessageText ?? ''}`;
+            return (
+              <Pressable
+                key={c.userId}
+                style={[styles.row, i === 0 ? null : styles.rowDivider]}
+                onPress={() => openThread(c)}
+                accessibilityRole="button"
+                accessibilityLabel={`Conversation with ${name}`}
+              >
+                <Avatar initials={initialsFor(name)} name={name} size="lg" color={colorFor(c.userId)} />
 
-      <View style={styles.list}>
-        {CONVERSATIONS.map((c, i) => (
-          <Pressable
-            key={c.id}
-            style={[styles.row, i === 0 ? null : styles.rowDivider]}
-            onPress={() =>
-              router.push({
-                pathname: '/(app)/(modals)/chat-thread',
-                params: { followerId: c.id, name: c.name },
-              })
-            }
-            accessibilityRole="button"
-            accessibilityLabel={`Conversation with ${c.name}`}
-          >
-            <Avatar initials={c.initials} name={c.name} size="lg" color={c.color} />
-
-            <View style={styles.rowText}>
-              <Text variant="bodyLg" color="textPrimary" style={styles.name}>
-                {c.name}
-              </Text>
-              <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-                {c.preview}
-                {c.previewHighlight ? (
-                  <Text variant="bodySm" color="textSecondary">
-                    {c.previewHighlight}
+                <View style={styles.rowText}>
+                  <Text variant="bodyLg" color="textPrimary" style={styles.name} numberOfLines={1}>
+                    {name}
                   </Text>
-                ) : null}
-              </Text>
-            </View>
-
-            <View style={styles.rowMeta}>
-              <Text variant="bodySm" color="textMuted">
-                {c.stamp}
-              </Text>
-
-              {c.unread ? (
-                <View style={styles.unread}>
-                  <Text style={styles.unreadText}>{c.unread}</Text>
-                </View>
-              ) : null}
-
-              {c.isNew ? (
-                <View style={styles.newPill}>
-                  <Text variant="label" color="cyan">
-                    NEW
+                  <Text
+                    variant="bodySm"
+                    color={c.unreadCount ? 'textSecondary' : 'textMuted'}
+                    numberOfLines={1}
+                  >
+                    {preview}
                   </Text>
                 </View>
-              ) : null}
-            </View>
-          </Pressable>
-        ))}
-      </View>
 
+                <View style={styles.rowMeta}>
+                  <Text variant="bodySm" color="textMuted">
+                    {relativeTime(c.lastMessageAtUtc)}
+                  </Text>
+                  {c.unreadCount ? (
+                    <View style={styles.unread}>
+                      <Text style={styles.unreadText}>{c.unreadCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
     </Screen>
   );
 };
@@ -134,7 +137,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: layout.screenPadding,
   },
-
   headBadge: {
     minWidth: 24,
     height: 24,
@@ -149,11 +151,18 @@ const styles = StyleSheet.create({
     fontSize: rf(10),
     color: colors.white,
   },
-
-  insight: {
-    marginTop: 12,
+  center: {
+    marginTop: 80,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 24,
   },
-
+  emptyTitle: {
+    fontFamily: fontFamily.bold,
+  },
+  emptyHint: {
+    textAlign: 'center',
+  },
   list: {
     marginTop: 12,
     borderTopWidth: 1,
@@ -194,22 +203,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.extrabold,
     fontSize: rf(9),
     color: colors.white,
-  },
-  newPill: {
-    borderWidth: 1,
-    borderColor: colors.infoBorder,
-    backgroundColor: colors.infoSoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-  },
-
-  footnote: {
-    marginTop: 26,
-    lineHeight: rf(17),
-  },
-  footLink: {
-    fontFamily: fontFamily.bold,
   },
 });
 

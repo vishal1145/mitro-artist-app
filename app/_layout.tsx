@@ -27,6 +27,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppSplash } from '@components/AppSplash';
 import { AppErrorBoundary, NotificationToastHost } from '@components/shared';
 import { attachInterceptors } from '@services/api';
 import { pushNotifications } from '@services/push/pushNotifications';
@@ -152,8 +153,12 @@ const RootLayout = () => {
 
   useAuthGuard();
 
+  // Branded splash (logo + spinner) while stores hydrate and fonts load -
+  // mirrors the user app so the launch experience matches. The native splash
+  // stays up until this paints (hideAsync fires on its first layout), so
+  // there's no blank flash between the two.
   if (!appReady) {
-    return null;
+    return <AppSplash />;
   }
 
   return (

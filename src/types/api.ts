@@ -459,3 +459,50 @@ export interface RegisterDevicePayload {
 export interface UnregisterDevicePayload {
   fcmToken: string;
 }
+
+
+/* ---- Paid private messages (artist side) ---------------------------------
+ * Mirrors MyArtist.Artist.Api PrivateMessagesController. Replies are free;
+ * the paid user→artist send lives on the User API. */
+
+/** One row in the artist's message inbox. */
+export interface ArtistConversationSummary {
+  userId: string;
+  userDisplayName: string | null;
+  userAvatarUrl: string | null;
+  lastMessageText: string;
+  lastMessageSenderType: 'user' | 'artist';
+  lastMessageAtUtc: string;
+  unreadCount: number;
+}
+
+/** One message in a 1:1 fan thread. */
+export interface PrivateMessageItem {
+  id: string;
+  senderType: 'user' | 'artist';
+  messageText: string;
+  privateCallId: string | null;
+  priceCharged: number;
+  readAtUtc: string | null;
+  createdAtUtc: string;
+  /** Edit/delete are only accepted while the fan hasn't read the message yet. */
+  editedAtUtc?: string | null;
+  isDeleted?: boolean;
+  /** Reply threading — the quoted message this one replies to. */
+  replyToMessageId?: string | null;
+  replyToText?: string | null;
+  replyToSenderType?: 'user' | 'artist' | null;
+}
+
+export interface PrivateMessageConversationResponse {
+  items: PrivateMessageItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ReplyPrivateMessageResponse {
+  message: string;
+  messageId: string;
+  createdAtUtc: string;
+}

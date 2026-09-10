@@ -6,14 +6,14 @@
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "scheme": "mitroartist",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "backgroundColor": "#070614",
+    "backgroundColor": "#05040B",
     "icon": "./src/static/images/icon.png",
     "splash": {
-      "image": "./src/static/images/splash-icon.png",
+      "image": "./src/static/images/splash-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#070614"
+      "backgroundColor": "#05040B"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -31,7 +31,7 @@
     },
     "android": {
       "package": "com.mitro.artist",
-      "backgroundColor": "#070614",
+      "backgroundColor": "#05040B",
       "adaptiveIcon": {
         "foregroundImage": "./src/static/images/icon-adaptive.png",
         "backgroundColor": "#FFFFFF"
@@ -73,10 +73,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./src/static/images/splash-icon.png",
-          "backgroundColor": "#070614",
+          "image": "./src/static/images/splash-logo.png",
+          "backgroundColor": "#05040B",
           "resizeMode": "contain",
-          "imageWidth": 200
+          "imageWidth": 180
         }
       ],
       "expo-build-properties",

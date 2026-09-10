@@ -31,6 +31,11 @@ export const queryKeys = {
     history: (take: number, skip: number) =>
       [...queryKeys.broadcast.all, 'history', take, skip] as const,
   },
+  messages: {
+    all: ['messages'] as const,
+    list: () => [...queryKeys.messages.all, 'list'] as const,
+    thread: (userId: string) => [...queryKeys.messages.all, 'thread', userId] as const,
+  },
   user: {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
