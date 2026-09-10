@@ -5,11 +5,10 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "RCT_USE_PREBUILT_RNCORE=0 expo run:ios",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx",
-    "ios:clean": "rm -rf ios/Pods ios/Podfile.lock ios/build && RCT_USE_PREBUILT_RNCORE=0 expo run:ios"
+    "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

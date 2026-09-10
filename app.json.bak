@@ -26,9 +26,7 @@
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -39,9 +37,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "softwareKeyboardLayoutMode": "pan",
-      "permissions": [
-        "POST_NOTIFICATIONS"
-      ],
+      "permissions": ["POST_NOTIFICATIONS"],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -71,9 +67,6 @@
         {
           "android": {
             "usesCleartextTraffic": true
-          },
-          "ios": {
-            "useFrameworks": "static"
           }
         }
       ],
@@ -86,6 +79,7 @@
           "imageWidth": 180
         }
       ],
+      "expo-build-properties",
       "@react-native-firebase/app",
       "@react-native-firebase/messaging"
     ],
