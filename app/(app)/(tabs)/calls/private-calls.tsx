@@ -1,25 +1,18 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { PageHeader, Screen, SectionLabel, TimelineRow } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
+import { privateCallApi } from '@services/api/privateCallApi';
+import { profileApi } from '@services/api/profileApi';
+import type { PrivateCallRequestItem } from '@app-types/privateCall';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
-interface Request {
-  id: string;
-  fan: string;
-  initials: string;
-  terms: string;
-}
-
-/** Requests only exist while the artist is accepting calls. */
-const REQUESTS: Request[] = [
-  { id: 'req_1', fan: 'Riya Sharma', initials: 'RS', terms: '50 tk/min · first 5 min upfront' },
-];
+const REQUESTS_POLL_MS = 8000;
 
 const HISTORY = [
   {
@@ -43,8 +36,71 @@ const PrivateCallsScreen = () => {
   const router = useRouter();
   const [rate, setRate] = useState('50');
   const [accepting, setAccepting] = useState(false);
+  const [pending, setPending] = useState<PrivateCallRequestItem[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [savingToggle, setSavingToggle] = useState(false);
 
-  const pending = accepting ? REQUESTS : [];
+  // Load the current availability + price from the artist profile.
+  useEffect(() => {
+    profileApi.getProfile().then((r) => {
+      if (r.success) {
+        setAccepting(!!r.data.acceptsPrivateCalls);
+        if (typeof r.data.privateShowTokenPerMinute === 'number') {
+          setRate(String(r.data.privateShowTokenPerMinute));
+        }
+      }
+    });
+  }, []);
+
+  // Turn 1:1 calls on/off (and save the price) on the backend — fans can only
+  // send requests while this is ON.
+  const toggleAccepting = useCallback(async () => {
+    const next = !accepting;
+    setSavingToggle(true);
+    const res = await privateCallApi.setSettings(next, Number(rate) || 0);
+    if (res.success) setAccepting(next);
+    else Alert.alert("Couldn't update", res.error);
+    setSavingToggle(false);
+  }, [accepting, rate]);
+
+  const refreshRequests = useCallback(() => {
+    privateCallApi.getRequests().then((r) => r.success && setPending(r.data));
+  }, []);
+
+  useEffect(() => {
+    refreshRequests();
+    const id = setInterval(refreshRequests, REQUESTS_POLL_MS);
+    return () => clearInterval(id);
+  }, [refreshRequests]);
+
+  const acceptRequest = useCallback(
+    async (req: PrivateCallRequestItem) => {
+      setBusyId(req.requestId);
+      const res = await privateCallApi.acceptRequest(req.requestId);
+      if (res.success) {
+        router.push({
+          pathname: '/(app)/(modals)/private-call-room',
+          params: {
+            connection: JSON.stringify(res.data),
+            fanName: req.userDisplayName,
+            ratePerMin: String(req.pricePerMinuteSnapshot),
+          },
+        });
+        setPending((prev) => prev.filter((p) => p.requestId !== req.requestId));
+      } else {
+        Alert.alert("Couldn't accept", res.error);
+      }
+      setBusyId(null);
+    },
+    [router],
+  );
+
+  const declineRequest = useCallback(async (req: PrivateCallRequestItem) => {
+    setBusyId(req.requestId);
+    await privateCallApi.rejectRequest(req.requestId, 'Not available right now');
+    setPending((prev) => prev.filter((p) => p.requestId !== req.requestId));
+    setBusyId(null);
+  }, []);
 
   return (
     <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
@@ -105,9 +161,10 @@ const PrivateCallsScreen = () => {
           </View>
 
           <Pressable
-            onPress={() => setAccepting((v) => !v)}
+            onPress={toggleAccepting}
+            disabled={savingToggle}
             accessibilityRole="button"
-            accessibilityLabel={accepting ? 'Stop accepting private calls' : 'Accept private calls'}
+            accessibilityLabel={accepting ? 'Turn off private calls' : 'Turn on private calls'}
             style={styles.toggleBtn}
           >
             {accepting ? (
@@ -117,11 +174,11 @@ const PrivateCallsScreen = () => {
                 end={gradientDirection.horizontal.end}
                 style={styles.toggleFill}
               >
-                <Text style={styles.toggleLabelOn}>ON — accepting requests</Text>
+                <Text style={styles.toggleLabelOn}>{savingToggle ? 'Saving…' : 'ON — tap to turn off'}</Text>
               </LinearGradient>
             ) : (
               <View style={[styles.toggleFill, styles.toggleOff]}>
-                <Text style={styles.toggleLabelOff}>Turn on</Text>
+                <Text style={styles.toggleLabelOff}>{savingToggle ? 'Saving…' : 'Turn on'}</Text>
               </View>
             )}
           </Pressable>
@@ -148,65 +205,46 @@ const PrivateCallsScreen = () => {
         </Text>
       ) : (
         pending.map((r) => (
-          <View key={r.id} style={styles.request}>
-            <Avatar initials={r.initials} name={r.fan} size="md" />
+          <View key={r.requestId} style={styles.request}>
+            <Avatar initials={(r.userDisplayName || '?').slice(0, 1).toUpperCase()} name={r.userDisplayName} size="md" />
 
             <View style={styles.requestText}>
               <Text variant="bodyLg" color="textPrimary">
-                {r.fan} wants a private call
+                {r.userDisplayName} wants a private call
               </Text>
               <Text variant="bodySm" color="textMuted">
-                {r.terms}
+                {r.initialChargeSnapshot} tk upfront · {r.pricePerMinuteSnapshot} tk/min
               </Text>
             </View>
 
             <View style={styles.requestActions}>
               <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: '/(app)/(modals)/private-call-room',
-                    params: { callId: r.id, fan: r.fan },
-                  })
-                }
+                onPress={() => acceptRequest(r)}
+                disabled={busyId === r.requestId}
                 style={[styles.decisionBtn, styles.acceptBtn]}
                 accessibilityRole="button"
-                accessibilityLabel={`Accept call from ${r.fan}`}
+                accessibilityLabel={`Accept call from ${r.userDisplayName}`}
               >
-                <Text variant="bodySm" color="green" style={styles.decisionLabel}>
-                  Accept
-                </Text>
+                {busyId === r.requestId ? (
+                  <ActivityIndicator size="small" color={colors.green} />
+                ) : (
+                  <Text variant="bodySm" color="green" style={styles.decisionLabel}>Accept</Text>
+                )}
               </Pressable>
 
               <Pressable
+                onPress={() => declineRequest(r)}
+                disabled={busyId === r.requestId}
                 style={[styles.decisionBtn, styles.declineBtn]}
                 accessibilityRole="button"
-                accessibilityLabel={`Decline call from ${r.fan}`}
+                accessibilityLabel={`Decline call from ${r.userDisplayName}`}
               >
-                <Text variant="bodySm" color="red" style={styles.decisionLabel}>
-                  Decline
-                </Text>
+                <Text variant="bodySm" color="red" style={styles.decisionLabel}>Decline</Text>
               </Pressable>
             </View>
           </View>
         ))
       )}
-
-      {/* Stands in for the push notification that opens this flow in production. */}
-      <Pressable
-        style={styles.previewBtn}
-        onPress={() =>
-          router.push({
-            pathname: '/(app)/(modals)/incoming-call-request',
-            params: { requestId: 'req_demo', fan: 'Riya Sharma', offer: `${rate} tk/min` },
-          })
-        }
-        accessibilityRole="button"
-        accessibilityLabel="Preview an incoming call request"
-      >
-        <Text variant="label" color="textMuted">
-          PREVIEW INCOMING CALL
-        </Text>
-      </Pressable>
 
       <SectionLabel style={styles.sectionLabel}>HISTORY</SectionLabel>
 

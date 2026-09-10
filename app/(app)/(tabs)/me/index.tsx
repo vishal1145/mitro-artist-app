@@ -15,6 +15,7 @@ import {
 } from '@components/shared';
 import { Text } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
+import { useConversations } from '@hooks/usePrivateMessages';
 import { useProfile } from '@hooks/useProfile';
 import { useAuthStore } from '@store/authStore';
 import { useNotificationStore } from '@store/notificationStore';
@@ -130,6 +131,13 @@ const MeScreen = () => {
 
   const { data: profile, isLoading, error: profileError } = useProfile();
   const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
+  const { data: convos } = useConversations();
+  const messagesUnread = (convos ?? []).reduce((n, c) => n + (c.unreadCount ?? 0), 0);
+  const accountRows: Row[] = ACCOUNT.map((r) =>
+    r.route === '/(app)/(tabs)/me/messages'
+      ? { ...r, badge: messagesUnread || undefined, sub: 'Chat with your fans' }
+      : r,
+  );
 
   const isApproved = profile?.approvalStatus === 'approved';
 
@@ -275,7 +283,7 @@ const MeScreen = () => {
       <InsightLine style={styles.insight} lead="940 new followers this week" />
 
       <SectionLabel style={styles.sectionLabel}>ACCOUNT</SectionLabel>
-      {ACCOUNT.map((row, i) => renderRow(row, i === ACCOUNT.length - 1))}
+      {accountRows.map((row, i) => renderRow(row, i === accountRows.length - 1))}
 
       <SectionLabel style={styles.sectionLabel}>ACTIVITY</SectionLabel>
       {ACTIVITY.map((row, i) => renderRow(row, i === ACTIVITY.length - 1))}

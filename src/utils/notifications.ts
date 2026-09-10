@@ -18,6 +18,13 @@ import type { NotificationItem } from '@app-types/api';
 export const resolveNotificationRoute = (
   item: Pick<NotificationItem, 'type' | 'actionUrl' | 'referenceId'>,
 ): string => {
+  // Private messages route to the artist's inbox. Checked before actionUrl
+  // because the server's actionUrl ("/private-messages") is the User web
+  // route, not this app's.
+  if (item.type === 'private_message') {
+    return '/(app)/(tabs)/me/messages';
+  }
+
   if (item.actionUrl?.startsWith('/')) {
     return item.actionUrl;
   }
@@ -39,7 +46,11 @@ export interface NotificationVisual {
  * has never heard of — gets a plain bell in the brand pink. */
 const VISUAL_BY_TYPE: Record<string, NotificationVisual> = {
   private_call_request: { icon: 'phone', tint: colors.violet, fill: colors.violetSoft },
+  private_message: { icon: 'message-circle', tint: colors.pink, fill: colors.pinkSoft },
   new_follower: { icon: 'users', tint: colors.cyan, fill: colors.cyanSoft },
+  kyc_approved: { icon: 'check-circle', tint: colors.cyan, fill: colors.cyanSoft },
+  kyc_rejected: { icon: 'alert-triangle', tint: colors.pink, fill: colors.pinkSoft },
+  account_status_changed: { icon: 'shield', tint: colors.gold, fill: colors.goldSoft },
   system: { icon: 'bell', tint: colors.gold, fill: colors.goldSoft },
 };
 

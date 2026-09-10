@@ -39,6 +39,13 @@ export const API_CONFIG = {
 export const ALLOW_INSECURE_HTTP: boolean =
   process.env.EXPO_PUBLIC_ALLOW_INSECURE === 'true';
 
+/**
+ * Agora RTC App ID — inlined at build time from EXPO_PUBLIC_AGORA_APP_ID.
+ * Powers live broadcasting and private/group video calls (react-native-agora).
+ * Empty string when unset, which the Agora engine treats as "unavailable".
+ */
+export const AGORA_APP_ID: string = process.env.EXPO_PUBLIC_AGORA_APP_ID ?? '';
+
 /** Keys used with the secure (encrypted) store. Tokens ONLY. */
 export const SECURE_KEYS = {
   accessToken: 'mitro.auth.accessToken',

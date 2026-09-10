@@ -1,299 +1,186 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Screen } from '@components/shared';
-import { Avatar, Card, Text } from '@components/ui';
+import { Avatar, Text } from '@components/ui';
+import { privateCallApi } from '@services/api/privateCallApi';
 import { colors, fontFamily, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
-/** Seconds before the request auto-declines. */
-const AUTO_DECLINE_SEC = 24;
-/** Below this the countdown turns red. */
 const URGENT_SEC = 5;
 
 const IncomingCallRequestScreen = () => {
   const router = useRouter();
-  const { requestId, fan, offer } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     requestId?: string;
     fan?: string;
-    offer?: string;
+    message?: string;
+    pricePerMinute?: string;
+    initialCharge?: string;
+    expiresAt?: string;
   }>();
 
-  const fanName = fan ?? 'Riya Sharma';
-  const rate = offer ?? '24 tk/min';
+  const requestId = params.requestId;
+  const fanName = params.fan || 'Someone';
+  const message = params.message || '';
+  const pricePerMinute = Number(params.pricePerMinute) || 0;
+  const initialCharge = Number(params.initialCharge) || 0;
 
-  const [remaining, setRemaining] = useState(AUTO_DECLINE_SEC);
-  const [declined, setDeclined] = useState(false);
-  /** Guards against the timer firing after the user already acted. */
+  const secsUntilExpiry = () => {
+    if (!params.expiresAt) return 24;
+    return Math.max(0, Math.floor((new Date(params.expiresAt).getTime() - Date.now()) / 1000));
+  };
+
+  const [remaining, setRemaining] = useState(secsUntilExpiry());
+  const [busy, setBusy] = useState<'accept' | 'reject' | null>(null);
   const settled = useRef(false);
 
   const dismiss = useCallback(() => {
-    if (settled.current) {
-      return;
-    }
+    if (settled.current) return;
     settled.current = true;
-    router.replace('/(app)/(tabs)/calls/private-calls');
+    if (router.canGoBack()) router.back();
+    else router.replace('/(app)/(tabs)/calls/private-calls');
   }, [router]);
 
-  const accept = useCallback(() => {
-    if (settled.current) {
-      return;
+  const accept = useCallback(async () => {
+    if (settled.current || !requestId) return;
+    setBusy('accept');
+    const res = await privateCallApi.acceptRequest(requestId);
+    if (res.success) {
+      settled.current = true;
+      router.replace({
+        pathname: '/(app)/(modals)/private-call-room',
+        params: {
+          connection: JSON.stringify(res.data),
+          fanName,
+          ratePerMin: String(pricePerMinute),
+        },
+      });
+    } else {
+      Alert.alert("Couldn't accept", res.error);
+      setBusy(null);
     }
-    settled.current = true;
-    router.replace({
-      pathname: '/(app)/(modals)/private-call-room',
-      params: { callId: requestId ?? 'call_001', fanId: fanName, ratePerMin: '24' },
-    });
-  }, [router, requestId, fanName]);
+  }, [requestId, router, fanName, pricePerMinute]);
 
-  // Tick down once a second; at zero mark declined, then dismiss.
+  const reject = useCallback(async () => {
+    if (settled.current || !requestId) return;
+    setBusy('reject');
+    await privateCallApi.rejectRequest(requestId, 'Not available right now');
+    dismiss();
+  }, [requestId, dismiss]);
+
   useEffect(() => {
-    if (settled.current) {
-      return;
-    }
-
     const id = setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(id);
-          setDeclined(true);
-          // Let the "Call declined" state show briefly before leaving.
-          setTimeout(dismiss, 1200);
+          setTimeout(dismiss, 800);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(id);
   }, [dismiss]);
 
   const urgent = remaining <= URGENT_SEC;
-  const progress: `${number}%` = `${(remaining / AUTO_DECLINE_SEC) * 100}%`;
-  const label = declined
-    ? 'Call declined'
-    : `Auto-declines in 0:${String(remaining).padStart(2, '0')}`;
 
   return (
-    <Screen contentContainerStyle={styles.content}>
-      <View style={styles.body}>
-        <Text variant="label" color="primary" style={styles.kicker}>
-          INCOMING PRIVATE CALL
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <View style={styles.card}>
+        <View style={styles.iconWrap}>
+          <Feather name="phone-incoming" size={rf(26)} color={colors.pink} />
+        </View>
+        <Text variant="h2" color="textPrimary" align="center" style={styles.title}>
+          Incoming private call
         </Text>
 
-        {/* Caller */}
-        <View style={styles.caller}>
-          <View style={styles.avatarRing}>
-            <Avatar initials="RS" name={fanName} size="xl" />
-          </View>
-          <Text variant="h2" align="center">
-            {fanName}
+        <Avatar initials={fanName.slice(0, 1).toUpperCase()} size="lg" />
+        <Text variant="h3" color="textPrimary" align="center">{fanName}</Text>
+
+        {message ? (
+          <Text variant="bodySm" color="textSecondary" align="center" style={styles.message}>
+            &ldquo;{message}&rdquo;
           </Text>
-          <View style={styles.pills}>
-            <View style={[styles.pill, styles.pillWarning]}>
-              <Feather name="star" size={rf(13)} color={colors.warning} />
-              <Text variant="caption" color="warning">
-                Top Supporter
-              </Text>
-            </View>
-            <View style={[styles.pill, styles.pillNeutral]}>
-              <Text variant="caption" color="textSecondary">
-                12 sessions
-              </Text>
-            </View>
-          </View>
-        </View>
+        ) : null}
 
-        {/* Offer */}
-        <Card style={styles.offer}>
-          <View style={styles.offerRow}>
-            <Text variant="caption" color="textMuted">
-              Rate
-            </Text>
-            <Text variant="label" color="textPrimary">
-              {rate}
-            </Text>
-          </View>
-          <View style={styles.offerRow}>
-            <Text variant="caption" color="textMuted">
-              Minimum
-            </Text>
-            <Text variant="label" color="textPrimary">
-              5 min (120 tk)
-            </Text>
-          </View>
-          <View style={styles.offerRow}>
-            <Text variant="caption" color="textMuted">
-              Fan Balance
-            </Text>
-            <Text variant="label" color="textPrimary">
-              12,450 coins
-            </Text>
-          </View>
-        </Card>
-
-        {/* Countdown */}
-        <View style={styles.countdown}>
-          <View style={styles.track}>
-            <View
-              style={[
-                styles.fill,
-                { width: progress },
-                urgent ? styles.fillUrgent : null,
-              ]}
-            />
-          </View>
-          <Text variant="label" color={urgent || declined ? 'error' : 'warning'}>
-            {label}
+        <View style={styles.priceRow}>
+          <Feather name="zap" size={rf(13)} color={colors.gold} />
+          <Text variant="bodySm" color="textPrimary" align="center">
+            {initialCharge} tokens for the first 5 minutes
+            <Text variant="bodySm" color="textMuted"> ({pricePerMinute}/min after)</Text>
           </Text>
         </View>
 
-        {/* Actions */}
+        <Text variant="bodyLg" color={urgent ? 'danger' : 'textMuted'} style={styles.countdown}>
+          Auto-declines in {remaining}s
+        </Text>
+
         <View style={styles.actions}>
-          <Pressable
-            style={[styles.actionBtn, styles.declineBtn]}
-            onPress={dismiss}
-            disabled={declined}
-            accessibilityRole="button"
-            accessibilityLabel="Decline call"
-          >
-            <Text variant="link" color="textSecondary">
-              Decline
-            </Text>
+          <Pressable style={[styles.btn, styles.reject]} onPress={reject} disabled={busy !== null}>
+            {busy === 'reject' ? <ActivityIndicator size="small" color={colors.onError} /> : (
+              <>
+                <Feather name="x" size={rf(16)} color={colors.onError} />
+                <Text variant="bodyLg" color="onError" style={styles.btnText}>Reject</Text>
+              </>
+            )}
           </Pressable>
-
-          <Pressable
-            style={[styles.actionBtn, styles.acceptBtn, declined ? styles.disabled : null]}
-            onPress={accept}
-            disabled={declined}
-            accessibilityRole="button"
-            accessibilityLabel="Accept call"
-          >
-            <Feather name="phone" size={rf(18)} color={colors.onSuccess} />
-            <Text variant="link" color="onSuccess" style={styles.acceptLabel}>
-              Accept
-            </Text>
+          <Pressable style={[styles.btn, styles.accept]} onPress={accept} disabled={busy !== null}>
+            {busy === 'accept' ? <ActivityIndicator size="small" color={colors.white} /> : (
+              <>
+                <Feather name="check" size={rf(16)} color={colors.white} />
+                <Text variant="bodyLg" color="white" style={styles.btnText}>Accept</Text>
+              </>
+            )}
           </Pressable>
         </View>
-
-        <Pressable
-          onPress={dismiss}
-          hitSlop={spacing.sm}
-          accessibilityRole="button"
-          accessibilityLabel="Block this fan"
-        >
-          <Text variant="caption" color="textMuted">
-            Block this fan
-          </Text>
-        </Pressable>
       </View>
-    </Screen>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
-  body: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  kicker: {
-    letterSpacing: 2,
-  },
-
-  caller: {
+  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.hero,
+    padding: spacing.xl,
     alignItems: 'center',
     gap: spacing.sm,
   },
-  avatarRing: {
-    padding: wp(2),
+  iconWrap: {
+    width: wp(16),
+    height: wp(16),
     borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.primaryBorder,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.pinkSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
   },
-  pills: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  pill: {
+  title: { fontFamily: fontFamily.extrabold },
+  message: { fontStyle: 'italic', marginTop: 2 },
+  priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
+    backgroundColor: colors.cardRaised,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    marginTop: spacing.xs,
   },
-  pillWarning: {
-    backgroundColor: colors.warningChip,
-  },
-  pillNeutral: {
-    backgroundColor: colors.surfaceElevated,
-  },
-
-  offer: {
-    alignSelf: 'stretch',
-    gap: spacing.sm,
-  },
-  offerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  countdown: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  track: {
-    alignSelf: 'stretch',
-    height: wp(1),
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceElevated,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: radius.full,
-    backgroundColor: colors.warning,
-  },
-  fillUrgent: {
-    backgroundColor: colors.error,
-  },
-
-  actions: {
-    flexDirection: 'row',
-    alignSelf: 'stretch',
-    gap: spacing.sm,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: wp(16),
-    borderRadius: radius.lg,
-  },
-  declineBtn: {
-    backgroundColor: colors.surfaceElevated,
-  },
-  acceptBtn: {
-    backgroundColor: colors.success,
-  },
-  acceptLabel: {
-    fontFamily: fontFamily.bodySemibold,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
+  countdown: { marginTop: spacing.xs, fontFamily: fontFamily.bold },
+  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, alignSelf: 'stretch' },
+  btn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 52, borderRadius: radius.pill },
+  reject: { backgroundColor: colors.error },
+  accept: { backgroundColor: colors.success },
+  btnText: { fontFamily: fontFamily.extrabold },
 });
 
 export default IncomingCallRequestScreen;
