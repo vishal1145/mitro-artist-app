@@ -15,7 +15,6 @@ import {
 } from '@components/shared';
 import { Text } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
-import { useConversations } from '@hooks/usePrivateMessages';
 import { useProfile } from '@hooks/useProfile';
 import { useAuthStore } from '@store/authStore';
 import { useNotificationStore } from '@store/notificationStore';
@@ -34,7 +33,6 @@ type Href =
   | '/(app)/(tabs)/me/photos'
   | '/(app)/(tabs)/me/settings'
   | '/(app)/(tabs)/me/kyc-payouts'
-  | '/(app)/(tabs)/home/reward-fulfillment'
   | '/(app)/(tabs)/business/transactions';
 
 interface Row {
@@ -51,15 +49,6 @@ interface Row {
 }
 
 const ACCOUNT: Row[] = [
-  {
-    icon: 'message-circle',
-    tint: colors.pink,
-    fill: colors.pinkSoft,
-    title: 'Messages',
-    sub: 'Riya sent 250 coins',
-    route: '/(app)/(tabs)/me/messages',
-    badge: 2,
-  },
   {
     icon: 'users',
     tint: colors.violet,
@@ -98,15 +87,6 @@ const ACCOUNT: Row[] = [
 
 const ACTIVITY: Row[] = [
   {
-    icon: 'gift',
-    tint: colors.pink,
-    fill: colors.pinkSoft,
-    title: 'Reward Deliveries',
-    sub: '3 waiting on delivery',
-    route: '/(app)/(tabs)/home/reward-fulfillment',
-    badge: 3,
-  },
-  {
     icon: 'inbox',
     tint: colors.green,
     fill: colors.successChip,
@@ -131,13 +111,7 @@ const MeScreen = () => {
 
   const { data: profile, isLoading, error: profileError } = useProfile();
   const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
-  const { data: convos } = useConversations();
-  const messagesUnread = (convos ?? []).reduce((n, c) => n + (c.unreadCount ?? 0), 0);
-  const accountRows: Row[] = ACCOUNT.map((r) =>
-    r.route === '/(app)/(tabs)/me/messages'
-      ? { ...r, badge: messagesUnread || undefined, sub: 'Chat with your fans' }
-      : r,
-  );
+  const accountRows: Row[] = ACCOUNT;
 
   const isApproved = profile?.approvalStatus === 'approved';
 

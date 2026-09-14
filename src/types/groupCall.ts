@@ -32,16 +32,23 @@ export interface GroupCallConnectionResponse {
   tokenExpiresAtUtc: string;
 }
 
+/**
+ * Verbatim from the artist web's `GroupCallParticipantStatus`. The app used to
+ * guess at `pending_approval`, which the API never sends — so join requests
+ * never matched and the approve UI never appeared.
+ */
 export type GroupCallParticipantStatus =
-  | 'pending_approval'
+  | 'requested'
   | 'approved'
+  | 'rejected'
+  | 'authorized'
+  | 'joining'
   | 'connected'
   | 'reconnecting'
   | 'left'
   | 'removed'
   | 'call_ended'
-  | 'failed'
-  | 'rejected';
+  | 'failed';
 
 export interface GroupCallParticipant {
   userId: string;

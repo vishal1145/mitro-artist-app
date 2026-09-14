@@ -7,5 +7,7 @@ export { insightsApi } from './insightsApi';
 export { settingsApi } from './settingsApi';
 export { notificationApi } from './notificationApi';
 export { privateMessageApi } from './privateMessageApi';
+export { followersApi } from './followersApi';
+export { rewardOrdersApi } from './rewardOrdersApi';
 export { contentTypeFor, fileNameFor, putFileToSignedUrl } from './uploadFile';
 export { USE_MOCK, mocked, mockedError } from './mock';

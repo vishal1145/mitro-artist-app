@@ -11,10 +11,10 @@ import Animated, {
 
 import { colors, layout, radius, spacing } from '@theme';
 
-/** Opacity pulse — 0.4 -> 0.8 -> 0.4, 900ms each leg. */
-const MIN_OPACITY = 0.4;
-const MAX_OPACITY = 0.8;
-const DURATION = 900;
+/** Opacity pulse — 0.5 -> 0.9 -> 0.5, 700ms each leg (matches web `skeletonPulse` 1.4s). */
+const MIN_OPACITY = 0.5;
+const MAX_OPACITY = 0.9;
+const DURATION = 700;
 
 /**
  * Drives one shared value for a whole skeleton tree.
@@ -58,7 +58,7 @@ const SkeletonComponent = ({ width = '100%', height = 16, round, style }: Skelet
       accessibilityLabel="Loading"
       style={[
         styles.block,
-        { width, height, borderRadius: round ?? radius.chip },
+        { width, height, borderRadius: round ?? 10 },
         pulse,
         style,
       ]}
@@ -140,7 +140,7 @@ export const SkeletonRows = memo(SkeletonRowsComponent);
 
 const styles = StyleSheet.create({
   block: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
 
   card: {

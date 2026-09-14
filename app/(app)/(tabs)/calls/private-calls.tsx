@@ -1,83 +1,296 @@
-import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 
-import { PageHeader, Screen, SectionLabel, TimelineRow } from '@components/shared';
-import { Avatar, Text } from '@components/ui';
+import { Screen, Skeleton } from '@components/shared';
+import { LucideIcon, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
+import { activePrivateCallStore } from '@services/privateCall/activePrivateCall';
 import { profileApi } from '@services/api/profileApi';
-import type { PrivateCallRequestItem } from '@app-types/privateCall';
-import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { showToast } from '@utils/toast';
+import type {
+  PrivateCallHistoryItem,
+  PrivateCallRequestItem,
+} from '@app-types/privateCall';
+import {
+  fontFamily,
+  gradientDirection,
+  palette,
+  webColors,
+  webGradients,
+} from '@theme';
 import { rf } from '@utils/responsive';
 
-const REQUESTS_POLL_MS = 8000;
+/* Timings copied from the web screen (PrivateCallScreen.tsx). The backend
+ * auto-expires a pending request 60s after it's created — the tick only drives
+ * the countdown label. */
+const COUNTDOWN_TICK_MS = 1000;
+const REQUEST_POLL_MS = 8000;
+const HISTORY_PAGE_SIZE = 20;
+/** How close to the bottom (px) the history list must be before the next page loads. */
+const HISTORY_SCROLL_THRESHOLD_PX = 48;
 
-const HISTORY = [
-  {
-    id: 'pc_1',
-    title: 'Riya Sharma',
-    meta: 'Aug 9 · 24 min',
-    earned: '+1,200 tk',
-    dot: colors.cyan,
-  },
-  {
-    id: 'pc_2',
-    title: 'Kabir Mehta',
-    meta: 'Aug 2 · 12 min',
-    earned: '+600 tk',
-    dot: colors.violet,
-  },
-];
+const secondsUntil = (iso: string): number =>
+  Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
+
+/**
+ * Wall-clock span between accept and end as a compact "1h 5m" / "12m 34s" /
+ * "45s". Null when either edge is missing (the call never connected).
+ */
+const formatCallDuration = (
+  acceptedAtUtc: string | null,
+  endedAtUtc: string | null,
+): string | null => {
+  if (!acceptedAtUtc || !endedAtUtc) return null;
+  const ms = new Date(endedAtUtc).getTime() - new Date(acceptedAtUtc).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+  const totalSeconds = Math.round(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+};
+
+type HistoryTone = 'ok' | 'warn' | 'bad' | 'neutral';
+
+/**
+ * Raw status / end_reason strings aren't meant for display — translate them
+ * into a short label plus a tone so History reads at a glance.
+ */
+const historyStatusMeta = (
+  status: string,
+  endReason: string | null,
+): { label: string; tone: HistoryTone } => {
+  if (status === 'failed') return { label: 'Failed', tone: 'bad' };
+  if (status === 'cancelled') return { label: 'Cancelled', tone: 'neutral' };
+  if (status === 'terminated') {
+    return endReason === 'admin_terminated'
+      ? { label: 'Ended by admin', tone: 'neutral' }
+      : { label: 'Terminated', tone: 'bad' };
+  }
+  switch (endReason) {
+    case 'user_ended':
+    case 'artist_ended':
+      return { label: 'Ended normally', tone: 'ok' };
+    case 'insufficient_balance':
+      return { label: 'Low balance', tone: 'warn' };
+    case 'user_reconnect_timeout':
+    case 'artist_reconnect_timeout':
+    case 'both_disconnected':
+      return { label: 'Connection dropped', tone: 'warn' };
+    case 'join_timeout':
+      return { label: 'Never connected', tone: 'bad' };
+    case 'technical_failure':
+    case 'token_failure':
+      return { label: 'Technical issue', tone: 'bad' };
+    case 'admin_terminated':
+      return { label: 'Ended by admin', tone: 'neutral' };
+    case 'platform_ended':
+      return { label: 'Ended by platform', tone: 'neutral' };
+    default:
+      return {
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        tone: 'neutral',
+      };
+  }
+};
+
+const TONE_FILL: Record<HistoryTone, string> = {
+  ok: webColors.greenPill,
+  warn: webColors.goldTone,
+  bad: webColors.dangerTone,
+  neutral: webColors.chip,
+};
+
+const TONE_INK: Record<HistoryTone, string> = {
+  ok: webColors.green,
+  warn: webColors.gold,
+  bad: webColors.danger,
+  neutral: webColors.chipText,
+};
+
+/** One loading row of the History list — mirrors the web's `.mitro-skel` set. */
+const HistorySkeletonRow = () => (
+  <View style={styles.historyRow}>
+    <Skeleton width={30} height={30} round={10} />
+    <View style={styles.historySkelText}>
+      <Skeleton width="55%" height={12} round={6} />
+      <Skeleton width="75%" height={10} round={6} />
+    </View>
+    <Skeleton width={54} height={14} round={6} />
+  </View>
+);
 
 /** Private 1:1 calls — availability switch, incoming requests, and history. */
 const PrivateCallsScreen = () => {
   const router = useRouter();
-  const [rate, setRate] = useState('50');
-  const [accepting, setAccepting] = useState(false);
-  const [pending, setPending] = useState<PrivateCallRequestItem[]>([]);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [savingToggle, setSavingToggle] = useState(false);
 
-  // Load the current availability + price from the artist profile.
+  const [acceptsPrivateCalls, setAcceptsPrivateCalls] = useState(false);
+  const [pricePerMinute, setPricePerMinute] = useState('');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  const [requests, setRequests] = useState<PrivateCallRequestItem[]>([]);
+  const [busyRequestId, setBusyRequestId] = useState<string | null>(null);
+  const [, forceTick] = useState(0);
+
+  /** A call already running — the artist backed out without ending it. */
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
+
+  const [history, setHistory] = useState<PrivateCallHistoryItem[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
+
+  const historyRef = useRef<PrivateCallHistoryItem[]>([]);
+  const loadingMoreRef = useRef(false);
+
+  // Countdown re-render tick for the pending-request rows.
   useEffect(() => {
-    profileApi.getProfile().then((r) => {
-      if (r.success) {
-        setAccepting(!!r.data.acceptsPrivateCalls);
-        if (typeof r.data.privateShowTokenPerMinute === 'number') {
-          setRate(String(r.data.privateShowTokenPerMinute));
-        }
-      }
-    });
+    const id = setInterval(() => forceTick((n) => n + 1), COUNTDOWN_TICK_MS);
+    return () => clearInterval(id);
   }, []);
 
-  // Turn 1:1 calls on/off (and save the price) on the backend — fans can only
-  // send requests while this is ON.
-  const toggleAccepting = useCallback(async () => {
-    const next = !accepting;
-    setSavingToggle(true);
-    const res = await privateCallApi.setSettings(next, Number(rate) || 0);
-    if (res.success) setAccepting(next);
-    else Alert.alert("Couldn't update", res.error);
-    setSavingToggle(false);
-  }, [accepting, rate]);
+  // Availability + price come off the artist profile.
+  useEffect(() => {
+    let cancelled = false;
+    profileApi.getProfile().then((r) => {
+      if (cancelled) return;
+      if (r.success) {
+        setAcceptsPrivateCalls(!!r.data.acceptsPrivateCalls);
+        if (typeof r.data.privateShowTokenPerMinute === 'number') {
+          setPricePerMinute(String(r.data.privateShowTokenPerMinute));
+        }
+      }
+      setIsLoadingSettings(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /*
+   * The backend knows whether a call is still running, so ask it rather than
+   * trusting only the local record — that is what the web's PrivateCallScreen
+   * does. Remember the id so the room can reconnect to it.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    privateCallApi.getActive().then((r) => {
+      if (cancelled || !r.success) return;
+      if (r.data.hasActiveSession && r.data.privateCallId) {
+        setActiveCallId(r.data.privateCallId);
+        activePrivateCallStore.savePointer(r.data.privateCallId, {
+          userId: r.data.userId,
+          ratePerMin: r.data.pricePerMinuteSnapshot,
+        });
+      } else {
+        setActiveCallId(null);
+        activePrivateCallStore.clear();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const refreshRequests = useCallback(() => {
-    privateCallApi.getRequests().then((r) => r.success && setPending(r.data));
+    privateCallApi.getRequests().then((r) => r.success && setRequests(r.data));
   }, []);
 
   useEffect(() => {
     refreshRequests();
-    const id = setInterval(refreshRequests, REQUESTS_POLL_MS);
+    const id = setInterval(refreshRequests, REQUEST_POLL_MS);
     return () => clearInterval(id);
   }, [refreshRequests]);
 
+  const refreshHistory = useCallback(async () => {
+    setIsLoadingHistory(true);
+    const res = await privateCallApi.getHistory(HISTORY_PAGE_SIZE, 0);
+    if (res.success) {
+      historyRef.current = res.data;
+      setHistory(res.data);
+      setHasMoreHistory(res.data.length === HISTORY_PAGE_SIZE);
+    }
+    setIsLoadingHistory(false);
+  }, []);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  /** Appends the next page — fired once the list is scrolled near its bottom. */
+  const loadMoreHistory = useCallback(async () => {
+    if (isLoadingHistory || loadingMoreRef.current || !hasMoreHistory) return;
+    loadingMoreRef.current = true;
+    setIsLoadingMoreHistory(true);
+    const res = await privateCallApi.getHistory(
+      HISTORY_PAGE_SIZE,
+      historyRef.current.length,
+    );
+    if (res.success) {
+      historyRef.current = [...historyRef.current, ...res.data];
+      setHistory(historyRef.current);
+      setHasMoreHistory(res.data.length === HISTORY_PAGE_SIZE);
+    }
+    setIsLoadingMoreHistory(false);
+    loadingMoreRef.current = false;
+  }, [hasMoreHistory, isLoadingHistory]);
+
+  const handleHistoryScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      if (
+        contentSize.height - contentOffset.y - layoutMeasurement.height <=
+        HISTORY_SCROLL_THRESHOLD_PX
+      ) {
+        loadMoreHistory();
+      }
+    },
+    [loadMoreHistory],
+  );
+
+  // Turn 1:1 calls on/off (and save the price). Fans can only send requests
+  // while this is ON — same contract as the web.
+  const handleSaveSettings = useCallback(async () => {
+    const next = !acceptsPrivateCalls;
+    const trimmed = pricePerMinute.trim();
+    const price = trimmed === '' ? undefined : Number(trimmed);
+    if (price !== undefined && (!Number.isFinite(price) || price <= 0)) {
+      showToast('Enter a price per minute greater than 0.', 'error');
+      return;
+    }
+    setIsSavingSettings(true);
+    const res = await privateCallApi.setSettings(next, price);
+    if (res.success) {
+      setAcceptsPrivateCalls(next);
+      showToast('Private call settings updated.', 'success');
+    } else {
+      showToast(res.error, 'error');
+    }
+    setIsSavingSettings(false);
+  }, [acceptsPrivateCalls, pricePerMinute]);
+
   const acceptRequest = useCallback(
     async (req: PrivateCallRequestItem) => {
-      setBusyId(req.requestId);
+      setBusyRequestId(req.requestId);
       const res = await privateCallApi.acceptRequest(req.requestId);
       if (res.success) {
+        setRequests((prev) =>
+          prev.filter((p) => p.requestId !== req.requestId),
+        );
         router.push({
           pathname: '/(app)/(modals)/private-call-room',
           params: {
@@ -86,333 +299,924 @@ const PrivateCallsScreen = () => {
             ratePerMin: String(req.pricePerMinuteSnapshot),
           },
         });
-        setPending((prev) => prev.filter((p) => p.requestId !== req.requestId));
       } else {
-        Alert.alert("Couldn't accept", res.error);
+        showToast(res.error, 'error');
       }
-      setBusyId(null);
+      setBusyRequestId(null);
     },
     [router],
   );
 
   const declineRequest = useCallback(async (req: PrivateCallRequestItem) => {
-    setBusyId(req.requestId);
-    await privateCallApi.rejectRequest(req.requestId, 'Not available right now');
-    setPending((prev) => prev.filter((p) => p.requestId !== req.requestId));
-    setBusyId(null);
+    setBusyRequestId(req.requestId);
+    await privateCallApi.rejectRequest(
+      req.requestId,
+      'Not available right now',
+    );
+    setRequests((prev) => prev.filter((p) => p.requestId !== req.requestId));
+    setBusyRequestId(null);
   }, []);
 
+  const on = acceptsPrivateCalls;
+
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
-      header={
-        <PageHeader
-          title="Private Calls"
-          onBack={() => router.back()}
-          right={
-            <Pressable
-              style={styles.helpBtn}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="How private calls work"
-            >
-              <Text style={styles.helpMark} color="textMuted">
-                ?
-              </Text>
-            </Pressable>
-          }
-        />
-      }
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
     >
-
-      {/* Availability */}
-      <View style={[styles.control, accepting ? styles.controlOn : null]}>
-        <View style={styles.controlHead}>
-          <View style={[styles.shield, accepting ? styles.shieldOn : null]}>
-            <Feather
-              name="shield"
-              size={rf(17)}
-              color={accepting ? colors.green : colors.pink}
-            />
+      {/* Header — back button, eyebrow, title */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.back}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <LucideIcon
+            name="arrow-left"
+            size={18}
+            color={webColors.textStrong}
+          />
+        </Pressable>
+        <View style={styles.headerCopy}>
+          <View style={styles.eyebrow}>
+            <LucideIcon name="phone" size={13} color={webColors.pinkLight} />
+            <Text style={styles.eyebrowText}>Private Call</Text>
           </View>
-          <Text variant="h3">Accept private calls</Text>
+          <Text style={styles.h1}>Private Calls</Text>
         </View>
-
-        <Text variant="bodySm" color="textSecondary" style={styles.controlBody}>
-          First{' '}
-          <Text variant="bodySm" color={accepting ? 'pink' : 'textSecondary'}>
-            5 minutes
-          </Text>{' '}
-          charged upfront.
-        </Text>
-
-        <View style={styles.rateRow}>
-          <View style={styles.rateField}>
-            <TextInput
-              value={rate}
-              onChangeText={setRate}
-              keyboardType="number-pad"
-              maxLength={4}
-              style={styles.rateInput}
-              accessibilityLabel="Rate per minute"
-            />
-            <Text variant="bodySm" color="textMuted">
-              tk/min
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={toggleAccepting}
-            disabled={savingToggle}
-            accessibilityRole="button"
-            accessibilityLabel={accepting ? 'Turn off private calls' : 'Turn on private calls'}
-            style={styles.toggleBtn}
-          >
-            {accepting ? (
-              <LinearGradient
-                colors={gradients.cta}
-                start={gradientDirection.horizontal.start}
-                end={gradientDirection.horizontal.end}
-                style={styles.toggleFill}
-              >
-                <Text style={styles.toggleLabelOn}>{savingToggle ? 'Saving…' : 'ON — tap to turn off'}</Text>
-              </LinearGradient>
-            ) : (
-              <View style={[styles.toggleFill, styles.toggleOff]}>
-                <Text style={styles.toggleLabelOff}>{savingToggle ? 'Saving…' : 'Turn on'}</Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-
-        {accepting ? (
-          <Text variant="bodySm" color="green" style={styles.controlNote}>
-            Visible as available
-          </Text>
-        ) : (
-          <Text variant="bodySm" color="textMuted" style={styles.controlNote}>
-            Currently off
-          </Text>
-        )}
       </View>
 
-      <SectionLabel style={styles.sectionLabel}>
-        {`PENDING REQUESTS ( ${pending.length} )`}
-      </SectionLabel>
+      <Text style={styles.pageSub}>
+        1:1 paid calls — a fan requests, you accept or reject, then connect for
+        a live call.
+      </Text>
 
-      {pending.length === 0 ? (
-        <Text variant="bodySm" color="textMuted">
-          No pending requests.
-        </Text>
-      ) : (
-        pending.map((r) => (
-          <View key={r.requestId} style={styles.request}>
-            <Avatar initials={(r.userDisplayName || '?').slice(0, 1).toUpperCase()} name={r.userDisplayName} size="md" />
-
-            <View style={styles.requestText}>
-              <Text variant="bodyLg" color="textPrimary">
-                {r.userDisplayName} wants a private call
-              </Text>
-              <Text variant="bodySm" color="textMuted">
-                {r.initialChargeSnapshot} tk upfront · {r.pricePerMinuteSnapshot} tk/min
-              </Text>
-            </View>
-
-            <View style={styles.requestActions}>
-              <Pressable
-                onPress={() => acceptRequest(r)}
-                disabled={busyId === r.requestId}
-                style={[styles.decisionBtn, styles.acceptBtn]}
-                accessibilityRole="button"
-                accessibilityLabel={`Accept call from ${r.userDisplayName}`}
-              >
-                {busyId === r.requestId ? (
-                  <ActivityIndicator size="small" color={colors.green} />
-                ) : (
-                  <Text variant="bodySm" color="green" style={styles.decisionLabel}>Accept</Text>
-                )}
-              </Pressable>
-
-              <Pressable
-                onPress={() => declineRequest(r)}
-                disabled={busyId === r.requestId}
-                style={[styles.decisionBtn, styles.declineBtn]}
-                accessibilityRole="button"
-                accessibilityLabel={`Decline call from ${r.userDisplayName}`}
-              >
-                <Text variant="bodySm" color="red" style={styles.decisionLabel}>Decline</Text>
-              </Pressable>
-            </View>
+      {/* A call is still running — the only way back into it. */}
+      {activeCallId ? (
+        <Pressable
+          style={styles.resumeCard}
+          onPress={() => router.push('/(app)/(modals)/private-call-room')}
+          accessibilityRole="button"
+          accessibilityLabel="Rejoin call in progress"
+        >
+          <View style={styles.resumeDot} />
+          <View style={styles.resumeCopy}>
+            <Text style={styles.resumeTitle}>Call in progress</Text>
+            <Text style={styles.resumeSub}>
+              You left without ending it — the fan is still being billed.
+            </Text>
           </View>
-        ))
-      )}
+          <View style={styles.resumeCta}>
+            <LucideIcon name="phone" size={14} color={webColors.onGreen} />
+            <Text style={styles.resumeCtaText}>Rejoin</Text>
+          </View>
+        </Pressable>
+      ) : null}
 
-      <SectionLabel style={styles.sectionLabel}>HISTORY</SectionLabel>
+      <View style={styles.grid}>
+        <View style={styles.mainCol}>
+          {/* Accept private calls */}
+          <LinearGradient
+            colors={on ? webGradients.settingsOn : webGradients.settingsOff}
+            start={gradientDirection.diagonal.start}
+            end={gradientDirection.diagonal.end}
+            style={[
+              styles.settingsCard,
+              on ? styles.settingsCardOn : styles.settingsCardOff,
+            ]}
+          >
+            <View style={styles.settingsCopy}>
+              <View
+                style={[styles.settingsIcon, on ? styles.settingsIconOn : null]}
+              >
+                <LucideIcon
+                  name="shield-check"
+                  size={18}
+                  color={on ? webColors.green : webColors.gold}
+                />
+              </View>
+              <View style={styles.settingsCopyText}>
+                <View style={styles.settingsTitleRow}>
+                  <Text style={styles.settingsTitle}>Accept private calls</Text>
+                  {!isLoadingSettings ? (
+                    <View
+                      style={[
+                        styles.statusPill,
+                        on ? styles.statusPillOn : styles.statusPillOff,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          { color: on ? webColors.green : webColors.white50 },
+                        ]}
+                      >
+                        {on ? 'ON' : 'OFF'}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.settingsSub}>
+                  Fans can send 1:1 call requests. First 5 minutes are charged
+                  upfront.
+                </Text>
+              </View>
+            </View>
 
-      {HISTORY.map((h, i) => (
-        <TimelineRow
-          key={h.id}
-          title={h.title}
-          meta={h.meta}
-          value={h.earned}
-          dotColor={h.dot}
-          last={i === HISTORY.length - 1}
-        />
-      ))}
+            <View style={styles.settingsForm}>
+              <View style={styles.inputWrap}>
+                <View style={styles.inputIcon} pointerEvents="none">
+                  <LucideIcon
+                    name="coins"
+                    size={13}
+                    color={webColors.white40}
+                  />
+                </View>
+                <TextInput
+                  value={pricePerMinute}
+                  onChangeText={setPricePerMinute}
+                  placeholder="Price"
+                  placeholderTextColor={webColors.white40}
+                  keyboardType="number-pad"
+                  editable={!isLoadingSettings}
+                  style={styles.input}
+                  accessibilityLabel="Price per minute"
+                />
+                <View style={styles.inputSuffix} pointerEvents="none">
+                  <Text style={styles.inputSuffixText}>/min</Text>
+                </View>
+              </View>
 
+              <Pressable
+                onPress={handleSaveSettings}
+                disabled={isSavingSettings || isLoadingSettings}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  on ? 'Turn off private calls' : 'Turn on private calls'
+                }
+                style={({ pressed }) => [
+                  styles.ctaWrap,
+                  pressed ? styles.pressed : null,
+                ]}
+              >
+                <LinearGradient
+                  colors={webGradients.greenCta}
+                  start={gradientDirection.diagonal.start}
+                  end={gradientDirection.diagonal.end}
+                  style={[
+                    styles.cta,
+                    isSavingSettings || isLoadingSettings
+                      ? styles.ctaDisabled
+                      : null,
+                  ]}
+                >
+                  <Text style={styles.ctaLabel}>
+                    {isSavingSettings
+                      ? 'Saving...'
+                      : on
+                        ? 'Turn off'
+                        : 'Turn on'}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </LinearGradient>
+
+          {!isLoadingSettings ? (
+            <Text style={styles.priceNote}>
+              {`Changing the price only saves when you tap the ${on ? '"Turn off"' : '"Turn on"'} button above.`}
+            </Text>
+          ) : null}
+
+          {/* Pending requests */}
+          <View style={styles.panel}>
+            <LinearGradient
+              colors={webGradients.panel}
+              start={gradientDirection.diagonal.start}
+              end={gradientDirection.diagonal.end}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <View style={styles.panelHeader}>
+              <LucideIcon name="phone" size={19} color={webColors.textStrong} />
+              <Text
+                style={styles.panelTitle}
+              >{`Pending requests (${requests.length})`}</Text>
+            </View>
+
+            <ScrollView
+              style={styles.panelList}
+              contentContainerStyle={styles.panelListContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+            >
+              {requests.length === 0 && !isLoadingSettings && !on ? (
+                <View style={styles.emptyState}>
+                  <LucideIcon
+                    name="phone-off"
+                    size={28}
+                    color={webColors.gold}
+                  />
+                  <Text style={[styles.emptyText, styles.emptyTextOff]}>
+                    <Text style={styles.emptyStrong}>
+                      Private calls are off.
+                    </Text>
+                    {
+                      ' Turn them on above so fans can start sending you requests.'
+                    }
+                  </Text>
+                </View>
+              ) : null}
+
+              {requests.length === 0 && (isLoadingSettings || on) ? (
+                <View style={styles.emptyState}>
+                  <LucideIcon
+                    name="phone"
+                    size={28}
+                    color={webColors.textSoft}
+                  />
+                  <Text style={styles.emptyText}>
+                    No pending requests right now — they&apos;ll show up here
+                    the moment a fan sends one.
+                  </Text>
+                </View>
+              ) : null}
+
+              {requests.map((r) => {
+                const secsLeft = secondsUntil(r.expiresAtUtc);
+                const busy = busyRequestId === r.requestId;
+                return (
+                  <View key={r.requestId} style={styles.viewerRow}>
+                    <LinearGradient
+                      colors={webGradients.avatar}
+                      start={gradientDirection.diagonal.start}
+                      end={gradientDirection.diagonal.end}
+                      style={styles.viewerAvatar}
+                    >
+                      <LucideIcon
+                        name="user"
+                        size={16}
+                        color={webColors.textStrong}
+                      />
+                    </LinearGradient>
+
+                    <View style={styles.viewerBody}>
+                      <Text style={styles.viewerName} numberOfLines={1}>
+                        {r.userDisplayName || 'Guest'}
+                      </Text>
+                      <View style={styles.viewerStatus}>
+                        <Text style={styles.viewerStatusText} numberOfLines={1}>
+                          {`${r.message ? `"${r.message}" — ` : ''}${r.initialChargeSnapshot} tokens for 5 min • `}
+                        </Text>
+                        <LucideIcon
+                          name="clock-3"
+                          size={12}
+                          color={webColors.textSoft}
+                        />
+                        <Text
+                          style={styles.viewerStatusText}
+                        >{` ${secsLeft}s left`}</Text>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      onPress={() => acceptRequest(r)}
+                      disabled={busy || secsLeft === 0}
+                      style={[
+                        styles.circleBtn,
+                        busy || secsLeft === 0
+                          ? styles.circleBtnDisabled
+                          : null,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Accept call from ${r.userDisplayName}`}
+                    >
+                      {busy ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={webColors.textSoft}
+                        />
+                      ) : (
+                        <LucideIcon
+                          name="check"
+                          size={15}
+                          color={webColors.textSoft}
+                        />
+                      )}
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => declineRequest(r)}
+                      disabled={busy}
+                      style={[
+                        styles.circleBtn,
+                        busy ? styles.circleBtnDisabled : null,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Reject call from ${r.userDisplayName}`}
+                    >
+                      <LucideIcon
+                        name="x"
+                        size={15}
+                        color={webColors.textSoft}
+                      />
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+
+        {/* History */}
+        <View style={styles.sideCard}>
+          <LinearGradient
+            colors={webGradients.sideCard}
+            start={gradientDirection.diagonal.start}
+            end={gradientDirection.diagonal.end}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={styles.sideCardHead}>
+            <LucideIcon name="history" size={18} color={webColors.textStrong} />
+            <Text style={styles.sideCardTitle}>History</Text>
+          </View>
+          <Text style={styles.sideCardSub}>
+            Every past private call, most recent first.
+          </Text>
+
+          {isLoadingHistory ? (
+            <View style={styles.historyList}>
+              {[0, 1, 2, 3].map((i) => (
+                <HistorySkeletonRow key={i} />
+              ))}
+            </View>
+          ) : history.length === 0 ? (
+            <View style={styles.historyEmpty}>
+              <LucideIcon name="phone" size={32} color={webColors.textSoft} />
+              <Text style={styles.emptyText}>No past private calls yet.</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.historyList}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              scrollEventThrottle={16}
+              onScroll={handleHistoryScroll}
+            >
+              {history.map((item, i) => {
+                const meta = historyStatusMeta(item.status, item.endReason);
+                const duration = formatCallDuration(
+                  item.acceptedAtUtc,
+                  item.endedAtUtc,
+                );
+                const last = i === history.length - 1 && !isLoadingMoreHistory;
+                return (
+                  <View
+                    key={item.privateCallId}
+                    style={[
+                      styles.historyRow,
+                      last ? styles.historyRowLast : null,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.historyIcon,
+                        { backgroundColor: TONE_FILL[meta.tone] },
+                      ]}
+                    >
+                      <LucideIcon
+                        name="phone"
+                        size={15}
+                        color={TONE_INK[meta.tone]}
+                      />
+                    </View>
+                    <View style={styles.historyInfo}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>
+                        {meta.label}
+                      </Text>
+                      <Text style={styles.historyMeta} numberOfLines={1}>
+                        {`${item.acceptedAtUtc ? new Date(item.acceptedAtUtc).toLocaleString() : 'never accepted'}${duration ? ` • ${duration}` : ''}`}
+                      </Text>
+                    </View>
+                    <View style={styles.historyAmount}>
+                      <LucideIcon
+                        name="coins"
+                        size={13}
+                        color={webColors.textStrong}
+                      />
+                      <Text style={styles.historyAmountText}>
+                        {item.totalCoinsCharged.toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {isLoadingMoreHistory ? (
+                <>
+                  <HistorySkeletonRow />
+                  <HistorySkeletonRow />
+                </>
+              ) : null}
+            </ScrollView>
+          )}
+
+          <Text style={styles.historyNote}>
+            Per-minute totals aren&apos;t tracked yet — only the flat initial
+            charge shows above until per-minute billing ships.
+          </Text>
+        </View>
+      </View>
     </Screen>
   );
 };
 
+/* Every value below is the computed style of the matching web element
+ * (Mitro.Artist.UI — .gsched-* / .pcall-* / .bcast-* / .broadcast-users-panel)
+ * at mobile widths, where `.creator-main` pads the page by 12px and the
+ * two-column `.gsched-grid` collapses to one column. */
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: 12,
+    paddingTop: 12,
     paddingBottom: 24,
   },
 
-  helpBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  helpMark: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-  },
-
-  control: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    padding: 18,
-    marginTop: 12,
-  },
-  // Accepting calls is a "live" state — the card picks up the same green.
-  controlOn: {
-    borderColor: colors.successBorder,
-  },
-  controlHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  shield: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.pinkSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shieldOn: {
-    backgroundColor: colors.successChip,
-  },
-  controlBody: {
-    marginTop: 14,
-  },
-  rateRow: {
+  /* --- .gsched-header --- */
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    marginTop: 18,
   },
-  rateField: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingBottom: 6,
-  },
-  rateInput: {
-    minWidth: 44,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(19),
-    color: colors.gold,
-    padding: 0,
-  },
-  toggleBtn: {
-    flex: 1,
-    borderRadius: radius.button,
-    overflow: 'hidden',
-  },
-  toggleFill: {
-    height: 48,
+  back: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: webColors.circleBorder,
+    backgroundColor: webColors.chip,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
   },
-  toggleOff: {
-    backgroundColor: colors.green,
+  headerCopy: {
+    flex: 1,
   },
-  toggleLabelOff: {
+  eyebrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  eyebrowText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(11.52),
+    lineHeight: rf(14),
+    letterSpacing: 0.69,
+    textTransform: 'uppercase',
+    color: webColors.pinkLight,
+  },
+  h1: {
+    marginTop: 4,
     fontFamily: fontFamily.bold,
-    fontSize: rf(13),
-    color: colors.screen,
+    fontSize: rf(22.4),
+    lineHeight: rf(25.76),
+    color: webColors.textStrong,
   },
-  toggleLabelOn: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-    color: colors.white,
-  },
-  controlNote: {
-    marginTop: 14,
+  /* .pcall-page-sub — page gap 20 plus its own -10 margin-top. */
+  pageSub: {
+    marginTop: 10,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13.6),
+    lineHeight: rf(21.08),
+    color: webColors.white50,
   },
 
-  sectionLabel: {
-    marginTop: 12,
-    marginBottom: 14,
-  },
-
-  request: {
+  /* --- .gsched-grid / .pcall-main-col --- */
+  resumeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  requestText: {
-    flex: 1,
-    gap: 3,
-  },
-  requestActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  decisionBtn: {
+    marginHorizontal: 12,
+    padding: 14,
     borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    borderColor: webColors.greenBorder,
+    borderRadius: 14,
+    backgroundColor: webColors.greenPill,
   },
-  acceptBtn: {
-    borderColor: colors.successBorder,
-    backgroundColor: colors.successChip,
+  resumeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: webColors.green,
   },
-  declineBtn: {
-    borderColor: colors.errorBorder,
-    backgroundColor: colors.errorSoft,
+  resumeCopy: { flex: 1, minWidth: 0, gap: 2 },
+  resumeTitle: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(14),
+    color: webColors.textStrong,
   },
-  decisionLabel: {
-    fontFamily: fontFamily.bold,
+  resumeSub: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12),
+    lineHeight: rf(16),
+    color: webColors.textSoft,
+  },
+  resumeCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: webColors.green,
+  },
+  resumeCtaText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(12.5),
+    color: webColors.onGreen,
+  },
+  grid: {
+    marginTop: 20,
+    gap: 20,
+  },
+  mainCol: {
+    gap: 16,
   },
 
-  previewBtn: {
+  /* --- .bcast-price-card.pcall-settings-card --- */
+  settingsCard: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 14,
+  },
+  settingsCardOn: {
+    borderColor: webColors.greenBorder,
+  },
+  settingsCardOff: {
+    borderColor: webColors.cardBorder,
+  },
+  settingsCopy: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  settingsIcon: {
+    width: 32,
+    height: 32,
+    marginTop: 1,
+    borderRadius: 16,
+    backgroundColor: webColors.goldChip,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  settingsIconOn: {
+    backgroundColor: webColors.greenChip,
+  },
+  settingsCopyText: {
+    flex: 1,
+  },
+  settingsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  settingsTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15.04),
+    lineHeight: rf(18),
+    color: webColors.textStrong,
+  },
+  /* .pcall-status-pill — the web's 1px ring is drawn as a border here. */
+  statusPill: {
+    marginLeft: 8,
+    paddingVertical: 1,
+    paddingHorizontal: 10,
+    borderRadius: 999,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    borderRadius: radius.button,
-    paddingVertical: 16,
-    marginTop: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusPillOn: {
+    backgroundColor: webColors.greenPill,
+    borderColor: webColors.greenRing,
+  },
+  statusPillOff: {
+    backgroundColor: webColors.offPill,
+    borderColor: webColors.offPillRing,
+  },
+  statusPillText: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10.56),
+    lineHeight: rf(13),
+    letterSpacing: 0.53,
+  },
+  settingsSub: {
+    marginTop: 3,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12.48),
+    lineHeight: rf(16.85),
+    color: webColors.textSoft,
   },
 
-  footnote: {
-    marginTop: 28,
+  /* --- .bcast-price-card-form.pcall-settings-form --- */
+  settingsForm: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  /* The web input shrinks to fill the row at phone widths. */
+  inputWrap: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  input: {
+    height: 40,
+    paddingLeft: 30,
+    paddingRight: 38,
+    paddingVertical: 0,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: webColors.inputBorder,
+    backgroundColor: webColors.inputFill,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(16),
+    color: webColors.textStrong,
+    textAlignVertical: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 11,
+    zIndex: 1,
+  },
+  inputSuffix: {
+    position: 'absolute',
+    right: 11,
+    zIndex: 1,
+  },
+  inputSuffixText: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(11.52),
+    lineHeight: rf(14),
+    color: webColors.white40,
+  },
+  ctaWrap: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  cta: {
+    height: 40,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaDisabled: {
+    opacity: 0.7,
+  },
+  ctaLabel: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(16),
+    lineHeight: rf(19),
+    color: webColors.onGreen,
+  },
+  pressed: {
+    opacity: 0.9,
+  },
+
+  /* .gcall-note.pcall-price-note — the web also drops it to 65% opacity. */
+  priceNote: {
+    marginBottom: 12.5,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12.48),
+    lineHeight: rf(18.72),
+    color: webColors.textSoft,
+    opacity: 0.65,
+  },
+
+  /* --- .broadcast-users-panel --- */
+  panel: {
+    height: 240,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: webColors.panelBorder,
+    backgroundColor: webColors.panelFill,
+    overflow: 'hidden',
+    shadowColor: palette.black,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.38,
+    shadowRadius: 29,
+    elevation: 8,
+  },
+  panelHeader: {
+    height: 54,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    backgroundColor: webColors.panelHeader,
+  },
+  panelTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(16),
+    lineHeight: rf(19),
+    color: webColors.textStrong,
+  },
+  panelList: {
+    flex: 1,
+  },
+  panelListContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 2,
+  },
+
+  /* --- .gcall-empty-state.pcall-empty-state --- */
+  emptyState: {
+    paddingVertical: 24,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 14,
+  },
+  emptyText: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(16),
+    lineHeight: rf(24.8),
+    textAlign: 'center',
+    color: webColors.textSoft,
+  },
+  emptyTextOff: {
+    color: webColors.gold,
+  },
+  emptyStrong: {
+    fontFamily: fontFamily.bold,
+    color: webColors.textStrong,
+  },
+
+  /* --- .bcast-activity-row.bcast-viewer-row --- */
+  viewerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  viewerAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerBody: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewerName: {
+    flexShrink: 1,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(13.76),
+    lineHeight: rf(19.3),
+    color: webColors.textStrong,
+  },
+  viewerStatus: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+  },
+  viewerStatusText: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12.16),
+    lineHeight: rf(17),
+    color: webColors.textSoft,
+  },
+  circleBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: webColors.offPillRing,
+    backgroundColor: webColors.chip,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleBtnDisabled: {
+    opacity: 0.6,
+  },
+
+  /* --- .gsched-side-card.pcall-history-card --- */
+  sideCard: {
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: webColors.panelBorder,
+    backgroundColor: webColors.sideCardFill,
+    overflow: 'hidden',
+    shadowColor: palette.black,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.3,
+    shadowRadius: 21,
+    elevation: 6,
+  },
+  sideCardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sideCardTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(15.68),
+    lineHeight: rf(19),
+    color: webColors.textStrong,
+  },
+  sideCardSub: {
+    marginTop: 4,
+    marginBottom: 14,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12.16),
+    lineHeight: rf(17.02),
+    color: webColors.white40,
+  },
+
+  /* --- .pcall-history-list / .pcall-history-row --- */
+  historyList: {
+    maxHeight: 420,
+    marginTop: 4,
+    paddingRight: 4,
+  },
+  historyEmpty: {
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    gap: 14,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: webColors.hairline,
+  },
+  historyRowLast: {
+    borderBottomWidth: 0,
+  },
+  historySkelText: {
+    flex: 1,
+    gap: 7,
+  },
+  historyIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  historyTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(13.12),
+    lineHeight: rf(16),
+    textTransform: 'capitalize',
+    color: webColors.textStrong,
+  },
+  historyMeta: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(11.52),
+    lineHeight: rf(17.86),
+    color: webColors.white45,
+  },
+  historyAmount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historyAmountText: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(12.8),
+    lineHeight: rf(16),
+    color: webColors.textStrong,
+  },
+  historyNote: {
+    marginTop: 14,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13.6),
+    lineHeight: rf(20.4),
+    color: webColors.textSoft,
   },
 });
 

@@ -1,9 +1,16 @@
 import type {
+  BroadcastAnalytics,
   BroadcastHistoryItem,
   BroadcastHistoryQuery,
+  BroadcastHistorySummary,
   EarningsSummary,
   EarningsTransaction,
   EarningsTransactionsQuery,
+  GroupCallAnalytics,
+  GroupCallHistoryItem,
+  GroupCallHistoryQuery,
+  GroupCallHistorySummary,
+  GroupCallHistoryFilter,
   Result,
 } from '@app-types/api';
 import { getErrorMessage } from '@utils/errorHandler';
@@ -49,6 +56,79 @@ export const insightsApi = {
       const res = await api.get<BroadcastHistoryItem[]>(
         ENDPOINTS.broadcast.history,
         { params: query },
+      );
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /**
+   * Lifetime broadcast totals — DB-aggregated, so it stays correct beyond
+   * whatever page `getBroadcastHistory` last fetched.
+   */
+  async getBroadcastHistorySummary(): Promise<Result<BroadcastHistorySummary>> {
+    try {
+      const res = await api.get<BroadcastHistorySummary>(
+        ENDPOINTS.broadcast.historySummary,
+      );
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Chat/reaction/reward/fun-wheel breakdown for one broadcast. */
+  async getBroadcastAnalytics(
+    broadcastId: string,
+  ): Promise<Result<BroadcastAnalytics>> {
+    try {
+      const res = await api.get<BroadcastAnalytics>(
+        ENDPOINTS.broadcast.analytics(broadcastId),
+      );
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Newest first. The server does the status filtering, not the client. */
+  async getGroupCallHistory(
+    query: GroupCallHistoryQuery,
+  ): Promise<Result<GroupCallHistoryItem[]>> {
+    try {
+      const res = await api.get<GroupCallHistoryItem[]>(
+        ENDPOINTS.groupCall.history,
+        { params: query },
+      );
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Lifetime group-call totals for the current status filter. */
+  async getGroupCallHistorySummary(
+    status: GroupCallHistoryFilter,
+  ): Promise<Result<GroupCallHistorySummary>> {
+    try {
+      const res = await api.get<GroupCallHistorySummary>(
+        ENDPOINTS.groupCall.historySummary,
+        { params: { status } },
+      );
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Requests/approvals/refunds + revenue breakdown for one group call. */
+  async getGroupCallAnalytics(
+    groupCallId: string,
+  ): Promise<Result<GroupCallAnalytics>> {
+    try {
+      const res = await api.get<GroupCallAnalytics>(
+        ENDPOINTS.groupCall.analytics(groupCallId),
       );
       return { success: true, data: res.data };
     } catch (error) {

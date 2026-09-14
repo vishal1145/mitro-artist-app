@@ -32,8 +32,48 @@ export interface PrivateCallActiveSession {
   paidThroughUtc?: string | null;
 }
 
-/** Pushed on the private-call hub each billed minute. */
-export interface CallCostUpdatePayload {
-  minuteNumber: number;
+/** One past 1:1 call, newest first. Mirrors the web's PrivateCallHistoryItem. */
+export interface PrivateCallHistoryItem {
+  privateCallId: string;
+  userId: string;
+  status: string;
+  acceptedAtUtc: string | null;
+  endedAtUtc: string | null;
+  endReason: string | null;
+  totalChargedMinutes: number;
   totalCoinsCharged: number;
+  totalRefundedCoins: number;
+}
+
+/**
+ * Pushed on the private-call hub from minute 6 onward (`AdditionalMinuteCharged`)
+ * — minutes 1-5 are covered by the initial charge taken at accept time.
+ */
+export interface CallCostUpdatePayload {
+  privateCallId?: string;
+  minuteNumber: number;
+  tokensCharged?: number;
+  totalCoinsCharged: number;
+}
+
+/** `RewardPurchased` push during a private call. */
+export interface PrivateCallRewardPush {
+  id: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  rewardName: string;
+  priceCharged: number;
+  createdAtUtc: string;
+}
+
+/** `FunWheelSpun` push during a private call. */
+export interface PrivateCallFunWheelPush {
+  id: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  activityName: string;
+  priceCharged: number;
+  createdAtUtc: string;
 }

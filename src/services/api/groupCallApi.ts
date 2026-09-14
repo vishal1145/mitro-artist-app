@@ -35,6 +35,53 @@ export const groupCallApi = {
     }
   },
 
+  /**
+   * Re-enter a call the artist walked out of without ending it. Returns a
+   * fresh Agora connection for the same room, so the call keeps running
+   * server-side while they're away instead of being orphaned.
+   */
+  async rejoin(groupCallId: string): Promise<Result<GroupCallConnectionResponse>> {
+    try {
+      const res = await api.post<GroupCallConnectionResponse>(ENDPOINTS.groupCall.rejoin(groupCallId));
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Liveness ping — lets the backend spot a silently-dropped host. */
+  async heartbeat(groupCallId: string): Promise<Result<null>> {
+    try {
+      await api.post(ENDPOINTS.groupCall.heartbeat(groupCallId));
+      return { success: true, data: null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** What a participant pays to pin a message in this call. */
+  async setHighlightedMessagePrice(groupCallId: string, price: number): Promise<Result<null>> {
+    try {
+      await api.put(ENDPOINTS.groupCall.highlightedPrice(groupCallId), { price });
+      return { success: true, data: null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Minutes connected before an early end no longer refunds entry. */
+  async setRefundThreshold(
+    groupCallId: string,
+    minServiceMinutesForRefund: number | null,
+  ): Promise<Result<null>> {
+    try {
+      await api.put(ENDPOINTS.groupCall.refundThreshold(groupCallId), { minServiceMinutesForRefund });
+      return { success: true, data: null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
   async confirmConnected(groupCallId: string): Promise<Result<null>> {
     try {
       await api.post(ENDPOINTS.groupCall.confirmConnected(groupCallId));

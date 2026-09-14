@@ -52,6 +52,10 @@ const VISUAL_BY_TYPE: Record<string, NotificationVisual> = {
   kyc_rejected: { icon: 'alert-triangle', tint: colors.pink, fill: colors.pinkSoft },
   account_status_changed: { icon: 'shield', tint: colors.gold, fill: colors.goldSoft },
   system: { icon: 'bell', tint: colors.gold, fill: colors.goldSoft },
+  // Inline app feedback (see @utils/toast → showToast).
+  success: { icon: 'check-circle', tint: colors.green, fill: colors.successChip },
+  error: { icon: 'alert-triangle', tint: colors.danger, fill: colors.redSoft },
+  info: { icon: 'info', tint: colors.cyan, fill: colors.cyanSoft },
 };
 
 const DEFAULT_VISUAL: NotificationVisual = {

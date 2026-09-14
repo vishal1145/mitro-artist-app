@@ -141,29 +141,6 @@ const BroadcastSummaryScreen = () => {
           three footer blocks. Per-element margins kept collapsing against one
           another; a gap on the parent cannot be. */}
       <View style={styles.footer}>
-      <Pressable
-        style={pressable(styles.nudge)}
-        onPress={() => router.replace('/(app)/(tabs)/home/reward-fulfillment')}
-        accessibilityRole="button"
-        accessibilityLabel="Fulfil the 3 rewards waiting on delivery"
-      >
-        <View style={styles.nudgeRow}>
-          <Feather name="alert-triangle" size={rf(16)} color={colors.gold} />
-          <Text
-            variant="bodySm"
-            color="textSecondary"
-            style={styles.nudgeText}
-            numberOfLines={2}
-          >
-            <Text variant="bodySm" color="textPrimary" style={styles.strong}>
-              3 rewards waiting
-            </Text>{' '}
-            — viewers want their shoutouts
-          </Text>
-          <Feather name="chevron-right" size={rf(15)} color={colors.textMuted} />
-        </View>
-      </Pressable>
-
       {/* Actions */}
       <Pressable
         style={pressable(styles.cta)}
@@ -291,19 +268,6 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 28,
     gap: 36,
-  },
-  nudge: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 24,
-  },
-  nudgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  nudgeText: {
-    flex: 1,
   },
   strong: {
     fontFamily: fontFamily.bold,

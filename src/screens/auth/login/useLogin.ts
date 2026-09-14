@@ -10,6 +10,7 @@ import { useAuthStore } from '@store';
 import type { AuthSession, SocialProviderId } from '@app-types/api';
 import { getErrorMessage } from '@utils/errorHandler';
 import { logger } from '@utils/logger';
+import { hidePopupToast, showPopupToast } from '@utils/toast';
 
 import { loginSchema, type LoginFormValues } from './schema';
 import type { UseLoginResult } from './types';
@@ -37,6 +38,9 @@ export const useLogin = (): UseLoginResult => {
   const onSubmit = useCallback<SubmitHandler<LoginFormValues>>(
     async (values) => {
       setSubmitError(null);
+      // Clear a toast still on screen from the previous attempt, so a retry
+      // never looks like it failed again before the request has resolved.
+      hidePopupToast();
 
       // --- Demo bypass, mock mode only -------------------------------------
       // Lets the screens be exercised without a backend. Never reachable once
@@ -73,7 +77,15 @@ export const useLogin = (): UseLoginResult => {
         logger.info('Login success');
         router.replace('/(app)/(tabs)/home');
       } catch (error) {
-        setSubmitError(getErrorMessage(error));
+        // Only ever after the request rejects — never on press. The message is
+        // the server's own 4xx copy where it sent one (see @utils/errorHandler
+        // `clientMessage`), e.g. "Account not found. Check your phone number
+        // or stage name and try again."
+        const message = getErrorMessage(error);
+        // Kept in state as well as toasted: the toast auto-dismisses after
+        // 3.5s, and `submitError` is part of UseLoginResult's contract.
+        setSubmitError(message);
+        showPopupToast(message, 'error');
       }
     },
     [authenticate, login, router],

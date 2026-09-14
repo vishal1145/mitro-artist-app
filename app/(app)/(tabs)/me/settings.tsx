@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import {
   AddRewardDialog,
   AvatarPreview,
+  InfoCallout,
   LabeledField,
   LoadFailed,
   PageHeader,
@@ -131,6 +132,13 @@ const SettingsScreen = () => {
         {/* Identity */}
         <SectionLabel style={styles.sectionLabel}>IDENTITY</SectionLabel>
 
+        <View style={styles.callout}>
+          <InfoCallout icon="lock" tone="warning">
+            These details are private and never shown to fans. Changing your mobile number
+            needs OTP confirmation to protect your account.
+          </InfoCallout>
+        </View>
+
         {isLoading ? (
           <SkeletonListRow />
         ) : loadError ? (
@@ -233,6 +241,13 @@ const SettingsScreen = () => {
           PUBLIC DETAILS
         </SectionLabel>
 
+        <View style={styles.callout}>
+          <InfoCallout icon="info" tone="info">
+            This is what fans see on your profile. Your handle, bio and about are the first
+            things people read before they follow or book you.
+          </InfoCallout>
+        </View>
+
         {/* Skeleton the whole form, not just the identity block — otherwise
             the fields render empty and visibly fill when the profile lands. */}
         {isLoading ? (
@@ -278,6 +293,13 @@ const SettingsScreen = () => {
             <SectionLabel divider style={styles.sectionLabel}>
               YOUR RATES
             </SectionLabel>
+
+            <View style={styles.callout}>
+              <InfoCallout icon="dollar-sign" tone="info">
+                Set your own rate. Private shows are one-on-one, so most creators price them
+                2–3× their group rate.
+              </InfoCallout>
+            </View>
 
             <View style={styles.rates}>
               <View style={styles.rate}>
@@ -560,6 +582,9 @@ const styles = StyleSheet.create({
   sectionLabel: {
     marginTop: 12,
     marginBottom: 14,
+  },
+  callout: {
+    marginBottom: 18,
   },
 
   identity: {

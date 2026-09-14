@@ -190,12 +190,13 @@ const CallsHubScreen = () => {
         </View>
 
         <Pressable
-          onPress={() =>
-            router.push({
-              pathname: '/(app)/(modals)/group-call-room',
-              params: { sessionId: UP_NEXT.id },
-            })
-          }
+          /*
+           * Goes through the schedule form, not straight into the room — a
+           * call can't be opened without a title, pin price and refund
+           * threshold. The form itself sends the artist on into the room if
+           * one is already running.
+           */
+          onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
           accessibilityRole="button"
           accessibilityLabel={`Start ${UP_NEXT.title}`}
           style={styles.startBtn}

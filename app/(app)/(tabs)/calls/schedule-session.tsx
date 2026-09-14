@@ -1,196 +1,1047 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Header, Screen, SegmentedControl, ToggleRow } from '@components/shared';
-import { Card, GradientButton, Text } from '@components/ui';
+import { Screen } from '@components/shared';
+import { Text } from '@components/ui';
 import { groupCallApi } from '@services/api/groupCallApi';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { activeGroupCallStore } from '@services/groupCall/activeGroupCall';
+import { fontFamily } from '@theme';
+import { showToast } from '@utils/toast';
 import { rf } from '@utils/responsive';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
 
+/**
+ * Palette + geometry lifted verbatim from the artist web's `.gsched-*` /
+ * `.gcall-mode-*` rules (Mitro.Artist.UI/src/styles.css) so this screen is the
+ * mobile-responsive web page, not an approximation of it.
+ */
+const web = {
+  textStrong: '#FFFAFF',
+  textSoft: 'rgba(255, 250, 255, 0.72)',
+  hint: 'rgba(255, 255, 255, 0.4)',
+  help: 'rgba(255, 255, 255, 0.35)',
+  eyebrow: '#FF8FC7',
+  backBg: 'rgba(255, 255, 255, 0.06)',
+  backBorder: 'rgba(255, 255, 255, 0.14)',
+  cardBase: 'rgba(12, 10, 25, 0.78)',
+  cardBorder: 'rgba(255, 255, 255, 0.13)',
+  sideBase: 'rgba(12, 10, 25, 0.7)',
+  inputBg: 'rgba(5, 4, 11, 0.6)',
+  inputBorder: 'rgba(255, 255, 255, 0.14)',
+  placeholder: 'rgba(255, 255, 255, 0.32)',
+  modeIdleBg: 'rgba(255, 255, 255, 0.04)',
+  modeIdleBorder: 'rgba(255, 255, 255, 0.12)',
+  approvalBg: 'rgba(255, 255, 255, 0.03)',
+  approvalBorder: 'rgba(255, 255, 255, 0.1)',
+  switchTrack: 'rgba(255, 255, 255, 0.16)',
+  checkIdleText: 'rgba(255, 255, 255, 0.45)',
+  checkIdleIcon: 'rgba(255, 255, 255, 0.25)',
+  green: '#42F5A7',
+  gold: '#FFC86B',
+  mathBorder: 'rgba(255, 255, 255, 0.08)',
+  shadow: '#000000',
+  pinkGlow: 'rgba(255, 63, 173, 0.3)',
+  white: '#FFFFFF',
+  transparent: 'transparent',
+} as const;
+
+/** linear-gradient(135deg, #ff3fad, #8c4dff) */
+const HOT_STOPS = ['#FF3FAD', '#8C4DFF'] as const;
+/** linear-gradient(145deg, rgba(255,255,255,.095), rgba(255,255,255,.035)) */
+const CARD_SHEEN = ['rgba(255, 255, 255, 0.095)', 'rgba(255, 255, 255, 0.035)'] as const;
+/** linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.02)) */
+const SIDE_SHEEN = ['rgba(255, 255, 255, 0.075)', 'rgba(255, 255, 255, 0.02)'] as const;
+
+const DIAG_START = { x: 0, y: 0 };
+const DIAG_END = { x: 1, y: 1 };
+/** 145deg — steeper than the corner-to-corner diagonal. */
+const SHEEN_END = { x: 0.7, y: 1 };
+
+const pad2 = (value: number) => String(value).padStart(2, '0');
+
+/** Digits -> `HH:MM`, mirroring what `<input type="time">` accepts. */
+const maskTime = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '').slice(0, 4);
+  return digits.length <= 2 ? digits : `${digits.slice(0, 2)}:${digits.slice(2)}`;
+};
+
+const normalizeTime = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (digits.length < 3) {
+    return '';
+  }
+  const padded = digits.padStart(4, '0');
+  const hours = Math.min(23, parseInt(padded.slice(0, 2), 10));
+  const minutes = Math.min(59, parseInt(padded.slice(2, 4), 10));
+  return `${pad2(hours)}:${pad2(minutes)}`;
+};
+
+/* -------------------------------------------------------------------------- */
+/*  .gsched-label / .gsched-hint / .gsched-field                               */
+/* -------------------------------------------------------------------------- */
+
 interface FieldProps {
   label: string;
-  icon?: FeatherIconName;
-  value: string;
-  onChangeText: (v: string) => void;
-  placeholder?: string;
-  keyboardType?: 'default' | 'number-pad';
-  multiline?: boolean;
+  /** Renders the lowercase `<i>(optional)</i>` suffix the web label uses. */
+  optional?: boolean;
+  /** Renders the `.gsched-help` question mark. */
+  help?: boolean;
   hint?: string;
-  containerStyle?: object;
+  children: ReactNode;
 }
 
-const Field = ({ label, icon, value, onChangeText, placeholder, keyboardType = 'default', multiline, hint, containerStyle }: FieldProps) => (
-  <View style={[styles.field, containerStyle]}>
-    <Text variant="label" color="textMuted">{label}</Text>
-    <View style={[styles.inputRow, multiline && styles.inputRowMultiline]}>
-      {icon ? <Feather name={icon} size={rf(15)} color={colors.textMuted} /> : null}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        placeholderTextColor={colors.inputPlaceholder}
-        style={[styles.input, multiline && styles.inputMultiline]}
-        multiline={multiline}
-        textAlignVertical={multiline ? 'top' : 'center'}
-      />
+const Field = memo(({ label, optional, help, hint, children }: FieldProps) => (
+  <View style={styles.field}>
+    <View style={styles.labelRow}>
+      <Text style={styles.label}>{label}</Text>
+      {optional ? <Text style={styles.labelOptional}>(optional)</Text> : null}
+      {help ? <Feather name="help-circle" size={rf(13)} color={web.help} /> : null}
     </View>
-    {hint ? <Text variant="caption" color="textMuted">{hint}</Text> : null}
+    {children}
+    {hint ? <Text style={styles.hint}>{hint}</Text> : null}
   </View>
-);
+));
+Field.displayName = 'Field';
+
+interface BoxInputProps {
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+  numeric?: boolean;
+  multiline?: boolean;
+}
+
+const BoxInput = memo(({ value, onChangeText, placeholder, numeric, multiline }: BoxInputProps) => (
+  <TextInput
+    value={value}
+    onChangeText={onChangeText}
+    placeholder={placeholder}
+    placeholderTextColor={web.placeholder}
+    keyboardType={numeric ? 'number-pad' : 'default'}
+    multiline={multiline}
+    textAlignVertical={multiline ? 'top' : 'center'}
+    style={[styles.input, multiline ? styles.inputMultiline : null]}
+  />
+));
+BoxInput.displayName = 'BoxInput';
+
+/* -------------------------------------------------------------------------- */
+/*  .gcall-mode-toggle                                                         */
+/* -------------------------------------------------------------------------- */
+
+interface ModeButtonProps {
+  icon: FeatherIconName;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}
+
+const ModeButton = memo(({ icon, label, active, onPress }: ModeButtonProps) => (
+  <Pressable
+    onPress={onPress}
+    accessibilityRole="radio"
+    accessibilityState={{ selected: active }}
+    style={[styles.modeBtn, active ? styles.modeBtnActive : styles.modeBtnIdle]}
+  >
+    {active ? (
+      <LinearGradient
+        colors={HOT_STOPS}
+        start={DIAG_START}
+        end={DIAG_END}
+        style={StyleSheet.absoluteFill}
+      />
+    ) : null}
+    <Feather name={icon} size={rf(18)} color={active ? web.white : web.textSoft} />
+    <Text style={active ? styles.modeTextActive : styles.modeText}>{label}</Text>
+  </Pressable>
+));
+ModeButton.displayName = 'ModeButton';
+
+/* -------------------------------------------------------------------------- */
+/*  .gsched-switch                                                             */
+/* -------------------------------------------------------------------------- */
+
+interface SwitchProps {
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+  accessibilityLabel: string;
+}
+
+const GschedSwitch = memo(({ value, onValueChange, accessibilityLabel }: SwitchProps) => (
+  <Pressable
+    onPress={() => onValueChange(!value)}
+    accessibilityRole="switch"
+    accessibilityLabel={accessibilityLabel}
+    accessibilityState={{ checked: value }}
+    style={styles.switch}
+  >
+    {value ? (
+      <LinearGradient
+        colors={HOT_STOPS}
+        start={DIAG_START}
+        end={DIAG_END}
+        style={styles.switchTrackFill}
+      />
+    ) : (
+      <View style={styles.switchTrackOff} />
+    )}
+    <View style={[styles.switchKnob, value ? styles.switchKnobOn : null]} />
+  </Pressable>
+));
+GschedSwitch.displayName = 'GschedSwitch';
+
+/* -------------------------------------------------------------------------- */
+/*  Screen                                                                     */
+/* -------------------------------------------------------------------------- */
 
 const ScheduleSessionScreen = () => {
   const router = useRouter();
+
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [duration, setDuration] = useState('30');
   const [seats, setSeats] = useState('5');
-  const [tokenPrice, setTokenPrice] = useState('8');
+  const [coinPrice, setCoinPrice] = useState('8');
   const [highlightedPrice, setHighlightedPrice] = useState('');
   const [refundThreshold, setRefundThreshold] = useState('');
-  const [description, setDescription] = useState('');
-  const [mode, setMode] = useState<'Video call' | 'Audio only'>('Video call');
-  const [requireApproval, setRequireApproval] = useState(false);
+  const [mode, setMode] = useState<'video' | 'audio'>('video');
+  const [requiresApproval, setRequiresApproval] = useState(false);
   const [creating, setCreating] = useState(false);
+  /** Blocks the form until we know whether a call is already running. */
+  const [checkingActive, setCheckingActive] = useState(true);
+
+  /*
+   * The backend allows one group call at a time, and a new one is only
+   * possible once the previous one is ended. So if the artist already has a
+   * room running (they backed out instead of ending it), don't show them a
+   * create form they can't submit — send them straight back into that room,
+   * which rejoins it.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    activeGroupCallStore.get().then((active) => {
+      if (cancelled) return;
+      if (active) {
+        showToast('You already have a group call running — taking you back to it.', 'info');
+        router.replace('/(app)/(modals)/group-call-room');
+        return;
+      }
+      setCheckingActive(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  // The date is locked to today — artists can only pick a time, so there is no
+  // separate date state, just a time-of-day today's date gets stitched onto.
+  const { todayIso, todayLabel } = useMemo(() => {
+    const now = new Date();
+    return {
+      todayIso: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`,
+      todayLabel: `${pad2(now.getMonth() + 1)}/${pad2(now.getDate())}/${now.getFullYear()}`,
+    };
+  }, []);
 
   const seatsNum = parseInt(seats, 10) || 0;
-  const priceNum = parseInt(tokenPrice, 10) || 0;
-  const potential = useMemo(() => (seatsNum * priceNum).toLocaleString('en-US'), [seatsNum, priceNum]);
-  const canSchedule = title.trim().length > 0 && seatsNum > 0 && priceNum >= 0;
+  const priceNum = parseInt(coinPrice, 10) || 0;
+  const potential = useMemo(
+    () => (seatsNum * priceNum).toLocaleString('en-US'),
+    [seatsNum, priceNum],
+  );
+
+  const highlightedNum = parseInt(highlightedPrice, 10);
+  const refundNum = parseInt(refundThreshold, 10);
+  const hasTitle = title.trim().length > 0;
+  const hasHighlighted = Number.isFinite(highlightedNum) && highlightedNum > 0;
+  const hasRefund = Number.isFinite(refundNum) && refundNum >= 0;
+
+  /*
+   * Title, highlighted message price and refund threshold are required before
+   * a room can be opened — same three the artist web insists on. The button
+   * stays inactive until they're set, and the list below it names what's
+   * still missing so the artist isn't left guessing why it won't press.
+   */
+  const missing = [
+    !hasTitle ? 'session title' : null,
+    !hasHighlighted ? 'highlighted message price' : null,
+    !hasRefund ? 'refund threshold' : null,
+  ].filter((v): v is string => v !== null);
+  const canSchedule = missing.length === 0 && seatsNum > 0 && priceNum >= 0;
+
+  const checklist = [
+    { label: 'Title and topic', done: hasTitle },
+    { label: 'Date and time (optional)', done: true },
+    { label: 'Seat limit', done: seatsNum > 0 },
+    { label: 'Coin price', done: priceNum >= 0 },
+    { label: 'Highlighted message price', done: hasHighlighted },
+    { label: 'Refund threshold', done: hasRefund },
+    { label: 'Approval preference set', done: true },
+  ];
 
   const schedule = async () => {
-    if (!canSchedule || creating) return;
+    if (creating) {
+      return;
+    }
+    if (!title.trim()) {
+      showToast('Session title is required.', 'error');
+      return;
+    }
+
+    const time = normalizeTime(scheduledTime);
+    let scheduledStartAtUtc: string | null = null;
+    if (time) {
+      const startsAt = new Date(`${todayIso}T${time}:00`);
+      if (startsAt.getTime() < Date.now()) {
+        showToast("Scheduled date and time can't be in the past.", 'error');
+        return;
+      }
+      scheduledStartAtUtc = startsAt.toISOString();
+    }
+
+    if (seatsNum <= 0) {
+      showToast('Available seats must be greater than 0.', 'error');
+      return;
+    }
+    if (priceNum < 0) {
+      showToast('Coin price cannot be negative.', 'error');
+      return;
+    }
+    if (!hasHighlighted) {
+      showToast('Highlighted message price is required.', 'error');
+      return;
+    }
+    if (!hasRefund) {
+      showToast('Refund threshold is required.', 'error');
+      return;
+    }
+
     setCreating(true);
     const res = await groupCallApi.create({
       title: title.trim(),
       description: description.trim() || undefined,
       maxParticipants: seatsNum,
       entryPrice: priceNum,
-      requiresApproval: requireApproval,
-      audioOrVideoMode: mode === 'Audio only' ? 'audio' : 'video',
+      requiresApproval,
+      audioOrVideoMode: mode,
+      scheduledStartAtUtc,
       expectedDurationMinutes: parseInt(duration, 10) || undefined,
     });
     setCreating(false);
+
     if (!res.success) {
-      Alert.alert("Couldn't schedule", res.error);
+      showToast(res.error, 'error');
       return;
     }
+
+    const groupCallId = res.data.groupCallId;
+
+    // Both are required, so push them before the room opens. A failure here
+    // isn't fatal — the call exists and the studio can still run it.
+    const [hl, rt] = await Promise.all([
+      groupCallApi.setHighlightedMessagePrice(groupCallId, highlightedNum),
+      groupCallApi.setRefundThreshold(groupCallId, refundNum),
+    ]);
+    if (!hl.success || !rt.success) {
+      showToast('Session created, but the pin price / refund threshold could not be saved.', 'info');
+    }
+
+    // Remember it before we navigate: from here on the artist can back out of
+    // the room and walk straight back into it instead of being locked out.
+    await activeGroupCallStore.saveDraft({
+      groupCallId,
+      title: title.trim(),
+      maxParticipants: seatsNum,
+      entryPrice: priceNum,
+      requiresApproval,
+      audioOrVideoMode: mode,
+    });
+
     // Land straight in the group-call studio, which starts + manages the room.
     router.replace({
       pathname: '/(app)/(modals)/group-call-room',
       params: {
-        groupCallId: res.data.groupCallId,
+        groupCallId,
         sessionConfig: JSON.stringify({
           title: title.trim(),
           maxParticipants: seatsNum,
           entryPrice: priceNum,
-          requiresApproval: requireApproval,
-          mode: mode === 'Audio only' ? 'audio' : 'video',
+          requiresApproval,
+          mode,
         }),
       },
     });
   };
 
+  if (checkingActive) {
+    return (
+      <Screen tabBarSpacing contentContainerStyle={styles.checking}>
+        <ActivityIndicator size="small" color={web.eyebrow} />
+      </Screen>
+    );
+  }
+
   return (
     <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
-      <Header title="Schedule Group Session" onBack={() => router.back()} />
-
-      <View style={styles.eyebrowRow}>
-        <Feather name="video" size={rf(12)} color={colors.pink} />
-        <Text variant="label" color="pink">GROUP CALL</Text>
+      {/* .gsched-header */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={styles.back}
+        >
+          <Feather name="arrow-left" size={rf(18)} color={web.textStrong} />
+        </Pressable>
+        <View style={styles.headerCopy}>
+          <View style={styles.eyebrowRow}>
+            <Feather name="video" size={rf(13)} color={web.eyebrow} />
+            <Text style={styles.eyebrow}>Group Call</Text>
+          </View>
+          <Text style={styles.h1}>Schedule Group Session</Text>
+        </View>
       </View>
 
-      <Card style={styles.section}>
-        <Text variant="h3" color="textPrimary">Create a paid group session</Text>
-        <Text variant="bodySm" color="textSecondary" style={styles.intro}>
-          Set the seats, topic, and token price — fans pay to join and everyone shares the room.
-        </Text>
-
-        <Field label="SESSION TITLE" icon="type" value={title} onChangeText={setTitle} placeholder="e.g. Late Night Q&A" />
-
-        <View style={styles.field}>
-          <Text variant="label" color="textMuted">EXPECTED DURATION (MIN)</Text>
-          <SegmentedControl options={['30', '60', '90']} value={duration} onChange={setDuration} />
-          <Text variant="caption" color="textMuted">Used for the refund threshold default in the studio.</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Field label="AVAILABLE SEATS" icon="users" value={seats} onChangeText={setSeats} keyboardType="number-pad" hint="Max people in the room." containerStyle={styles.flex} />
-          <Field label="TOKEN PRICE" icon="tag" value={tokenPrice} onChangeText={setTokenPrice} keyboardType="number-pad" hint="One-time price per seat." containerStyle={styles.flex} />
-        </View>
-
-        <View style={styles.row}>
-          <Field label="HIGHLIGHTED MESSAGE PRICE" value={highlightedPrice} onChangeText={setHighlightedPrice} keyboardType="number-pad" placeholder="e.g. 100" hint="What a participant pays to pin a message." containerStyle={styles.flex} />
-          <Field label="REFUND THRESHOLD" value={refundThreshold} onChangeText={setRefundThreshold} keyboardType="number-pad" placeholder="e.g. 2" hint="Minutes before refunds stop." containerStyle={styles.flex} />
-        </View>
-
-        <Field label="SESSION DESCRIPTION (OPTIONAL)" value={description} onChangeText={setDescription} placeholder="What's this session about?" multiline />
-
-        <View style={styles.field}>
-          <Text variant="label" color="textMuted">CALL MODE</Text>
-          <SegmentedControl options={['Video call', 'Audio only']} value={mode} onChange={(v) => setMode(v as 'Video call' | 'Audio only')} />
-          <Text variant="caption" color="textMuted">Audio-only uses less bandwidth — good for talk-focused sessions.</Text>
-        </View>
-
-        <View style={styles.divider} />
-        <ToggleRow
-          label="Require my approval before someone can join"
-          description="Off = fans join instantly up to your seat limit. On = they wait in a queue you approve one by one."
-          value={requireApproval}
-          onValueChange={setRequireApproval}
+      {/* .gsched-card */}
+      <View style={styles.card}>
+        <LinearGradient
+          colors={CARD_SHEEN}
+          start={DIAG_START}
+          end={SHEEN_END}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
         />
-      </Card>
 
-      {/* If every seat fills */}
-      <View style={styles.potential}>
-        <Text variant="bodyLg" color="textPrimary" style={styles.bold}>If every seat fills</Text>
-        <View style={styles.potentialRow}>
-          <Text variant="body" color="textSecondary">Seats × price</Text>
-          <Text variant="h3" color="gold" style={styles.potentialValue}>{potential} tk</Text>
+        <View style={styles.cardHead}>
+          <Text style={styles.h2}>Create a paid group session</Text>
+          <Text style={styles.cardHeadText}>
+            Set the date, seats, topic, and coin price — fans pay to join and everyone shares the
+            room.
+          </Text>
         </View>
-        <View style={styles.potentialRow}>
-          <Text variant="body" color="textSecondary">Price per seat (one-time)</Text>
-          <Text variant="h3" color="gold" style={styles.potentialValue}>{priceNum} tk</Text>
+
+        <View style={styles.form}>
+          <Field label="Session Title">
+            <BoxInput value={title} onChangeText={setTitle} placeholder="e.g. Late Night Q&A" />
+          </Field>
+
+          <Field
+            label="Date & Time"
+            help
+            hint="Today only — blank time = starts on-demand, whenever you hit go."
+          >
+            <View style={styles.split}>
+              <View style={[styles.input, styles.inputDisabled]}>
+                <Text style={styles.disabledValue}>{todayLabel}</Text>
+              </View>
+              <View style={[styles.input, styles.timeBox]}>
+                <TextInput
+                  value={scheduledTime}
+                  onChangeText={(next) => setScheduledTime(maskTime(next))}
+                  onBlur={() => setScheduledTime((prev) => normalizeTime(prev))}
+                  placeholder="--:-- --"
+                  placeholderTextColor={web.placeholder}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  accessibilityLabel="Start time"
+                  style={styles.timeInput}
+                />
+                <Feather name="clock" size={rf(14)} color={web.textSoft} />
+              </View>
+            </View>
+          </Field>
+
+          <Field
+            label="Expected Duration (min)"
+            hint="Used for the refund threshold default in the studio."
+          >
+            <BoxInput value={duration} onChangeText={setDuration} placeholder="30" numeric />
+          </Field>
+
+          <Field label="Available Seats" hint="Max people who can be in the room at once.">
+            <BoxInput value={seats} onChangeText={setSeats} placeholder="e.g. 20" numeric />
+          </Field>
+
+          <Field label="Coin Price" hint="One-time price per seat, not per minute.">
+            <BoxInput value={coinPrice} onChangeText={setCoinPrice} placeholder="e.g. 10" numeric />
+          </Field>
+
+          <Field
+            label="Highlighted message price"
+            hint="What a participant pays to pin their message."
+          >
+            <BoxInput
+              value={highlightedPrice}
+              onChangeText={setHighlightedPrice}
+              placeholder="e.g. 100 coins to pin a message"
+              numeric
+            />
+          </Field>
+
+          <Field
+            label="Refund threshold"
+            hint="Minutes connected before an early end no longer refunds entry."
+          >
+            <BoxInput
+              value={refundThreshold}
+              onChangeText={setRefundThreshold}
+              placeholder="e.g. 2 minutes before refunds stop"
+              numeric
+            />
+          </Field>
+
+          <Field label="Session Description" optional>
+            <BoxInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="What's this session about?"
+              multiline
+            />
+          </Field>
+
+          <Field
+            label="Call Mode"
+            help
+            hint="Audio-only uses less bandwidth — good for talk-focused sessions."
+          >
+            <View style={styles.modeToggle}>
+              <ModeButton
+                icon="video"
+                label="Video call"
+                active={mode === 'video'}
+                onPress={() => setMode('video')}
+              />
+              <ModeButton
+                icon="radio"
+                label="Audio only"
+                active={mode === 'audio'}
+                onPress={() => setMode('audio')}
+              />
+            </View>
+          </Field>
+
+          {/* .gsched-approval-row */}
+          <View style={styles.approvalRow}>
+            <View style={styles.approvalCopy}>
+              <View style={styles.approvalTitleRow}>
+                <Text style={styles.approvalTitle}>
+                  Require my approval before someone can join
+                </Text>
+                <Feather name="help-circle" size={rf(13)} color={web.help} />
+              </View>
+              <Text style={styles.approvalNote}>
+                Off = fans join instantly up to your seat limit. On = they wait in a queue you
+                approve one by one.
+              </Text>
+            </View>
+            <GschedSwitch
+              value={requiresApproval}
+              onValueChange={setRequiresApproval}
+              accessibilityLabel="Require my approval before someone can join"
+            />
+          </View>
+
+          {/* .gsched-submit */}
+          <Pressable
+            onPress={schedule}
+            disabled={creating || !canSchedule}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: creating || !canSchedule, busy: creating }}
+            accessibilityHint={
+              missing.length > 0 ? `Still needed: ${missing.join(', ')}` : undefined
+            }
+            style={[styles.submit, creating || !canSchedule ? styles.submitDisabled : null]}
+          >
+            <LinearGradient
+              colors={HOT_STOPS}
+              start={DIAG_START}
+              end={DIAG_END}
+              style={styles.submitFill}
+            >
+              <Feather name="video" size={rf(20)} color={web.white} />
+              <Text style={styles.submitLabel}>
+                {creating ? 'Scheduling...' : 'Schedule Session'}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+
+          {missing.length > 0 ? (
+            <View style={styles.blockedNote}>
+              <Feather name="alert-circle" size={rf(13)} color={web.gold} />
+              <Text style={styles.blockedNoteText}>
+                Add your {missing.length === 1 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`} to start the session.
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.submitNote}>
+              You&apos;ll land in the group call studio next, where you actually start and manage
+              the room.
+            </Text>
+          )}
         </View>
       </View>
 
-      <GradientButton
-        label={creating ? 'Scheduling…' : 'Schedule Session'}
-        gradient="primary"
-        textColor="ctaDark"
-        leftIcon="video"
-        disabled={!canSchedule || creating}
-        onPress={schedule}
-      />
-      <Text variant="caption" color="textMuted" style={styles.footNote}>
-        You&apos;ll land in the group call studio next, where you actually start and manage the room.
-      </Text>
+      {/* .gsched-side-card — Session Checklist */}
+      <View style={styles.sideCard}>
+        <LinearGradient
+          colors={SIDE_SHEEN}
+          start={DIAG_START}
+          end={SHEEN_END}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <Text style={styles.h3}>Session Checklist</Text>
+        <Text style={styles.sideSub}>Fills in automatically as you complete the form.</Text>
+        <View style={styles.checklist}>
+          {checklist.map((item) => (
+            <View key={item.label} style={styles.checkRow}>
+              <Feather
+                name={item.done ? 'check-circle' : 'circle'}
+                size={rf(18)}
+                color={item.done ? web.green : web.checkIdleIcon}
+              />
+              <Text style={item.done ? styles.checkTextDone : styles.checkText}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* .gsched-side-card — If every seat fills */}
+      <View style={[styles.sideCard, styles.mathCard]}>
+        <LinearGradient
+          colors={SIDE_SHEEN}
+          start={DIAG_START}
+          end={SHEEN_END}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <Text style={styles.h3}>If every seat fills</Text>
+        <View style={styles.mathRow}>
+          <Text style={styles.mathLabel}>Seats × price</Text>
+          <Text style={styles.mathValue}>{potential} tk</Text>
+        </View>
+        <View style={[styles.mathRow, styles.mathRowDivided]}>
+          <Text style={styles.mathLabel}>Price per seat (one-time)</Text>
+          <Text style={styles.mathValue}>{priceNum.toLocaleString('en-US')} tk</Text>
+        </View>
+      </View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: spacing.xl, gap: spacing.md },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionLabel: { marginTop: spacing.xs },
-  section: { gap: spacing.md },
-  intro: { marginTop: -4, lineHeight: rf(18) },
-  field: { gap: spacing.xs },
-  flex: { flex: 1 },
-  row: { flexDirection: 'row', gap: spacing.md },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.inputBackground, borderRadius: radius.md, borderWidth: 1, borderColor: colors.inputBorder, paddingHorizontal: spacing.md },
-  inputRowMultiline: { alignItems: 'flex-start', minHeight: 70, paddingVertical: spacing.sm },
-  input: { flex: 1, color: colors.textPrimary, fontFamily: fontFamily.body, fontSize: rf(13), paddingVertical: spacing.sm },
-  inputMultiline: { minHeight: 56, paddingVertical: 0 },
-  divider: { height: 1, backgroundColor: colors.border },
-  bold: { fontFamily: fontFamily.bold },
-  potential: { backgroundColor: colors.warningSoft, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.warningBorder, padding: spacing.md, gap: spacing.xs, marginTop: spacing.sm },
-  potentialRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  potentialValue: { fontFamily: fontFamily.extrabold },
-  footNote: { textAlign: 'center', marginTop: spacing.xs },
+  /* .creator-main @media (max-width: 768px) { padding: 12px } + .gsched-page gap */
+  content: {
+    paddingHorizontal: 12,
+    paddingBottom: 24,
+    gap: 20,
+  },
+
+  /* .gsched-header */
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  back: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: web.backBorder,
+    backgroundColor: web.backBg,
+  },
+  headerCopy: {
+    flex: 1,
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  eyebrow: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(11),
+    lineHeight: rf(14),
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: web.eyebrow,
+  },
+  h1: {
+    marginTop: 4,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(22),
+    lineHeight: rf(26),
+    color: web.textStrong,
+  },
+
+  /* .gsched-card */
+  card: {
+    borderWidth: 1,
+    borderColor: web.cardBorder,
+    borderRadius: 14,
+    backgroundColor: web.cardBase,
+    overflow: 'hidden',
+    shadowColor: web.shadow,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.38,
+    shadowRadius: 29,
+    elevation: 10,
+  },
+  cardHead: {
+    paddingTop: 20,
+    paddingHorizontal: 22,
+    paddingBottom: 4,
+  },
+  h2: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(17),
+    lineHeight: rf(21),
+    color: web.textStrong,
+  },
+  cardHeadText: {
+    marginTop: 6,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    lineHeight: rf(20),
+    color: web.textSoft,
+  },
+
+  /* .gsched-form */
+  form: {
+    paddingTop: 16,
+    paddingHorizontal: 22,
+    paddingBottom: 22,
+    gap: 14,
+  },
+
+  /* .gsched-field */
+  field: {
+    gap: 6,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  label: {
+    fontFamily: fontFamily.semibold,
+    fontSize: rf(11),
+    lineHeight: rf(14),
+    letterSpacing: 0.45,
+    textTransform: 'uppercase',
+    color: web.textSoft,
+  },
+  labelOptional: {
+    fontFamily: fontFamily.semibold,
+    fontSize: rf(11),
+    lineHeight: rf(14),
+    color: web.hint,
+  },
+
+  /* .gsched-field input / textarea */
+  input: {
+    minHeight: 36,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    color: web.textStrong,
+    borderWidth: 1,
+    borderColor: web.inputBorder,
+    borderRadius: 10,
+    backgroundColor: web.inputBg,
+  },
+  inputMultiline: {
+    minHeight: 60,
+  },
+  inputDisabled: {
+    flex: 1,
+    justifyContent: 'center',
+    opacity: 0.7,
+  },
+  disabledValue: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    color: web.textSoft,
+  },
+
+  /* .gsched-datetime-split */
+  split: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  timeBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 0,
+  },
+  timeInput: {
+    flex: 1,
+    paddingVertical: 8,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    color: web.textStrong,
+  },
+
+  /* .gsched-hint */
+  hint: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12),
+    lineHeight: rf(17),
+    color: web.hint,
+  },
+
+  /* .gcall-mode-toggle / .gcall-mode-btn */
+  modeToggle: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  modeBtnIdle: {
+    borderColor: web.modeIdleBorder,
+    backgroundColor: web.modeIdleBg,
+  },
+  modeBtnActive: {
+    borderColor: web.transparent,
+    backgroundColor: web.transparent,
+    shadowColor: web.pinkGlow,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 1,
+    shadowRadius: 13,
+    elevation: 6,
+  },
+  modeText: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(16),
+    lineHeight: rf(20),
+    color: web.textSoft,
+  },
+  modeTextActive: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(16),
+    lineHeight: rf(20),
+    color: web.white,
+  },
+
+  /* .gsched-approval-row */
+  approvalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: web.approvalBorder,
+    borderRadius: 10,
+    backgroundColor: web.approvalBg,
+  },
+  approvalCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  approvalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  approvalTitle: {
+    flex: 1,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(14),
+    lineHeight: rf(18),
+    color: web.textStrong,
+  },
+  approvalNote: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12),
+    lineHeight: rf(17),
+    color: web.hint,
+  },
+
+  /* .gsched-switch */
+  switch: {
+    width: 40,
+    height: 22,
+    borderRadius: 999,
+    justifyContent: 'center',
+  },
+  switchTrackFill: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 999,
+  },
+  switchTrackOff: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 999,
+    backgroundColor: web.switchTrack,
+  },
+  switchKnob: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: web.white,
+  },
+  switchKnobOn: {
+    transform: [{ translateX: 18 }],
+  },
+
+  /* .gsched-submit */
+  submit: {
+    minHeight: 52,
+    borderRadius: 999,
+    overflow: 'hidden',
+    shadowColor: web.pinkGlow,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 1,
+    shadowRadius: 21,
+    elevation: 10,
+  },
+  submitDisabled: {
+    opacity: 0.7,
+  },
+  submitFill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 52,
+  },
+  submitLabel: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(15),
+    lineHeight: rf(20),
+    color: web.white,
+  },
+  checking: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  blockedNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  blockedNoteText: {
+    flexShrink: 1,
+    fontFamily: fontFamily.semibold,
+    fontSize: rf(12),
+    lineHeight: rf(17),
+    color: web.gold,
+  },
+  submitNote: {
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12),
+    lineHeight: rf(17),
+    textAlign: 'center',
+    color: web.hint,
+  },
+
+  /* .gsched-side-card */
+  sideCard: {
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: web.cardBorder,
+    borderRadius: 14,
+    backgroundColor: web.sideBase,
+    overflow: 'hidden',
+    shadowColor: web.shadow,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.3,
+    shadowRadius: 21,
+    elevation: 8,
+  },
+  /* .gsched-sidebar gap is 16, the page grid gap is 20. */
+  mathCard: {
+    marginTop: -4,
+  },
+  h3: {
+    fontFamily: fontFamily.bold,
+    fontSize: rf(16),
+    lineHeight: rf(20),
+    color: web.textStrong,
+  },
+  sideSub: {
+    marginTop: 4,
+    marginBottom: 14,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12),
+    lineHeight: rf(17),
+    color: web.hint,
+  },
+
+  /* .gsched-checklist */
+  checklist: {
+    gap: 12,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkText: {
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(14),
+    lineHeight: rf(18),
+    color: web.checkIdleText,
+  },
+  checkTextDone: {
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(14),
+    lineHeight: rf(18),
+    color: web.textStrong,
+  },
+
+  /* .gsched-math-row */
+  mathRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  mathRowDivided: {
+    borderTopWidth: 1,
+    borderTopColor: web.mathBorder,
+  },
+  mathLabel: {
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    lineHeight: rf(18),
+    color: web.textSoft,
+  },
+  mathValue: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(15),
+    lineHeight: rf(20),
+    color: web.gold,
+  },
 });
 
 export default ScheduleSessionScreen;

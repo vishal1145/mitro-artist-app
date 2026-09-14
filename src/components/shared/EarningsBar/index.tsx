@@ -1,9 +1,11 @@
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { LogoBadge } from '@components/ui/LogoBadge';
 import { Text } from '@components/ui/Text';
+import { useConversations } from '@hooks/usePrivateMessages';
 import { colors, fontFamily, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
@@ -23,7 +25,8 @@ export interface EarningsBarProps {
   unread?: boolean;
 }
 
-/** Top strip shared by the tab roots: brand or earnings on the left, bell right. */
+/** Top strip shared by the tab roots: brand or earnings on the left, messages
+ * + bell on the right. */
 const EarningsBarComponent = ({
   amount = '',
   caption = 'EARNED',
@@ -31,46 +34,66 @@ const EarningsBarComponent = ({
   onPressAmount,
   onPressBell,
   unread = false,
-}: EarningsBarProps) => (
-  <View style={styles.row}>
-    {brand ? (
-      <View style={styles.brand}>
-        <LogoBadge variant="wave" size={38} />
-        <Text style={styles.brandName}>Mitro</Text>
-      </View>
-    ) : (
-      <Pressable
-        style={styles.pill}
-        onPress={onPressAmount}
-        disabled={!onPressAmount}
-        accessibilityRole="button"
-        accessibilityLabel={`${amount} ${caption.toLowerCase()}`}
-      >
-        <View style={styles.icon}>
-          <Feather name="zap" size={rf(14)} color={colors.gold} />
-        </View>
-        <View>
-          <Text style={styles.amount}>{amount}</Text>
-          <Text style={styles.caption} color="textMuted">
-            {caption}
-          </Text>
-        </View>
-      </Pressable>
-    )}
+}: EarningsBarProps) => {
+  const router = useRouter();
+  const { data: convos } = useConversations();
+  const messagesUnread = (convos ?? []).reduce((n, c) => n + (c.unreadCount ?? 0), 0);
 
-    {onPressBell ? (
-      <Pressable
-        style={styles.bell}
-        onPress={onPressBell}
-        accessibilityRole="button"
-        accessibilityLabel="Notifications"
-      >
-        <Feather name="bell" size={rf(18)} color={colors.textSecondary} />
-        {unread ? <View style={styles.bellDot} /> : null}
-      </Pressable>
-    ) : null}
-  </View>
-);
+  return (
+    <View style={styles.row}>
+      {brand ? (
+        <View style={styles.brand}>
+          <LogoBadge variant="wave" size={38} />
+          <Text style={styles.brandName}>Mitro</Text>
+        </View>
+      ) : (
+        <Pressable
+          style={styles.pill}
+          onPress={onPressAmount}
+          disabled={!onPressAmount}
+          accessibilityRole="button"
+          accessibilityLabel={`${amount} ${caption.toLowerCase()}`}
+        >
+          <View style={styles.icon}>
+            <Feather name="zap" size={rf(14)} color={colors.gold} />
+          </View>
+          <View>
+            <Text style={styles.amount}>{amount}</Text>
+            <Text style={styles.caption} color="textMuted">
+              {caption}
+            </Text>
+          </View>
+        </Pressable>
+      )}
+
+      <View style={styles.right}>
+        {/* Notifications leads and messages sits in the outer corner — the
+            order fans/artists expect, and what was asked for explicitly. */}
+        {onPressBell ? (
+          <Pressable
+            style={styles.iconBtn}
+            onPress={onPressBell}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Feather name="bell" size={rf(18)} color={colors.textSecondary} />
+            {unread ? <View style={styles.dot} /> : null}
+          </Pressable>
+        ) : null}
+
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => router.push('/(app)/(tabs)/me/messages')}
+          accessibilityRole="button"
+          accessibilityLabel="Messages"
+        >
+          <Feather name="message-circle" size={rf(18)} color={colors.textSecondary} />
+          {messagesUnread > 0 ? <View style={styles.dot} /> : null}
+        </Pressable>
+      </View>
+    </View>
+  );
+};
 
 export const EarningsBar = memo(EarningsBarComponent);
 
@@ -120,7 +143,12 @@ const styles = StyleSheet.create({
     fontSize: rf(9),
     letterSpacing: 0.8,
   },
-  bell: {
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -130,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bellDot: {
+  dot: {
     position: 'absolute',
     top: 9,
     right: 10,

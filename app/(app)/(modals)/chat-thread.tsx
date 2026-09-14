@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
+import { Skeleton } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
 import { useProfile } from '@hooks/useProfile';
 import { useConversations } from '@hooks/usePrivateMessages';
@@ -92,10 +93,27 @@ function toast(text1: string): void {
   Toast.show({ type: 'appNotification', text1, props: { type: 'system' } });
 }
 
+/**
+ * Alternating left/right placeholder bubbles for the opening load — mirrors the
+ * web thread's skeleton (`pmsg-bubble-row` shimmer blocks) rather than a spinner.
+ */
+const SKELETON_BUBBLES: { out: boolean; width: `${number}%` }[] = [
+  { out: false, width: '55%' },
+  { out: true, width: '48%' },
+  { out: false, width: '68%' },
+  { out: true, width: '40%' },
+  { out: false, width: '60%' },
+  { out: true, width: '50%' },
+];
+
 /** 1:1 conversation with a fan — live, with reply / copy / forward / edit / delete. */
 const ChatThreadScreen = () => {
   const router = useRouter();
-  const { userId, name } = useLocalSearchParams<{ userId?: string; name?: string; avatarUrl?: string }>();
+  const { userId, name, avatarUrl } = useLocalSearchParams<{
+    userId?: string;
+    name?: string;
+    avatarUrl?: string;
+  }>();
   const fan = name ?? 'Fan';
   const firstName = fan.split(' ')[0];
 
@@ -117,6 +135,20 @@ const ChatThreadScreen = () => {
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
   const mounted = useRef(true);
+  const sendingRef = useRef(false);
+  const initialScrollDone = useRef(false);
+
+  /**
+   * Native layout keeps settling for a beat after onContentSizeChange first
+   * fires — KeyboardAvoidingView padding, avatar loads, date-pill sizing —
+   * so a single scrollToEnd can land short of the real bottom (the thread
+   * opening "somewhere in the middle" instead of on the latest message).
+   * Nudging again next frame and after a short delay reliably closes the gap.
+   */
+  const nudgeScroll = useCallback((animated: boolean) => {
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated }));
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated }), 200);
+  }, []);
 
   const { data: convData } = useConversations();
   const otherConvos = (convData ?? []).filter((c) => c.userId !== userId);
@@ -135,17 +167,24 @@ const ChatThreadScreen = () => {
   }, []);
 
   const load = useCallback(
-    async (markRead: boolean) => {
+    async (markRead: boolean, dropId?: string) => {
       if (!userId) return;
       const res = await privateMessageApi.getConversation(userId, 1, 50);
       if (!mounted.current) return;
       if (res.success) {
-        setMessages((prev) => mergeMessages(prev, res.data.items));
+        setMessages((prev) => {
+          const base = dropId ? prev.filter((m) => m.id !== dropId) : prev;
+          return mergeMessages(base, res.data.items);
+        });
         if (markRead) privateMessageApi.markRead(userId);
       }
       setLoading(false);
+      if (!initialScrollDone.current) {
+        initialScrollDone.current = true;
+        nudgeScroll(false);
+      }
     },
-    [userId],
+    [userId, nudgeScroll],
   );
 
   useEffect(() => {
@@ -172,8 +211,11 @@ const ChatThreadScreen = () => {
           },
         ]),
       );
+      // Scroll for any incoming realtime message (including the artist's own
+      // sends echoed back from another session) — not just fan messages.
+      // Read-receipts stay scoped to the fan's messages only.
+      nudgeScroll(true);
       if (p.senderType === 'user') {
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
         privateMessageApi.markRead(userId);
       }
     };
@@ -182,7 +224,7 @@ const ChatThreadScreen = () => {
       cancelled = true;
       privateMessageHub.disconnect();
     };
-  }, [artistId, userId]);
+  }, [artistId, userId, nudgeScroll]);
 
   const startReply = (m: PrivateMessageItem) => {
     setEditing(null);
@@ -248,21 +290,95 @@ const ChatThreadScreen = () => {
 
   const handleSend = async () => {
     const text = draft.trim();
-    if (!text || sending || !userId) return;
+    // sendingRef is a plain ref (not state), so it's already true for a
+    // same-tick double-tap even before React re-renders the disabled button —
+    // that race is what let a fast double-tap through and posted the same
+    // reply twice ("shows in two places").
+    if (!text || sendingRef.current || !userId) return;
+    const isEditing = editing;
+    const replyTarget = replyingTo;
+
+    sendingRef.current = true;
     setSending(true);
-    const res = editing
-      ? await privateMessageApi.editMessage(editing.id, text)
-      : await privateMessageApi.reply(userId, text, replyingTo?.id ?? null);
-    if (mounted.current) {
+
+    if (isEditing) {
+      try {
+        const res = await privateMessageApi.editMessage(isEditing.id, text);
+        if (!mounted.current) return;
+        if (res.success) {
+          setDraft('');
+          setEditing(null);
+          await load(false);
+          nudgeScroll(true);
+        } else {
+          flashError(res.error);
+        }
+      } catch {
+        // Previously uncaught — a thrown error (vs. a Result failure) skipped
+        // straight past setSending(false), leaving the send button spinning
+        // forever ("gol gol ghumta rehta hai").
+        flashError('Could not save the edit. Check your connection and try again.');
+      } finally {
+        sendingRef.current = false;
+        if (mounted.current) setSending(false);
+      }
+      return;
+    }
+
+    // New message: echo it into the thread the instant you hit send instead
+    // of waiting on a full round trip — this is what "smooth" was missing.
+    // It's reconciled with the server's real id below, in place, so it never
+    // shows twice.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimistic: PrivateMessageItem = {
+      id: tempId,
+      senderType: 'artist',
+      messageText: text,
+      privateCallId: null,
+      priceCharged: 0,
+      readAtUtc: null,
+      createdAtUtc: new Date().toISOString(),
+      replyToMessageId: replyTarget?.id ?? null,
+      replyToText: replyTarget?.messageText ?? null,
+      replyToSenderType: replyTarget?.senderType ?? null,
+    };
+    setMessages((prev) => mergeMessages(prev, [optimistic]));
+    setDraft('');
+    setReplyingTo(null);
+    nudgeScroll(true);
+
+    try {
+      const res = await privateMessageApi.reply(userId, text, replyTarget?.id ?? null);
+      if (!mounted.current) return;
+
       if (res.success) {
-        setDraft('');
-        setEditing(null);
-        setReplyingTo(null);
-        await load(false);
+        const real = res.data;
+        setMessages((prev) => {
+          // Drop the placeholder and upsert the confirmed row by its real id
+          // — handles the realtime hub echoing the same send back before
+          // this response even lands, which used to leave both copies on
+          // screen at once.
+          const withoutTemp = prev.filter((m) => m.id !== tempId);
+          return mergeMessages(withoutTemp, [
+            { ...optimistic, id: real.messageId, createdAtUtc: real.createdAtUtc },
+          ]);
+        });
+        void load(false);
+        nudgeScroll(true);
       } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setDraft(text);
+        setReplyingTo(replyTarget);
         flashError(res.error);
       }
-      setSending(false);
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setDraft(text);
+      setReplyingTo(replyTarget);
+      flashError('Could not send. Check your connection and try again.');
+    } finally {
+      sendingRef.current = false;
+      if (mounted.current) setSending(false);
     }
   };
 
@@ -274,7 +390,13 @@ const ChatThreadScreen = () => {
         <Pressable onPress={() => router.back()} style={styles.iconBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
           <Feather name="chevron-left" size={rf(20)} color={colors.textPrimary} />
         </Pressable>
-        <Avatar initials={initialsFor(fan)} name={fan} size="md" color={colors.pink} />
+        <Avatar
+          uri={avatarUrl || undefined}
+          initials={initialsFor(fan)}
+          name={fan}
+          size="md"
+          color={colors.pink}
+        />
         <View style={styles.headerText}>
           <Text variant="bodyLg" color="textPrimary" style={styles.headerName} numberOfLines={1}>
             {fan}
@@ -294,8 +416,15 @@ const ChatThreadScreen = () => {
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
         >
           {loading && messages.length === 0 ? (
-            <View style={styles.center}>
-              <ActivityIndicator color={colors.pink} />
+            <View style={styles.skeletonThread}>
+              {SKELETON_BUBBLES.map((b, i) => (
+                <View
+                  key={i}
+                  style={[styles.skeletonRow, b.out ? styles.skeletonRight : styles.skeletonLeft]}
+                >
+                  <Skeleton width={b.width} height={44} round={radius.card} />
+                </View>
+              ))}
             </View>
           ) : messages.length === 0 ? (
             <View style={styles.center}>
@@ -520,6 +649,9 @@ const MessageRow = ({
         ) : null}
         <Text variant="bodySm" color="textMuted">
           {bubbleTime(msg.createdAtUtc)}
+          {/* Fans pay to message; the artist's replies are free — so only a
+              fan's own bubble shows what it cost them, matching artist web. */}
+          {!out && msg.priceCharged > 0 ? ` · ${msg.priceCharged} tk` : ''}
         </Text>
         {out ? (
           <Feather
@@ -567,6 +699,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 60 },
+  skeletonThread: { gap: 12 },
+  skeletonRow: { flexDirection: 'row' },
+  skeletonLeft: { justifyContent: 'flex-start' },
+  skeletonRight: { justifyContent: 'flex-end' },
   emptyTitle: { fontFamily: fontFamily.bold },
   emptyHint: { textAlign: 'center' },
 
