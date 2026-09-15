@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   EarningsBar,
+  InfoCallout,
   LoadFailed,
   Screen,
   SectionLabel,
@@ -101,6 +102,14 @@ const EarningsScreen = () => {
         <LoadFailed message={getErrorMessage(error)} onRetry={() => void refetch()} />
       ) : (
         <>
+          <View style={styles.intro}>
+            <InfoCallout icon="info" tone="info">
+              This dashboard tallies every token earned from private shows, group calls, reactions,
+              tips, and the fun wheel, then splits it out by source below so you can see what&apos;s
+              driving your income. The trend chart plots tokens earned per day.
+            </InfoCallout>
+          </View>
+
           {/* All-time hero */}
           <LinearGradient
             colors={gradients.cta}
@@ -282,6 +291,9 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 12,
+  },
+  intro: {
+    marginTop: 16,
   },
 
   hero: {

@@ -30,6 +30,27 @@ export const queryKeys = {
     all: ['broadcast'] as const,
     history: (take: number, skip: number) =>
       [...queryKeys.broadcast.all, 'history', take, skip] as const,
+    historySummary: () =>
+      [...queryKeys.broadcast.all, 'historySummary'] as const,
+    analytics: (broadcastId: string) =>
+      [...queryKeys.broadcast.all, 'analytics', broadcastId] as const,
+  },
+  groupCall: {
+    all: ['groupCall'] as const,
+    history: (take: number, skip: number, status: string) =>
+      [...queryKeys.groupCall.all, 'history', take, skip, status] as const,
+    historySummary: (status: string) =>
+      [...queryKeys.groupCall.all, 'historySummary', status] as const,
+    analytics: (groupCallId: string) =>
+      [...queryKeys.groupCall.all, 'analytics', groupCallId] as const,
+  },
+  rewardOrders: {
+    all: ['rewardOrders'] as const,
+    pending: () => [...queryKeys.rewardOrders.all, 'pending'] as const,
+  },
+  followers: {
+    all: ['followers'] as const,
+    list: () => [...queryKeys.followers.all, 'list'] as const,
   },
   messages: {
     all: ['messages'] as const,

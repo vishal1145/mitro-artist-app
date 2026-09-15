@@ -1,10 +1,9 @@
-import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useEffect, useRef } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients, radius } from '@theme';
+import { colors, fontFamily, gradientDirection, gradients } from '@theme';
 import { rf } from '@utils/responsive';
 
 export type ConfirmTone = 'danger' | 'primary';
@@ -17,7 +16,10 @@ export interface ConfirmDialogProps {
   cancelLabel?: string;
   /** `danger` gives a red confirm button, `primary` the CTA gradient. */
   tone?: ConfirmTone;
-  icon?: keyof typeof Feather.glyphMap;
+  /** Shows a spinner in the confirm button and blocks re-taps / dismissal. */
+  confirmLoading?: boolean;
+  /** Deprecated — kept for call-site compatibility; no longer rendered. */
+  icon?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -33,7 +35,7 @@ const ConfirmDialogComponent = ({
   confirmLabel,
   cancelLabel = 'Cancel',
   tone = 'danger',
-  icon,
+  confirmLoading = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) => {
@@ -49,8 +51,6 @@ const ConfirmDialogComponent = ({
   }, [visible, anim]);
 
   const danger = tone === 'danger';
-  const accent = danger ? colors.red : colors.pink;
-  const accentFill = danger ? colors.errorSoft : colors.pinkSoft;
 
   return (
     <Modal
@@ -79,51 +79,41 @@ const ConfirmDialogComponent = ({
             },
           ]}
         >
-          {icon ? (
-            <View style={[styles.icon, { backgroundColor: accentFill }]}>
-              <Feather name={icon} size={rf(22)} color={accent} />
-            </View>
-          ) : null}
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
 
-          <Text variant="h3" align="center" style={styles.title}>
-            {title}
-          </Text>
-          <Text variant="bodySm" color="textSecondary" align="center" style={styles.message}>
-            {message}
-          </Text>
+          <View style={styles.actions}>
+            <Pressable
+              onPress={onCancel}
+              disabled={confirmLoading}
+              style={[styles.cancel, confirmLoading && styles.disabled]}
+              accessibilityRole="button"
+              accessibilityLabel={cancelLabel}
+            >
+              <Text style={styles.cancelLabel}>{cancelLabel}</Text>
+            </Pressable>
 
-          <Pressable
-            onPress={onConfirm}
-            style={styles.confirm}
-            accessibilityRole="button"
-            accessibilityLabel={confirmLabel}
-          >
-            {danger ? (
-              <View style={[styles.confirmFill, styles.confirmDanger]}>
-                <Text style={styles.confirmLabel}>{confirmLabel}</Text>
-              </View>
-            ) : (
+            <Pressable
+              onPress={onConfirm}
+              disabled={confirmLoading}
+              style={styles.confirm}
+              accessibilityRole="button"
+              accessibilityLabel={confirmLabel}
+            >
               <LinearGradient
-                colors={gradients.cta}
+                colors={danger ? ['#FF4757', '#FF6B81'] : gradients.cta}
                 start={gradientDirection.horizontal.start}
                 end={gradientDirection.horizontal.end}
                 style={styles.confirmFill}
               >
-                <Text style={styles.confirmLabel}>{confirmLabel}</Text>
+                {confirmLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.confirmLabel}>{confirmLabel}</Text>
+                )}
               </LinearGradient>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={onCancel}
-            style={styles.cancel}
-            accessibilityRole="button"
-            accessibilityLabel={cancelLabel}
-          >
-            <Text variant="bodyLg" color="textSecondary" style={styles.cancelLabel}>
-              {cancelLabel}
-            </Text>
-          </Pressable>
+            </Pressable>
+          </View>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -138,64 +128,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.overlayDim,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
   },
   card: {
     width: '100%',
-    maxWidth: 340,
-    alignItems: 'center',
-    backgroundColor: colors.card,
+    maxWidth: 400,
+    backgroundColor: '#1A1A2E',
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 18,
-  },
-  icon: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
+    borderColor: 'rgba(255,255,255,0.125)',
+    borderRadius: 12,
+    padding: 24,
   },
   title: {
-    marginBottom: 8,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(17),
+    color: '#FFFFFF',
+    marginBottom: 12,
   },
   message: {
-    lineHeight: rf(17),
+    fontFamily: fontFamily.body,
+    fontSize: rf(14),
+    lineHeight: rf(20),
+    color: '#AAAAAA',
     marginBottom: 24,
   },
-
-  confirm: {
-    alignSelf: 'stretch',
-    height: 50,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
   },
-  confirmFill: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmDanger: {
-    backgroundColor: colors.red,
-  },
-  confirmLabel: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(13),
-    color: colors.white,
-  },
-
   cancel: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 48,
-    marginTop: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.125)',
+    backgroundColor: 'transparent',
   },
   cancelLabel: {
     fontFamily: fontFamily.bold,
+    fontSize: rf(13),
+    color: '#FFFFFF',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  confirm: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  confirmFill: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmLabel: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(13),
+    color: '#FFFFFF',
   },
 });

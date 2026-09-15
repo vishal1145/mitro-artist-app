@@ -7,6 +7,7 @@ import {
   AvatarPreview,
   ConfirmDialog,
   EmptyState,
+  InfoCallout,
   LoadFailed,
   PageHeader,
   PhotoViewer,
@@ -61,6 +62,13 @@ const PhotosScreen = () => {
           {error}
         </Text>
       ) : null}
+
+      <View style={styles.callout}>
+        <InfoCallout icon="image" tone="success">
+          Profiles with at least 3 gallery photos get noticeably more follows and bookings —
+          fans use them to judge your vibe. Square images work best.
+        </InfoCallout>
+      </View>
 
       {isLoading ? (
         <View style={styles.grid}>
@@ -165,6 +173,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
   },
   error: {
+    marginBottom: 12,
+  },
+  callout: {
+    marginTop: 8,
     marginBottom: 12,
   },
   grid: {

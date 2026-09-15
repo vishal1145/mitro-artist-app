@@ -1,13 +1,21 @@
-import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Screen } from '@components/shared';
-import { Button, Text } from '@components/ui';
+import { AuthBackground, AuthLogo, Screen } from '@components/shared';
+import { GradientButton, Text } from '@components/ui';
 import { useAppStore } from '@store';
-import { colors, spacing } from '@theme';
-import { rf } from '@utils/responsive';
+import { layout, spacing } from '@theme';
+
+/** Feature highlights — mirrors the web register/landing story bullets. */
+const FEATURES: readonly { emoji: string; label: string }[] = [
+  { emoji: '🎥', label: 'Go Live Instantly' },
+  { emoji: '💬', label: 'Engage With Your Audience' },
+  { emoji: '🎁', label: 'Receive Gifts & Rewards' },
+  { emoji: '👥', label: 'Build a Loyal Fan Community' },
+  { emoji: '⭐', label: 'Create Exclusive Experiences' },
+  { emoji: '📈', label: 'Grow Your Personal Brand' },
+];
 
 /** First-launch onboarding. Sets the MMKV flag and continues to login. */
 const OnboardingScreen = () => {
@@ -21,36 +29,111 @@ const OnboardingScreen = () => {
   }, [completeOnboarding, router]);
 
   return (
-    <Screen>
+    <Screen
+      scrollable
+      padded={false}
+      background={<AuthBackground />}
+      contentContainerStyle={styles.content}
+    >
       <View style={styles.body}>
-        <View style={styles.iconWrap}>
-          <Feather name="droplet" size={rf(64)} color={colors.primary} />
+        <View style={styles.header}>
+          <AuthLogo />
+          <Text variant="display" align="center" style={styles.brand}>
+            Mitro
+          </Text>
+          <Text variant="h3" color="pink" align="center" style={styles.tagline}>
+            Go Live. Connect. Earn.
+          </Text>
+          <Text variant="body" color="textSecondary" align="center" style={styles.story}>
+            Showcase your talent, build meaningful relationships with your fans, and
+            unlock new earning opportunities through live interactive experiences.
+          </Text>
         </View>
-        <Text variant="display" align="center">
-          Mitro Artist
+
+        <View style={styles.features}>
+          {FEATURES.map((feature) => (
+            <View key={feature.label} style={styles.featureRow}>
+              <Text variant="h3" style={styles.featureEmoji}>
+                {feature.emoji}
+              </Text>
+              <Text variant="body" color="textPrimary">
+                {feature.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <Text variant="bodyLg" color="cyan" align="center" style={styles.waiting}>
+          Your Audience Is Waiting.
         </Text>
-        <Text variant="bodyLarge" color="textMuted" align="center">
-          Create, showcase, and share your art — all in one place.
+
+        <GradientButton
+          label="Get Started"
+          gradient="cta"
+          rightIcon="arrow-right"
+          onPress={handleContinue}
+          style={styles.cta}
+        />
+
+        <Text variant="bodySm" color="error" align="center" style={styles.legal}>
+          Mitro is an entertainment platform for adult audiences (18+ only). By
+          continuing, you confirm that you are 18 years or older.
         </Text>
       </View>
-
-      <Button label="Get started" onPress={handleContinue} style={styles.cta} />
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  body: {
-    flex: 1,
-    alignItems: 'center',
+  /** See login.tsx — centring must sit on the scroll container, not the body. */
+  content: {
     justifyContent: 'center',
-    gap: spacing.md,
   },
-  iconWrap: {
-    marginBottom: spacing.sm,
+  body: {
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: 32,
+  },
+  header: {
+    alignItems: 'center',
+  },
+  // logo -> brand 12
+  brand: {
+    marginTop: 12,
+  },
+  // brand -> tagline 8
+  tagline: {
+    marginTop: 8,
+  },
+  // tagline -> story 12
+  story: {
+    marginTop: 12,
+  },
+  // story -> feature list 28
+  features: {
+    marginTop: 28,
+    gap: 14,
+    alignSelf: 'center',
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  featureEmoji: {
+    width: 28,
+    textAlign: 'center',
+  },
+  // list -> tagline 28
+  waiting: {
+    marginTop: 28,
+    marginBottom: 24,
   },
   cta: {
-    marginBottom: spacing.lg,
+    marginTop: 4,
+  },
+  // CTA -> age note 24
+  legal: {
+    marginTop: 24,
   },
 });
 

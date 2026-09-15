@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { PageHeader, Screen } from '@components/shared';
+import { PageHeader, Screen, SkeletonRows } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
 import { useConversations } from '@hooks/usePrivateMessages';
 import type { ArtistConversationSummary } from '@app-types/api';
@@ -74,9 +74,7 @@ const MessagesScreen = () => {
       }
     >
       {isLoading && conversations.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.pink} />
-        </View>
+        <SkeletonRows count={6} style={styles.skeleton} />
       ) : conversations.length === 0 ? (
         <View style={styles.center}>
           <Text variant="bodyLg" color="textPrimary" style={styles.emptyTitle}>
@@ -99,7 +97,13 @@ const MessagesScreen = () => {
                 accessibilityRole="button"
                 accessibilityLabel={`Conversation with ${name}`}
               >
-                <Avatar initials={initialsFor(name)} name={name} size="lg" color={colorFor(c.userId)} />
+                <Avatar
+                  uri={c.userAvatarUrl ?? undefined}
+                  initials={initialsFor(name)}
+                  name={name}
+                  size="lg"
+                  color={colorFor(c.userId)}
+                />
 
                 <View style={styles.rowText}>
                   <Text variant="bodyLg" color="textPrimary" style={styles.name} numberOfLines={1}>
@@ -156,6 +160,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 24,
+  },
+  skeleton: {
+    marginTop: 16,
   },
   emptyTitle: {
     fontFamily: fontFamily.bold,

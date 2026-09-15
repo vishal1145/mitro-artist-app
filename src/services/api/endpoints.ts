@@ -85,6 +85,9 @@ export const ENDPOINTS = {
     remove: (id: string, userId: string) => `/api/artist/group-call/${id}/participants/${userId}/remove`,
     mute: (id: string, userId: string) => `/api/artist/group-call/${id}/participants/${userId}/mute`,
     unmute: (id: string, userId: string) => `/api/artist/group-call/${id}/participants/${userId}/unmute`,
+    heartbeat: (id: string) => `/api/artist/group-call/${id}/heartbeat`,
+    highlightedPrice: (id: string) => `/api/artist/group-call/${id}/highlighted-message-price`,
+    refundThreshold: (id: string) => `/api/artist/group-call/${id}/refund-threshold`,
     activity: (id: string) => `/api/artist/group-call/${id}/activity`,
     chat: (id: string) => `/api/artist/group-call/${id}/chat`,
     analytics: (id: string) => `/api/artist/group-call/${id}/analytics`,
@@ -102,6 +105,7 @@ export const ENDPOINTS = {
     connectionLost: (id: string) => `/api/artist/private-call/${id}/connection-lost`,
     heartbeat: (id: string) => `/api/artist/private-call/${id}/heartbeat`,
     active: '/api/artist/private-call/active',
+    history: '/api/artist/private-call/history',
   },
   /** Reward-order fulfillment queue (host delivers rewards fans bought). */
   rewardOrders: {
@@ -112,6 +116,10 @@ export const ENDPOINTS = {
   funWheelSpins: {
     list: '/api/artist/fun-wheel-spins',
     fulfill: (id: string) => `/api/artist/fun-wheel-spins/${id}/fulfill`,
+  },
+  /** Read-only followers list, with badges + engagement summary. */
+  followers: {
+    list: '/api/artist/followers',
   },
   /** In-app notifications. The hub itself lives at NOTIFICATIONS.hubPath. */
   notifications: {

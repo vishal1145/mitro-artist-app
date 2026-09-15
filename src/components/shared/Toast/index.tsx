@@ -6,6 +6,9 @@ import { Text } from '@components/ui/Text';
 import { colors, radius, spacing } from '@theme';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
+import { POPUP_TOAST_TYPE } from '@utils/toast';
+
+import PopupToast from './AppToast';
 
 const AppNotificationToast = ({ text1, text2, props }: ToastConfigParams<{ type?: string }>) => {
   const visual = notificationVisual(props?.type ?? '');
@@ -43,10 +46,17 @@ const AppNotificationToastPressable = (params: ToastConfigParams<{ type?: string
 );
 
 export const toastConfig: ToastConfig = {
+  /** Push / hub notifications — `showToast`, `showNotificationToast`. */
   appNotification: AppNotificationToastPressable,
+  /** Form / auth / API feedback — `showPopupToast`. Web `.popup-toast` parity. */
+  [POPUP_TOAST_TYPE]: PopupToast,
 };
 
-/** Mount once at the app root — see app/_layout.tsx. */
+/**
+ * Mount once at the app root — see app/_layout.tsx. Hosts every toast card in
+ * the app; add variants to `toastConfig` above rather than mounting a second
+ * host.
+ */
 export const NotificationToastHost = () => <RNToast config={toastConfig} />;
 
 const styles = StyleSheet.create({

@@ -10,10 +10,11 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 
 import { Text } from '@components/ui/Text';
 import { colors, radius, spacing } from '@theme';
-import { SCREEN, wp } from '@utils/responsive';
+import { rf, SCREEN, wp } from '@utils/responsive';
 
 export interface BottomSheetProps {
   visible: boolean;
@@ -183,9 +184,20 @@ const BottomSheetComponent = ({
           ) : null}
 
           {title ? (
-            <Text variant="h3" style={styles.title}>
-              {title}
-            </Text>
+            <View style={styles.header}>
+              <Text variant="h3" style={styles.title}>
+                {title}
+              </Text>
+              <Pressable
+                style={styles.close}
+                onPress={close}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <Feather name="x" size={rf(16)} color={colors.textMuted} />
+              </Pressable>
+            </View>
           ) : null}
 
           <View style={[styles.content, contentStyle]}>{children}</View>
@@ -224,10 +236,24 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.textDisabled,
   },
-  title: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
     paddingBottom: spacing.sm,
+  },
+  title: {
+    flex: 1,
+  },
+  close: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   content: {
     flex: 1,

@@ -16,6 +16,25 @@ import { showNotificationToast } from '@utils/notifications';
  * logout. See connectAuthInterceptors' sibling wiring in store/authStore.ts.
  */
 
+/** Collapse duplicates by id AND by content signature — the same event delivered
+ * twice (realtime hub + FCM) can arrive under two different ids. */
+const sigOf = (n: NotificationItem) =>
+  `${n.type}|${n.referenceType ?? ''}|${n.referenceId ?? ''}|${n.title}|${n.body}`;
+
+const dedupeNotifications = (items: NotificationItem[]): NotificationItem[] => {
+  const seenId = new Set<string>();
+  const seenSig = new Set<string>();
+  const out: NotificationItem[] = [];
+  for (const it of items) {
+    const sig = sigOf(it);
+    if (seenId.has(it.id) || seenSig.has(sig)) continue;
+    seenId.add(it.id);
+    seenSig.add(sig);
+    out.push(it);
+  }
+  return out;
+};
+
 interface NotificationState {
   items: NotificationItem[];
   unreadCount: number;
@@ -58,7 +77,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
 
     set({
-      items: listResult.success ? listResult.data : [],
+      items: listResult.success ? dedupeNotifications(listResult.data) : [],
       unreadCount: countResult.success ? countResult.data.unreadCount : 0,
       hydrated: true,
     });
@@ -80,7 +99,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       notificationApi.getUnreadCount(),
     ]);
     set({
-      items: listResult.success ? listResult.data : get().items,
+      items: listResult.success ? dedupeNotifications(listResult.data) : get().items,
       unreadCount: countResult.success ? countResult.data.unreadCount : get().unreadCount,
       refreshing: false,
     });
@@ -127,7 +146,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   ingest: (item) => {
-    const alreadyKnown = get().items.some((existing) => existing.id === item.id);
+    const sig = sigOf(item);
+    const alreadyKnown = get().items.some(
+      (existing) => existing.id === item.id || sigOf(existing) === sig,
+    );
     if (alreadyKnown) {
       return;
     }

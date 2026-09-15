@@ -1,13 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
 import { colors, fontFamily, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
+import { showToast } from '@utils/toast';
 
 const URGENT_SEC = 5;
 
@@ -59,7 +60,7 @@ const IncomingCallRequestScreen = () => {
         },
       });
     } else {
-      Alert.alert("Couldn't accept", res.error);
+      showToast(res.error, 'error');
       setBusy(null);
     }
   }, [requestId, router, fanName, pricePerMinute]);

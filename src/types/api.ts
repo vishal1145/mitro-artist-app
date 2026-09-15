@@ -405,6 +405,154 @@ export interface BroadcastHistoryQuery {
 }
 
 /**
+ * Lifetime broadcast totals — `GET /api/artist/broadcast/history/summary`.
+ * Computed DB-side (COUNT/SUM/AVG), so it stays accurate no matter how many
+ * broadcasts the artist has ever hosted, unlike summing a page of `history`.
+ */
+export interface BroadcastHistorySummary {
+  totalShows: number;
+  totalRevenueTokens: number;
+  totalUniqueViewers: number;
+  avgDurationSeconds: number | null;
+}
+
+/** Per-broadcast breakdown — `GET /api/artist/broadcast/{id}/analytics`. */
+export interface BroadcastAnalytics {
+  broadcastId: string;
+  title: string;
+  status: string;
+  startedAtUtc: string | null;
+  endedAtUtc: string | null;
+  durationSeconds: number | null;
+  peakViewerCount: number;
+  currentViewerCount: number;
+  totalUniqueViewers: number;
+  chatMessageCount: number;
+  reactionCount: number;
+  reactionTokens: number;
+  highlightedMessageCount: number;
+  highlightedMessageTokens: number;
+  rewardOrderCount: number;
+  rewardOrderTokens: number;
+  funWheelSpinCount: number;
+  funWheelSpinTokens: number;
+  totalRevenueTokens: number;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Group calls                                                               */
+/* -------------------------------------------------------------------------- */
+
+/** One past group call, as `GET /api/artist/group-call/history` returns it. */
+export interface GroupCallHistoryItem {
+  groupCallId: string;
+  title: string;
+  /** "ended" | "cancelled" | "terminated" | "failed" | … */
+  status: string;
+  startedAtUtc: string | null;
+  endedAtUtc: string | null;
+  durationSeconds: number | null;
+  endReason: string | null;
+  peakParticipantCount: number;
+  totalRequests: number;
+  totalRevenueTokens: number;
+}
+
+/** Server-side status filter for the group-call history list + summary. */
+export type GroupCallHistoryFilter = 'all' | 'ended' | 'cancelled';
+
+export interface GroupCallHistoryQuery {
+  take: number;
+  skip: number;
+  status: GroupCallHistoryFilter;
+}
+
+/** Lifetime group-call totals — `GET /api/artist/group-call/history/summary`. */
+export interface GroupCallHistorySummary {
+  totalCalls: number;
+  totalRevenueTokens: number;
+  avgDurationSeconds: number | null;
+}
+
+/** Per-call breakdown — `GET /api/artist/group-call/{id}/analytics`. */
+export interface GroupCallAnalytics {
+  groupCallId: string;
+  title: string;
+  status: string;
+  startedAtUtc: string | null;
+  endedAtUtc: string | null;
+  durationSeconds: number | null;
+  peakParticipantCount: number;
+  currentParticipantCount: number;
+  totalRequests: number;
+  totalApproved: number;
+  totalRejected: number;
+  totalJoined: number;
+  reconnectedParticipants: number;
+  totalRevenueTokens: number;
+  entryRevenueTokens: number;
+  highlightedMessageRevenueTokens: number;
+  reactionRevenueTokens: number;
+  rewardRevenueTokens: number;
+  funWheelRevenueTokens: number;
+  refundCount: number;
+  refundedTokens: number;
+  netArtistEarningTokens: number;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reward orders — fan-purchased rewards awaiting fulfillment                */
+/* -------------------------------------------------------------------------- */
+
+/** `GET /api/artist/reward-orders`. */
+export interface RewardOrder {
+  id: string;
+  broadcastId: string;
+  userId: string;
+  buyerDisplayName: string;
+  rewardName: string;
+  priceCharged: number;
+  /** "pending" | "fulfilled" | … */
+  status: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Followers                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export type FollowerBadge =
+  | 'new_follower'
+  | 'top_supporter'
+  | 'session_regular'
+  | 'returning_fan'
+  | 'follower';
+
+/** One row in the followers list — `GET /api/artist/followers`. */
+export interface Follower {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  followedAtUtc: string;
+  totalCoinsSpent: number;
+  interactionCount: number;
+  badge: FollowerBadge;
+}
+
+export interface FollowersSummary {
+  totalFollowers: number;
+  newFollowersThisWeek: number;
+  topSupporterCount: number;
+  sessionRegularCount: number;
+}
+
+export interface FollowersResponse {
+  summary: FollowersSummary;
+  followers: Follower[];
+}
+
+/**
  * An entry in the artist's photo gallery.
  *
  * `id` and `photoUrl` are the two fields the app actually uses — the grid

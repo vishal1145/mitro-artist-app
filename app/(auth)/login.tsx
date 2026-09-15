@@ -23,15 +23,10 @@ const MODES: readonly [AuthToggleOption<IdentifierMode>, AuthToggleOption<Identi
 
 /** Login screen — UI only. All behavior lives in useLogin(). */
 const LoginScreen = () => {
-  const {
-    control,
-    isValid,
-    isSubmitting,
-    submitError,
-    handleSubmit,
-    goToRegister,
-    goToForgotPassword,
-  } = useLogin();
+  // `submitError` is intentionally not read here — a failed login surfaces as
+  // the top popup toast raised in useLogin(), not as text under the form.
+  const { control, isValid, isSubmitting, handleSubmit, goToRegister, goToForgotPassword } =
+    useLogin();
 
   const [mode, setMode] = useState<IdentifierMode>('mobile');
   const mobile = mode === 'mobile';
@@ -99,12 +94,6 @@ const LoginScreen = () => {
             Forgot password?
           </Text>
         </Pressable>
-
-        {submitError ? (
-          <Text variant="bodySm" color="error" align="center" style={styles.submitError}>
-            {submitError}
-          </Text>
-        ) : null}
 
         <GradientButton
           label="Login"
@@ -177,9 +166,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginTop: 12,
     marginBottom: 20,
-  },
-  submitError: {
-    marginBottom: 12,
   },
   // CTA -> alt row 20
   footer: {

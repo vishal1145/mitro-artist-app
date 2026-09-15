@@ -223,9 +223,18 @@ export const gradients = {
   forgot: ['#7C4DFF', palette.pink, '#FF7AD1'] as const,
 
   /** Disabled CTA — the brand ramp at low opacity. */
-  ctaMuted: [withAlpha('#7C4DFF', 0.28), withAlpha(palette.pink, 0.28)] as const,
+  ctaMuted: [
+    withAlpha('#7C4DFF', 0.28),
+    withAlpha(palette.pink, 0.28),
+  ] as const,
   /** Profile ring — the full accent wheel. */
-  ring: [palette.pink, palette.gold, palette.cyan, palette.violet, palette.pink] as const,
+  ring: [
+    palette.pink,
+    palette.gold,
+    palette.cyan,
+    palette.violet,
+    palette.pink,
+  ] as const,
   /** Dark card fill from the spec's card pattern. */
   card: ['#2C1C52', '#170F30'] as const,
 
@@ -278,6 +287,143 @@ export const gradientGlow = {
   primary: colors.ctaGlow,
   forgot: colors.ctaGlow,
 } as const;
+
+/* -------------------------------------------------------------------------- */
+/*  4. Artist Web parity tokens                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Verbatim values from the Artist Web (`Mitro.Artist.UI/src/styles.css`).
+ *
+ * Screens replicated 1:1 from the web read from here instead of the app
+ * palette above, so the copy keeps the web's exact colours (its greens/greys
+ * are a few points off the app spec and approximating them shows). Do not use
+ * these on screens that are NOT web replicas.
+ */
+export const webColors = {
+  /** --text-strong */
+  textStrong: '#FFFAFF',
+  /** --text-soft */
+  textSoft: 'rgba(255, 250, 255, 0.72)',
+
+  green: '#42F5A7',
+  gold: '#FFC86B',
+  danger: '#FF5959',
+  pinkLight: '#FF8FC7',
+  pinkHot: '#FF3FAD',
+  purple: '#8C4DFF',
+  /** Foreground on the green CTA fill. */
+  onGreen: '#0C1F14',
+
+  /** Panel / side-card base fills (the gradient sits on top of these). */
+  panelFill: 'rgba(12, 10, 25, 0.78)',
+  sideCardFill: 'rgba(12, 10, 25, 0.7)',
+  panelBorder: 'rgba(255, 255, 255, 0.13)',
+  panelHeader: 'rgba(255, 255, 255, 0.055)',
+  cardBorder: 'rgba(255, 255, 255, 0.12)',
+  circleBorder: 'rgba(255, 255, 255, 0.14)',
+  hairline: 'rgba(255, 255, 255, 0.08)',
+
+  inputFill: 'rgba(5, 4, 11, 0.55)',
+  inputBorder: 'rgba(255, 255, 255, 0.16)',
+
+  /** Neutral chip fill — also the skeleton block colour. */
+  chip: 'rgba(255, 255, 255, 0.06)',
+  chipText: 'rgba(255, 255, 255, 0.55)',
+  offPill: 'rgba(255, 255, 255, 0.08)',
+  offPillRing: 'rgba(255, 255, 255, 0.12)',
+
+  greenBorder: 'rgba(66, 245, 167, 0.32)',
+  greenChip: 'rgba(66, 245, 167, 0.16)',
+  greenPill: 'rgba(66, 245, 167, 0.14)',
+  greenRing: 'rgba(66, 245, 167, 0.35)',
+  goldChip: 'rgba(255, 200, 107, 0.14)',
+  goldTone: 'rgba(255, 200, 107, 0.16)',
+  dangerTone: 'rgba(255, 89, 89, 0.15)',
+
+  /** Plain white alphas the web uses directly on text. */
+  white40: 'rgba(255, 255, 255, 0.4)',
+  white45: 'rgba(255, 255, 255, 0.45)',
+  white50: 'rgba(255, 255, 255, 0.5)',
+} as const;
+
+/** Multi-stop fills copied from the same stylesheet. All are CSS 135deg/145deg
+ *  (top-left to bottom-right), i.e. `gradientDirection.diagonal`. */
+export const webGradients = {
+  /** .pcall-settings-card.is-on */
+  settingsOn: ['rgba(66, 245, 167, 0.09)', 'rgba(255, 255, 255, 0.02)'],
+  /** .bcast-price-card */
+  settingsOff: ['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.02)'],
+  /** .broadcast-users-panel */
+  panel: ['rgba(255, 255, 255, 0.095)', 'rgba(255, 255, 255, 0.035)'],
+  /** .gsched-side-card */
+  sideCard: ['rgba(255, 255, 255, 0.075)', 'rgba(255, 255, 255, 0.02)'],
+  /** .bcast-price-card-form button */
+  greenCta: ['#42F5A7', '#6AA238'],
+  /** .bcast-activity-avatar */
+  avatar: ['#FF3FAD', '#8C4DFF'],
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/*  5. Call-room (Live Broadcast studio) visual language                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The exact surface/border/ink values the Live Broadcast room ships, lifted
+ * out of that screen so every call surface (Group Call, Private Call) renders
+ * in the same language instead of re-picking colours.
+ *
+ * Verbatim from the broadcast studio — do not "improve" them; changing one
+ * changes the studio look everywhere.
+ */
+export const callUi = {
+  /** Round action-bar chips. */
+  chip: {
+    danger: { bg: 'rgba(255,92,122,0.16)', border: 'rgba(255,92,122,0.5)', icon: '#FF5C7A' },
+    neutral: { bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.16)', icon: '#FFFFFF' },
+    gift: { bg: '#6B2E46', border: '#8A3D5C', icon: '#FFFFFF' },
+    stats: { bg: '#2E5A6B', border: '#3D768F', icon: '#FFFFFF' },
+  },
+  /** Active chip / START-style gradient. */
+  activeGradient: ['#FF3FAD', '#8C4DFF'] as const,
+
+  barSurface: 'rgba(255,255,255,0.05)',
+  stageFill: '#090716',
+  stageBorder: 'rgba(140,77,255,0.55)',
+  stageDark: '#05040B',
+
+  glassPill: 'rgba(0,0,0,0.66)',
+  glassPillBorder: 'rgba(255,255,255,0.25)',
+  headerPill: 'rgba(0,0,0,0.42)',
+  subtleSurface: 'rgba(255,255,255,0.07)',
+  hairline: 'rgba(255,255,255,0.07)',
+
+  overlayBadge: 'rgba(5,4,11,0.68)',
+  overlayBadgeBorder: 'rgba(255,255,255,0.16)',
+
+  mutedBtnBg: 'rgba(239,68,68,0.14)',
+  mutedBtnBorder: 'rgba(239,68,68,0.45)',
+  mutedIcon: '#FF8A97',
+
+  liveBadge: '#E8192C',
+  white: '#FFFFFF',
+  headerSub: 'rgba(255,255,255,0.62)',
+
+  /** Activity feed rows. */
+  actDetail: 'rgba(255,250,255,0.72)',
+  actName: '#FFFAFF',
+  actNameGift: '#FF8FB3',
+  tokenPill: 'rgba(255,200,107,0.14)',
+  tokenPillInk: '#FFC86B',
+} as const;
+
+/** Activity-row status chips — same labels/colours as the broadcast feed. */
+export const callStatusStyle: Record<string, { label: string; color: string; bg: string }> = {
+  fulfilled: { label: 'DELIVERED', color: '#4ADE80', bg: 'rgba(74,222,128,0.16)' },
+  pending: { label: 'PENDING', color: '#FFC86B', bg: 'rgba(255,200,107,0.16)' },
+  refunded: { label: 'REFUNDED', color: '#94A3B8', bg: 'rgba(148,163,184,0.16)' },
+  cancelled: { label: 'CANCELLED', color: '#F87171', bg: 'rgba(248,113,113,0.16)' },
+};
 
 export type ColorToken = keyof typeof colors;
 export type GradientToken = keyof typeof gradients;

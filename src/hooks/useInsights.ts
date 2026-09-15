@@ -3,7 +3,9 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { queryKeys } from '@constants/queryKeys';
 import { insightsApi } from '@services/api';
 import type {
+  BroadcastAnalytics,
   BroadcastHistoryItem,
+  BroadcastHistorySummary,
   EarningsSummary,
   EarningsTransaction,
 } from '@app-types/api';
@@ -62,6 +64,49 @@ export const useBroadcastHistory = (
       }
       return result.data;
     },
+    staleTime: 60_000,
+    retry: false,
+  });
+
+/**
+ * Lifetime broadcast totals for the Broadcast History header strip —
+ * DB-aggregated, so it stays correct beyond whatever page of `history` is
+ * currently loaded.
+ */
+export const useBroadcastHistorySummary = (): UseQueryResult<
+  BroadcastHistorySummary,
+  Error
+> =>
+  useQuery({
+    queryKey: queryKeys.broadcast.historySummary(),
+    queryFn: async () => {
+      const result = await insightsApi.getBroadcastHistorySummary();
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+
+/**
+ * Chat / reward / fun-wheel breakdown for one broadcast. `enabled` so a row's
+ * analytics only fetch once the artist actually expands it.
+ */
+export const useBroadcastAnalytics = (
+  broadcastId: string | null,
+): UseQueryResult<BroadcastAnalytics, Error> =>
+  useQuery({
+    queryKey: queryKeys.broadcast.analytics(broadcastId ?? ''),
+    queryFn: async () => {
+      const result = await insightsApi.getBroadcastAnalytics(broadcastId as string);
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    enabled: !!broadcastId,
     staleTime: 60_000,
     retry: false,
   });

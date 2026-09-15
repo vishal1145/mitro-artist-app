@@ -13,16 +13,21 @@ const KEY = 'mitro.artist.activeBroadcast';
 export interface ActiveBroadcastRecord {
   broadcastId: string;
   title: string;
+  category?: string;
+  /** Epoch ms the broadcast went live — lets the timer resume correctly on rejoin. */
+  startedAt: number;
   agoraChannelName: string;
   agoraUid: number;
   agoraToken: string;
 }
 
 export const activeBroadcastStore = {
-  save(title: string, r: StartBroadcastResponse): Promise<void> {
+  save(title: string, category: string | undefined, r: StartBroadcastResponse): Promise<void> {
     return mmkvStorage.setJSON(KEY, {
       broadcastId: r.broadcastId,
       title,
+      category,
+      startedAt: Date.now(),
       agoraChannelName: r.agoraChannelName,
       agoraUid: r.agoraUid,
       agoraToken: r.agoraToken,

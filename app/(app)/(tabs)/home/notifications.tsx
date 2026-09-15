@@ -1,26 +1,22 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
-  CircleFilters,
   InsightLine,
   PageHeader,
   Screen,
   SectionLabel,
   SkeletonRows,
-  type CircleFilterOption,
 } from '@components/shared';
 import { Text } from '@components/ui';
 import { useNotificationStore } from '@store';
 import type { NotificationItem } from '@app-types/api';
 import { colors, fontFamily, layout, radius } from '@theme';
 import { relativeShort } from '@utils/format';
-import { navigateToNotification, notificationVisual } from '@utils/notifications';
+import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
 
-type FilterValue = 'all' | 'unread';
 type Group = 'TODAY' | 'EARLIER';
 
 const isToday = (iso: string): boolean => {
@@ -38,7 +34,6 @@ const GROUPS: Group[] = ['TODAY', 'EARLIER'];
 
 const NotificationsScreen = () => {
   const router = useRouter();
-  const [filter, setFilter] = useState<FilterValue>('all');
 
   const items = useNotificationStore((s) => s.items);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -48,24 +43,15 @@ const NotificationsScreen = () => {
   const markRead = useNotificationStore((s) => s.markRead);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
 
-  const filters: CircleFilterOption[] = [
-    { value: 'all', label: 'All', icon: 'bell', badge: unreadCount },
-    { value: 'unread', label: 'Unread', icon: 'mail' },
-  ];
-
-  const visible = useMemo(
-    () => (filter === 'unread' ? items.filter((item) => !item.isRead) : items),
-    [items, filter],
-  );
-
+  // Web parity (Mitro.Artist.UI/src/main.tsx, CreatorNotificationsScreen):
+  // tapping a row only flips it to read. The web's `.notif-row` onClick is
+  // `markRead(notice.id)` and nothing else — no filters, no per-row
+  // navigation — so the list stays put under the artist's thumb.
   const handlePress = (item: NotificationItem): void => {
-    void markRead(item.id);
-    // Only jump the artist somewhere when there's a real destination — most
-    // "system" notifications are informational and belong right where the
-    // artist already is: this list.
-    if (item.actionUrl || item.type === 'private_call_request') {
-      navigateToNotification(item);
+    if (item.isRead) {
+      return;
     }
+    void markRead(item.id);
   };
 
   return (
@@ -86,16 +72,20 @@ const NotificationsScreen = () => {
           title="Notifications"
           onBack={() => router.back()}
           badge={unreadCount}
+          // Web parity: the mark-all control only exists while something is
+          // unread (`{unreadCount > 0 && <button className="notif-mark-all-btn">}`).
           right={
-            <Pressable
-              onPress={() => void markAllRead()}
-              style={styles.markAll}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Mark all as read"
-            >
-              <Feather name="check-square" size={rf(18)} color={colors.textPrimary} />
-            </Pressable>
+            unreadCount > 0 ? (
+              <Pressable
+                onPress={() => void markAllRead()}
+                style={styles.markAll}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Mark all as read"
+              >
+                <Feather name="check-square" size={rf(18)} color={colors.textPrimary} />
+              </Pressable>
+            ) : undefined
           }
         />
       }
@@ -105,16 +95,9 @@ const NotificationsScreen = () => {
         lead={unreadCount ? `${unreadCount} need your attention` : 'You’re all caught up'}
       />
 
-      <CircleFilters
-        style={styles.filters}
-        options={filters}
-        value={filter}
-        onChange={(v) => setFilter(v as FilterValue)}
-      />
-
       {!hydrated ? <SkeletonRows count={4} style={styles.skeleton} /> : null}
 
-      {hydrated && visible.length === 0 ? (
+      {hydrated && items.length === 0 ? (
         <Text variant="bodySm" color="textMuted" align="center" style={styles.empty}>
           Nothing here yet.
         </Text>
@@ -122,7 +105,7 @@ const NotificationsScreen = () => {
 
       {hydrated &&
         GROUPS.map((group) => {
-        const rows = visible.filter((item) => groupOf(item) === group);
+        const rows = items.filter((item) => groupOf(item) === group);
         if (rows.length === 0) {
           return null;
         }
@@ -133,15 +116,19 @@ const NotificationsScreen = () => {
 
             {rows.map((item) => {
               const visual = notificationVisual(item.type);
-              const hasRoute = Boolean(item.actionUrl) || item.type === 'private_call_request';
 
               return (
                 <Pressable
                   key={item.id}
                   style={styles.note}
                   onPress={() => handlePress(item)}
+                  disabled={item.isRead}
                   accessibilityRole="button"
-                  accessibilityLabel={`${item.title}. ${item.body}`}
+                  accessibilityLabel={
+                    item.isRead
+                      ? `${item.title}. ${item.body}`
+                      : `${item.title}. ${item.body}. Unread, tap to mark as read.`
+                  }
                 >
                   {/* Accent bar keeps the row anchored to the left rule. */}
                   <View style={[styles.accent, { backgroundColor: visual.tint }]} />
@@ -169,23 +156,13 @@ const NotificationsScreen = () => {
                       {item.body}
                     </Text>
 
-                    {/* Action and unread marker share a row; the dot shows for
-                        every unread note, action or not. */}
-                    <View style={styles.actionRow}>
-                      {hasRoute ? (
-                        <Text
-                          variant="bodySm"
-                          color="pink"
-                          style={styles.actionLabel}
-                          onPress={() => handlePress(item)}
-                        >
-                          View
-                        </Text>
-                      ) : (
-                        <View style={styles.actionLabel} />
-                      )}
-                      {!item.isRead ? <View style={styles.unreadDot} /> : null}
-                    </View>
+                    {/* Unread marker only — the row carries no action of its
+                        own now, so nothing shares this line with the dot. */}
+                    {!item.isRead ? (
+                      <View style={styles.actionRow}>
+                        <View style={styles.unreadDot} />
+                      </View>
+                    ) : null}
                   </View>
                 </Pressable>
               );
@@ -216,12 +193,11 @@ const styles = StyleSheet.create({
   insight: {
     marginTop: 18,
   },
-  filters: {
-    marginTop: 24,
-  },
 
+  // Was 12 — the All/Unread filter row used to sit between the insight line
+  // and the first group label and carried the gap.
   sectionLabel: {
-    marginTop: 12,
+    marginTop: 24,
     marginBottom: 12,
   },
   empty: {
@@ -270,11 +246,8 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     marginTop: 4,
-  },
-  actionLabel: {
-    flex: 1,
-    fontFamily: fontFamily.bold,
   },
   unreadDot: {
     width: 8,

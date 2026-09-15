@@ -1,124 +1,84 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
-  CircleFilters,
-  InsightLine,
+  EmptyState,
+  InfoCallout,
+  LoadFailed,
   PageHeader,
   Screen,
-  SectionLabel,
-  type CircleFilterOption,
+  Skeleton,
 } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
+import { useFollowers } from '@hooks/useFollowers';
 import { colors, fontFamily, layout, radius } from '@theme';
+import { getErrorMessage } from '@utils/errorHandler';
+import { grouped } from '@utils/format';
 import { rf } from '@utils/responsive';
 
 import type { ColorToken } from '@theme';
+import type { Follower, FollowerBadge } from '@app-types/api';
 
-type Filter = 'all' | 'top' | 'regulars' | 'new';
+type BadgeStyle = { label: string; tint: ColorToken; fill: string; border: string };
 
-interface Follower {
-  id: string;
-  name: string;
-  initials: string;
-  color: string;
-  /** Tag pill under the name. Omitted for plain followers. */
-  tag?: { label: string; tint: ColorToken; fill: string; border: string };
-  /** Fallback caption when there's no tag. */
-  role: string;
-  coins: string;
-  buckets: Filter[];
-}
+/** Visual per badge — mirrors artist-web's `followerBadgeClass` groupings. */
+const BADGE_STYLE: Record<FollowerBadge, BadgeStyle> = {
+  top_supporter: { label: 'TOP SUPPORTER', tint: 'green', fill: colors.successChip, border: colors.successBorder },
+  new_follower: { label: 'NEW FOLLOWER', tint: 'pink', fill: colors.pinkSoft, border: colors.borderHot },
+  session_regular: { label: 'SESSION REGULAR', tint: 'violet', fill: colors.violetSoft, border: colors.violetSoft },
+  returning_fan: { label: 'RETURNING FAN', tint: 'cyan', fill: colors.cyanSoft, border: colors.infoBorder },
+  follower: { label: 'FOLLOWER', tint: 'textMuted', fill: colors.surfaceSoft, border: colors.border },
+};
 
-const FOLLOWERS: Follower[] = [
-  {
-    id: 'f_riya',
-    name: 'Riya Sharma',
-    initials: 'R',
-    color: colors.pink,
-    tag: {
-      label: 'TOP SUPPORTER',
-      tint: 'green',
-      fill: colors.successChip,
-      border: colors.successBorder,
-    },
-    role: '12 sessions',
-    coins: '12,450',
-    buckets: ['all', 'top', 'regulars'],
-  },
-  {
-    id: 'f_kabir',
-    name: 'Kabir Mehta',
-    initials: 'K',
-    color: colors.violet,
-    tag: {
-      label: 'JOINED 8 SESSIONS',
-      tint: 'violet',
-      fill: colors.violetSoft,
-      border: colors.violetSoft,
-    },
-    role: '8 sessions',
-    coins: '8,750',
-    buckets: ['all', 'top', 'regulars'],
-  },
-  {
-    id: 'f_ananya',
-    name: 'Ananya Rao',
-    initials: 'A',
-    color: colors.cyan,
-    tag: {
-      label: 'NEW FOLLOWER',
-      tint: 'pink',
-      fill: colors.pinkSoft,
-      border: colors.borderHot,
-    },
-    role: 'Joined this week',
-    coins: '1,200',
-    buckets: ['all', 'new'],
-  },
-  {
-    id: 'f_dev',
-    name: 'Dev P.',
-    initials: 'D',
-    color: colors.gold,
-    role: 'Follower',
-    coins: '950',
-    buckets: ['all'],
-  },
-  {
-    id: 'f_meera',
-    name: 'Meera K.',
-    initials: 'M',
-    color: colors.green,
-    role: 'Follower',
-    coins: '720',
-    buckets: ['all'],
-  },
-];
+const initialsFrom = (name: string): string =>
+  name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .slice(0, 2)
+    .join('');
 
-const FILTERS: CircleFilterOption[] = [
-  { value: 'all', label: 'All', icon: 'users' },
-  { value: 'top', label: 'Top', icon: 'trending-up' },
-  { value: 'regulars', label: 'Regulars', icon: 'repeat' },
-  { value: 'new', label: 'New', icon: 'star' },
-];
+/** "Followed 3 days ago" — only shown for a follower with zero paid interactions. */
+const followedAgo = (iso: string): string => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return 'Followed today';
+  if (days === 1) return 'Followed yesterday';
+  if (days < 30) return `Followed ${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `Followed ${months} month${months === 1 ? '' : 's'} ago`;
+  const years = Math.floor(months / 12);
+  return `Followed ${years} year${years === 1 ? '' : 's'} ago`;
+};
 
-const STATS: { value: string; label: string; color: ColorToken; star?: boolean }[] = [
-  { value: '128', label: 'Top Supporters', color: 'green' },
-  { value: '12', label: 'Session Regulars', color: 'violet' },
-  { value: '4.9', label: 'Creator Rating', color: 'gold', star: true },
-];
+const activityLine = (f: Follower): string =>
+  f.interactionCount > 0
+    ? `${grouped(f.totalCoinsSpent)} coins · ${f.interactionCount} interaction${f.interactionCount === 1 ? '' : 's'}`
+    : followedAgo(f.followedAtUtc);
 
+/** Followers list — engagement summary + every follower, tagged and dynamic. */
 const FollowersScreen = () => {
   const router = useRouter();
-  const [filter, setFilter] = useState<Filter>('all');
+  const { data, isLoading, isError, error, refetch, isRefetching } = useFollowers();
+  const summary = data?.summary;
+  const followers = data?.followers ?? [];
 
-  const rows = useMemo(() => FOLLOWERS.filter((f) => f.buckets.includes(filter)), [filter]);
+  const messageFollower = (f: Follower) =>
+    router.push({
+      pathname: '/(app)/(modals)/chat-thread',
+      params: { userId: f.userId, name: f.displayName, avatarUrl: f.avatarUrl ?? '' },
+    });
 
   return (
-    <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
+    <Screen
+      tabBarSpacing
+      scrollable
+      padded={false}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} tintColor={colors.pink} />
+      }
       header={
         <PageHeader
           title="Followers"
@@ -136,91 +96,127 @@ const FollowersScreen = () => {
         />
       }
     >
-      {/* Headline count */}
-      <Text style={styles.heroValue}>48.2K</Text>
-      <Text variant="label" color="textMuted" align="center">
-        FOLLOWERS
-      </Text>
-
-      <InsightLine style={styles.insight} lead="940 new this week" />
-
-      <View style={styles.stats}>
-        {STATS.map((s) => (
-          <View key={s.label} style={styles.stat}>
-            <View style={styles.statValueRow}>
-              <Text variant="h3" color={s.color} style={styles.statValue}>
-                {s.value}
-              </Text>
-              {s.star ? <Feather name="star" size={rf(12)} color={colors.gold} /> : null}
-            </View>
-            <Text variant="bodySm" color="textMuted">
-              {s.label}
-            </Text>
-          </View>
-        ))}
+      <View style={styles.callout}>
+        <InfoCallout icon="info" tone="info">
+          This is your full follower list — everyone who follows you, tagged with badges like Top
+          Supporter, Session Regular, and New Follower that show how engaged each fan is. Scan for
+          the highest coin totals to spot who&apos;s worth a personal thank-you before you go live.
+        </InfoCallout>
       </View>
 
-      <CircleFilters
-        style={styles.filters}
-        options={FILTERS}
-        value={filter}
-        onChange={(v) => setFilter(v as Filter)}
-      />
-
-      <SectionLabel style={styles.sectionLabel} onHelp={() => undefined}>
-        LEADERBOARD
-      </SectionLabel>
-
-      {rows.map((f, i) => (
-        <View key={f.id} style={[styles.row, i === 0 ? null : styles.rowDivider]}>
-          <Avatar initials={f.initials} name={f.name} size="md" color={f.color} />
-
-          <View style={styles.rowText}>
-            <Text variant="bodyLg" color="textPrimary" style={styles.name} numberOfLines={1}>
-              {f.name}
-            </Text>
-
-            {f.tag ? (
-              <View
-                style={[styles.tag, { backgroundColor: f.tag.fill, borderColor: f.tag.border }]}
-              >
-                <Text variant="label" color={f.tag.tint}>
-                  {f.tag.label}
-                </Text>
-              </View>
-            ) : null}
-
-            {/* Own row — sitting beside the pill pushed it under the coins column. */}
-            <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-              {f.role}
-            </Text>
-          </View>
-
-          <View style={styles.coins}>
-            <Text variant="bodySm" color="gold" style={styles.coinsValue}>
-              {f.coins}
-            </Text>
-            <Text variant="label" color="textMuted">
-              COINS
-            </Text>
-          </View>
-
-          <Pressable
-            style={styles.chatBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/(app)/(modals)/chat-thread',
-                params: { followerId: f.id, name: f.name },
-              })
-            }
-            accessibilityRole="button"
-            accessibilityLabel={`Message ${f.name}`}
-          >
-            <Feather name="message-circle" size={rf(15)} color={colors.textSecondary} />
-          </Pressable>
+      {isLoading ? (
+        <View style={styles.pulseSkeleton}>
+          <Skeleton width={140} height={40} round={12} />
+          <Skeleton width="80%" height={14} round={7} />
         </View>
-      ))}
+      ) : (
+        <View style={styles.pulse}>
+          <View style={styles.pulseHead}>
+            <Feather name="heart" size={rf(12)} color={colors.pink} />
+            <Text variant="label" color="textMuted">
+              AUDIENCE PULSE
+            </Text>
+          </View>
+          <Text variant="numHero">{summary ? grouped(summary.totalFollowers) : '—'}</Text>
+          <Text variant="bodySm" color="textSecondary" style={styles.pulseSub}>
+            {summary
+              ? `${grouped(summary.newFollowersThisWeek)} new follower${summary.newFollowersThisWeek === 1 ? '' : 's'} joined this week with strong support from live gifts and paid sessions.`
+              : 'Loading follower activity…'}
+          </Text>
 
+          <View style={styles.pulsePills}>
+            <View style={styles.pill}>
+              <Feather name="check" size={rf(12)} color={colors.green} />
+              <Text variant="bodySm" color="textPrimary" style={styles.pillStrong}>
+                {summary?.topSupporterCount ?? 0}
+              </Text>
+              <Text variant="bodySm" color="textMuted">
+                top supporters
+              </Text>
+            </View>
+            <View style={styles.pill}>
+              <Feather name="users" size={rf(12)} color={colors.violet} />
+              <Text variant="bodySm" color="textPrimary" style={styles.pillStrong}>
+                {summary?.sessionRegularCount ?? 0}
+              </Text>
+              <Text variant="bodySm" color="textMuted">
+                session regulars
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {isLoading ? (
+        <View style={styles.list}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={styles.row}>
+              <Skeleton width={46} height={46} round={23} />
+              <View style={styles.rowText}>
+                <Skeleton width={90} height={14} round={7} />
+                <Skeleton width={140} height={12} round={6} style={styles.skelGap} />
+              </View>
+              <Skeleton width={70} height={28} round={8} />
+            </View>
+          ))}
+        </View>
+      ) : isError ? (
+        <LoadFailed message={getErrorMessage(error)} onRetry={refetch} />
+      ) : followers.length === 0 ? (
+        <EmptyState
+          icon="users"
+          title="No followers yet"
+          description="Once fans favorite your profile, they'll show up here."
+        />
+      ) : (
+        <View style={styles.list}>
+          {followers.map((f, i) => {
+            const badge = BADGE_STYLE[f.badge];
+            return (
+              <View key={f.userId} style={[styles.row, i === 0 ? null : styles.rowDivider]}>
+                <Avatar
+                  uri={f.avatarUrl ?? undefined}
+                  initials={initialsFrom(f.displayName)}
+                  name={f.displayName}
+                  size="md"
+                  color={f.avatarUrl ? undefined : colors.violet}
+                />
+
+                <View style={styles.rowText}>
+                  <View style={[styles.tag, { backgroundColor: badge.fill, borderColor: badge.border }]}>
+                    <Text variant="label" color={badge.tint}>
+                      {badge.label}
+                    </Text>
+                  </View>
+                  <Text variant="bodyLg" color="textPrimary" numberOfLines={1} style={styles.name}>
+                    {f.displayName}
+                  </Text>
+                  <Text variant="bodySm" color="textMuted" numberOfLines={1}>
+                    {activityLine(f)}
+                  </Text>
+                </View>
+
+                <View style={styles.rowRight}>
+                  <Text variant="bodySm" color="gold" style={styles.coinsValue}>
+                    {grouped(f.totalCoinsSpent)}
+                  </Text>
+                  <Pressable
+                    style={styles.chatBtn}
+                    onPress={() => messageFollower(f)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Message ${f.displayName}`}
+                  >
+                    <Feather name="message-circle" size={rf(13)} color={colors.textSecondary} />
+                    <Text variant="label" color="textSecondary">
+                      Message
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </Screen>
   );
 };
@@ -228,6 +224,7 @@ const FollowersScreen = () => {
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: layout.screenPadding,
+    paddingBottom: 24,
   },
 
   iconBtn: {
@@ -241,44 +238,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  heroValue: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(35),
-    lineHeight: rf(42),
-    color: colors.pink,
+  callout: {
+    marginTop: 12,
+  },
+
+  pulseSkeleton: {
+    marginTop: 20,
+    gap: 10,
+    alignItems: 'center',
+  },
+  pulse: {
+    marginTop: 20,
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  pulseHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  pulseSub: {
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: 6,
   },
-  insight: {
-    marginTop: 18,
-  },
-
-  stats: {
+  pulsePills: {
     flexDirection: 'row',
-    marginTop: 22,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 16,
   },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  statValueRow: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 6,
+    backgroundColor: colors.surfaceSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
-  statValue: {
-    fontFamily: fontFamily.extrabold,
-  },
-
-  filters: {
-    marginTop: 24,
-  },
-  sectionLabel: {
-    marginTop: 12,
-    marginBottom: 4,
+  pillStrong: {
+    fontFamily: fontFamily.bold,
   },
 
+  list: {
+    marginTop: 20,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,6 +303,10 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     gap: 4,
+    minWidth: 0,
+  },
+  skelGap: {
+    marginTop: 6,
   },
   name: {
     fontFamily: fontFamily.bold,
@@ -303,26 +318,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  coins: {
+  rowRight: {
     alignItems: 'flex-end',
+    gap: 8,
   },
   coinsValue: {
     fontFamily: fontFamily.extrabold,
   },
   chatBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  footnote: {
-    marginTop: 26,
-    lineHeight: rf(17),
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
 });
 

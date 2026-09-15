@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 
-import { PageHeader, Screen, SectionLabel } from '@components/shared';
+import { InfoCallout, PageHeader, Screen, SectionLabel } from '@components/shared';
 import { Text } from '@components/ui';
 import { colors, fontFamily, layout, radius } from '@theme';
 import { rf } from '@utils/responsive';
@@ -98,6 +98,15 @@ const KycPayoutsScreen = () => {
             </Text>
           </View>
         ))}
+      </View>
+
+      <View style={styles.callout}>
+        <InfoCallout icon="shield" tone="warning">
+          Why we ask: Indian payment regulations require verified identity and bank details
+          before we can release your earnings. Reviews usually take 24–48 hours, and your
+          documents are encrypted and only used for payout compliance — never shown on your
+          profile.
+        </InfoCallout>
       </View>
 
       {/* Identity */}
@@ -254,6 +263,10 @@ const styles = StyleSheet.create({
   },
   stepLocked: {
     backgroundColor: colors.surfaceSoft,
+  },
+
+  callout: {
+    marginTop: 22,
   },
 
   sectionLabel: {

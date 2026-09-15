@@ -16,3 +16,5 @@ export { Badge } from './Badge';
 export type { BadgeProps, BadgeTone } from './Badge';
 export { Avatar } from './Avatar';
 export type { AvatarProps, AvatarSize } from './Avatar';
+export { LucideIcon } from './LucideIcon';
+export type { LucideIconProps, LucideIconName } from './LucideIcon';

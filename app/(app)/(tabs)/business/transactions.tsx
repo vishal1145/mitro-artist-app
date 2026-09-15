@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import {
   EarningsBar,
+  InfoCallout,
   ListRow,
   LoadFailed,
   Screen,
@@ -46,6 +47,22 @@ const TransactionsScreen = () => {
   const settledTokens =
     (summary?.availableTokens ?? 0) + (summary?.paidOutTokens ?? 0);
 
+  // Live rows exclude refunds/reversals — matching how the web ledger counts.
+  const liveTxns = useMemo(
+    () =>
+      (transactions ?? []).filter(
+        (t) => t.status.toLowerCase() !== 'refunded' && t.status.toLowerCase() !== 'reversed',
+      ),
+    [transactions],
+  );
+  const weekTokens = useMemo(
+    () =>
+      liveTxns
+        .filter((t) => Date.now() - new Date(t.createdAtUtc).getTime() < 7 * 24 * 60 * 60 * 1000)
+        .reduce((sum, t) => sum + t.amountTokens, 0),
+    [liveTxns],
+  );
+
   const rows = useMemo(() => {
     const all = transactions ?? [];
     if (filter === 'Pending') {
@@ -77,26 +94,55 @@ const TransactionsScreen = () => {
 
       <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} />
 
-      <View style={styles.grid}>
-        <StatTile
-          icon="clock"
-          label="PENDING"
-          value={loadingSummary ? '—' : grouped(summary?.pendingTokens ?? 0)}
-          unit="tk"
-          tint={colors.warning}
-        />
-        <StatTile
-          icon="check-circle"
-          label="SETTLED"
-          value={loadingSummary ? '—' : grouped(settledTokens)}
-          unit="tk"
-          tint={colors.success}
-        />
+      <InfoCallout icon="info" tone="info">
+        Your full coin ledger — every credit fans send you (reactions, fun-wheel spins, highlighted
+        messages, group-call entries, reward purchases) alongside every payout to your bank. Use the
+        filters above to see what&apos;s still clearing versus already settled.
+      </InfoCallout>
+
+      <View style={styles.stats}>
+        <View style={styles.grid}>
+          <StatTile
+            icon="credit-card"
+            label="TRANSACTIONS"
+            value={loadingTxns ? '—' : grouped(liveTxns.length)}
+            tint={colors.cyan}
+          />
+          <StatTile
+            icon="clock"
+            label="PENDING"
+            value={loadingSummary ? '—' : grouped(summary?.pendingTokens ?? 0)}
+            unit="tk"
+            tint={colors.warning}
+          />
+        </View>
+        <View style={styles.grid}>
+          <StatTile
+            icon="check-circle"
+            label="SETTLED"
+            value={loadingSummary ? '—' : grouped(settledTokens)}
+            unit="tk"
+            tint={colors.success}
+          />
+          <StatTile
+            icon="bar-chart-2"
+            label="THIS WEEK"
+            value={loadingTxns ? '—' : grouped(weekTokens)}
+            unit="tk"
+            tint={colors.purple}
+          />
+        </View>
       </View>
 
       <SectionLabel divider style={styles.sectionLabel}>
         RECENT ACTIVITY
       </SectionLabel>
+
+      <InfoCallout icon="clock" tone="warning">
+        Pending means a fan&apos;s coins are still in the platform&apos;s hold window before they
+        release to your balance — usually within 24-48 hours. Once a row flips to Settled, those
+        coins count toward what you can withdraw.
+      </InfoCallout>
 
       {error ? (
         <LoadFailed message={getErrorMessage(error)} onRetry={() => void refetch()} />
@@ -152,6 +198,9 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 12,
+  },
+  stats: {
+    gap: spacing.md,
   },
   grid: {
     flexDirection: 'row',
