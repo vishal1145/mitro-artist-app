@@ -3,7 +3,7 @@ import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily } from '@theme';
+import { colors, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface PageHeaderProps {
@@ -19,7 +19,12 @@ export interface PageHeaderProps {
  * Pushed-screen header: circular back button, left-aligned title, optional
  * trailing action. Distinct from `Header`, which centres its title.
  */
-const PageHeaderComponent = ({ title, onBack, badge, right }: PageHeaderProps) => (
+const PageHeaderComponent = ({
+  title,
+  onBack,
+  badge,
+  right,
+}: PageHeaderProps) => (
   <View style={styles.row}>
     {onBack ? (
       <Pressable
@@ -84,8 +89,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   badgeText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(11),
+    ...typography.badge,
     color: colors.white,
   },
 });

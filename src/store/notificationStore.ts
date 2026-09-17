@@ -7,6 +7,8 @@ import type { NotificationItem } from '@app-types/api';
 import { logger } from '@utils/logger';
 import { showNotificationToast } from '@utils/notifications';
 
+import { useIncomingCallStore } from './incomingCallStore';
+
 /**
  * In-app notifications (Zustand) — the bell badge, the notification list, and
  * the toast-on-receipt behavior all read from this one store.
@@ -40,6 +42,20 @@ interface NotificationState {
   unreadCount: number;
   hydrated: boolean;
   refreshing: boolean;
+  /**
+   * How many rows the last request asked the server for.
+   *
+   * `GET /api/artist/notifications` takes `take` only — there is no `skip` —
+   * so paging means asking for a bigger window each time rather than fetching
+   * a disjoint page. The realtime hub prepends to the same list, and
+   * `dedupeNotifications` keeps the two from doubling up.
+   */
+  take: number;
+  /** False once the server returns fewer rows than we asked for. */
+  hasMore: boolean;
+  loadingMore: boolean;
+  /** Widen the window by one page. No-op while one is already in flight. */
+  loadMore: () => Promise<void>;
 
   /** Fetch the initial list + count, then open the realtime hub. */
   init: () => Promise<void>;
@@ -62,6 +78,31 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 0,
   hydrated: false,
   refreshing: false,
+  take: NOTIFICATIONS.take,
+  hasMore: true,
+  loadingMore: false,
+
+  loadMore: async () => {
+    const { loadingMore, hasMore, take } = get();
+    if (loadingMore || !hasMore) {
+      return;
+    }
+    const nextTake = take + NOTIFICATIONS.take;
+    set({ loadingMore: true });
+    const result = await notificationApi.getNotifications(nextTake);
+    if (!result.success) {
+      logger.warn('Failed to load more notifications', { error: result.error });
+      set({ loadingMore: false });
+      return;
+    }
+    set({
+      items: dedupeNotifications(result.data),
+      take: nextTake,
+      // A short page means the server has nothing older left.
+      hasMore: result.data.length >= nextTake,
+      loadingMore: false,
+    });
+  },
 
   init: async () => {
     const [listResult, countResult] = await Promise.all([
@@ -80,6 +121,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       items: listResult.success ? dedupeNotifications(listResult.data) : [],
       unreadCount: countResult.success ? countResult.data.unreadCount : 0,
       hydrated: true,
+      take: NOTIFICATIONS.take,
+      hasMore: listResult.success ? listResult.data.length >= NOTIFICATIONS.take : false,
     });
 
     notificationHub.setHandler((item) => get().ingest(item));
@@ -89,18 +132,30 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   teardown: () => {
     notificationHub.setHandler(null);
     void notificationHub.disconnect();
-    set({ items: [], unreadCount: 0, hydrated: false, refreshing: false });
+    set({
+      items: [],
+      unreadCount: 0,
+      hydrated: false,
+      refreshing: false,
+      take: NOTIFICATIONS.take,
+      hasMore: true,
+      loadingMore: false,
+    });
   },
 
   refresh: async () => {
+    // Refresh re-asks for the window the artist has already scrolled open, so
+    // pulling down doesn't collapse the list back to the first page.
+    const windowSize = get().take;
     set({ refreshing: true });
     const [listResult, countResult] = await Promise.all([
-      notificationApi.getNotifications(NOTIFICATIONS.take),
+      notificationApi.getNotifications(windowSize),
       notificationApi.getUnreadCount(),
     ]);
     set({
       items: listResult.success ? dedupeNotifications(listResult.data) : get().items,
       unreadCount: countResult.success ? countResult.data.unreadCount : get().unreadCount,
+      hasMore: listResult.success ? listResult.data.length >= windowSize : get().hasMore,
       refreshing: false,
     });
   },
@@ -146,6 +201,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   ingest: (item) => {
+    // An incoming private-call request should pop the global overlay right away
+    // rather than waiting for the next poll — mirror the web's hub-driven pop.
+    if (item.type === 'private_call_request') {
+      void useIncomingCallStore.getState().refresh();
+    }
+
     const sig = sigOf(item);
     const alreadyKnown = get().items.some(
       (existing) => existing.id === item.id || sigOf(existing) === sig,

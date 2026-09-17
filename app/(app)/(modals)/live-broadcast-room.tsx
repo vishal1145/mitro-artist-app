@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AgoraVideoView } from '@components/call/AgoraVideoView';
 import { ActivityRow, RoundChip } from '@components/live';
@@ -91,7 +91,6 @@ const LiveBroadcastRoomScreen = () => {
   const [videoKey, setVideoKey] = useState(0);
   const [panel, setPanel] = useState<'chat' | 'viewers' | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const insets = useSafeAreaInsets();
   const [statsOpen, setStatsOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -398,7 +397,7 @@ const LiveBroadcastRoomScreen = () => {
         )}
 
         <Pressable
-          style={[styles.fsPill, isFullscreen && { top: insets.top + 8 }]}
+          style={[styles.fsPill, isFullscreen && styles.fsPillFull]}
           onPress={() => setIsFullscreen((v) => !v)}
           hitSlop={10}
           accessibilityLabel={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
@@ -407,7 +406,7 @@ const LiveBroadcastRoomScreen = () => {
           <Text style={styles.fsPillText}>{isFullscreen ? 'Exit' : 'Full Screen'}</Text>
         </Pressable>
 
-        <View style={styles.quickControls}>
+        <View style={[styles.quickControls, isFullscreen && styles.fsPillFull]}>
           <Pressable style={[styles.quickBtn, !camOn && styles.quickBtnMuted]} onPress={toggleCam} accessibilityLabel="Toggle camera">
             <Feather name={camOn ? 'video' : 'video-off'} size={rf(16)} color={camOn ? colors.textPrimary : '#FF8A97'} />
           </Pressable>
@@ -815,7 +814,9 @@ const styles = StyleSheet.create({
   videoArea: { flex: 1, marginHorizontal: spacing.md, marginTop: spacing.xs, marginBottom: spacing.sm, borderRadius: 22, backgroundColor: '#090716', position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(140,77,255,0.55)', alignItems: 'center', justifyContent: 'center' },
   videoAreaFull: { marginHorizontal: 0, marginTop: 0, marginBottom: 0, borderRadius: 0, borderWidth: 0 },
   fsPill: { position: 'absolute', top: 12, left: 12, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 12, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.66)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-  fsPillFull: { top: 44 },
+  /* Fullscreen is inside the same SafeAreaView — the status-bar inset is
+     already paid for, so the controls ride the stage's very top edge. */
+  fsPillFull: { top: 6 },
   fsPillText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: '#fff' },
   quickBtnMuted: { borderWidth: 1, borderColor: 'rgba(239,68,68,0.45)', backgroundColor: 'rgba(239,68,68,0.14)' },
 

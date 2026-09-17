@@ -32,11 +32,16 @@ const ScreenPlaceholderComponent = ({
   hideBack = false,
 }: ScreenPlaceholderProps) => {
   const router = useRouter();
-  const entries = Object.entries(params ?? {}).filter(([, v]) => v !== undefined);
+  const entries = Object.entries(params ?? {}).filter(
+    ([, v]) => v !== undefined,
+  );
 
   return (
     <Screen>
-      <Header title={title} onBack={hideBack ? undefined : () => router.back()} />
+      <Header
+        title={title}
+        onBack={hideBack ? undefined : () => router.back()}
+      />
 
       <View style={styles.body}>
         <View style={styles.iconWrap}>

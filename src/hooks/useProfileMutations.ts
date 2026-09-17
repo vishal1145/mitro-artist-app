@@ -14,6 +14,7 @@ import type {
   Result,
   SendChangePhoneOtpPayload,
   SendOtpResponse,
+  UpdateCategoryPayload,
   UpdateProfilePayload,
   VerifyChangePhoneOtpPayload,
 } from '@app-types/api';
@@ -46,6 +47,24 @@ export const useUpdateProfileMutation = (): UseMutationResult<
     mutationKey: ['profile', 'update'],
     mutationFn: (payload: UpdateProfilePayload) =>
       unwrap(profileApi.updateProfile(payload)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile.me() });
+    },
+    retry: false,
+  });
+};
+
+export const useUpdateCategoryMutation = (): UseMutationResult<
+  MessageResponse,
+  Error,
+  UpdateCategoryPayload
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: ['profile', 'updateCategory'],
+    mutationFn: (payload: UpdateCategoryPayload) =>
+      unwrap(profileApi.updateCategory(payload)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.profile.me() });
     },

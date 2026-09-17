@@ -56,7 +56,11 @@ const AuthToggleComponent = <T extends string>({
               size={rf(16)}
               color={active ? colors.white : colors.textMuted}
             />
-            <Text variant="bodyLg" color={active ? 'white' : 'textMuted'} numberOfLines={1}>
+            <Text
+              variant="bodyLg"
+              color={active ? 'white' : 'textMuted'}
+              numberOfLines={1}
+            >
               {option.label}
             </Text>
           </View>
@@ -66,7 +70,9 @@ const AuthToggleComponent = <T extends string>({
   </View>
 );
 
-export const AuthToggle = memo(AuthToggleComponent) as typeof AuthToggleComponent;
+export const AuthToggle = memo(
+  AuthToggleComponent,
+) as typeof AuthToggleComponent;
 
 const styles = StyleSheet.create({
   track: {

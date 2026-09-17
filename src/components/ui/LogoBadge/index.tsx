@@ -52,7 +52,12 @@ const LogoBadgeComponent = ({
       accessibilityRole="image"
       accessibilityLabel="Mitro"
     >
-      <Image source={logo} style={styles.image} contentFit="contain" transition={150} />
+      <Image
+        source={logo}
+        style={styles.image}
+        contentFit="contain"
+        transition={150}
+      />
     </View>
   );
 };

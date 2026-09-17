@@ -87,12 +87,12 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://api.mitro.app",
+      "apiBaseUrl": "https://artist-api.mitro.live",
       "apiTimeoutMs": 20000,
       "router": {
         "origin": false
       },
-      "useMock": true
+      "useMock": false
     }
   }
 }

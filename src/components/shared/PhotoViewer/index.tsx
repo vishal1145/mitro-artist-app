@@ -23,7 +23,12 @@ export interface PhotoViewerProps {
  * can see what they actually uploaded — `contentFit="contain"` on black, at
  * full width.
  */
-const PhotoViewerComponent = ({ visible, uri, onClose, onDelete }: PhotoViewerProps) => {
+const PhotoViewerComponent = ({
+  visible,
+  uri,
+  onClose,
+  onDelete,
+}: PhotoViewerProps) => {
   const insets = useSafeAreaInsets();
 
   return (

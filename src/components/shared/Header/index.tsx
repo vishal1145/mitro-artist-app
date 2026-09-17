@@ -45,11 +45,19 @@ const HeaderComponent = ({
       </View>
 
       <View style={styles.titles}>
-        <Text variant="h3" align="center" numberOfLines={1}>
+        {/* Same role — and the same `h2` — as PageHeader's title: this one is
+            just centred. A pushed screen's title must not change size with
+            which header component it happens to use. */}
+        <Text variant="h2" align="center" numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="caption" color="textMuted" align="center" numberOfLines={1}>
+          <Text
+            variant="caption"
+            color="textMuted"
+            align="center"
+            numberOfLines={1}
+          >
             {subtitle}
           </Text>
         ) : null}
@@ -64,7 +72,11 @@ const HeaderComponent = ({
             accessibilityLabel={rightAccessibilityLabel ?? 'Action'}
             style={styles.iconButton}
           >
-            <Feather name={rightIcon} size={rf(22)} color={colors.textPrimary} />
+            <Feather
+              name={rightIcon}
+              size={rf(22)}
+              color={colors.textPrimary}
+            />
           </Pressable>
         ) : null}
       </View>

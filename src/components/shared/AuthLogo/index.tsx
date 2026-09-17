@@ -32,7 +32,12 @@ const AuthLogoComponent = ({ size = wp(26) }: AuthLogoProps) => {
       accessibilityLabel="Mitro"
     >
       <View style={styles.inner}>
-        <Image source={logo} style={styles.image} contentFit="contain" transition={150} />
+        <Image
+          source={logo}
+          style={styles.image}
+          contentFit="contain"
+          transition={150}
+        />
       </View>
     </LinearGradient>
   );

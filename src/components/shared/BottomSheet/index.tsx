@@ -1,4 +1,11 @@
-import { memo, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import {
   Animated,
   Modal,

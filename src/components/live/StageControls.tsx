@@ -19,6 +19,11 @@ export interface StageControlsProps {
    * camera to toggle. Defaults to showing it.
    */
   showCamera?: boolean;
+  /**
+   * Override the top offset — used in fullscreen so the cluster clears the
+   * status-bar / notch (pass the safe-area top inset). Defaults to 12.
+   */
+  topOffset?: number;
 }
 
 /**
@@ -34,8 +39,9 @@ export const StageControls = memo(
     onToggleMic,
     onFlipCamera,
     showCamera = true,
+    topOffset,
   }: StageControlsProps) => (
-    <View style={styles.row}>
+    <View style={[styles.row, topOffset != null && { top: topOffset }]}>
       {showCamera ? (
         <Pressable
           style={[styles.btn, !camOn && styles.btnMuted]}

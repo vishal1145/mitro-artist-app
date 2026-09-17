@@ -1,9 +1,11 @@
-import { memo, type ReactElement, type ReactNode } from 'react';
+import { memo, useRef, type ReactElement, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   type RefreshControlProps,
   type StyleProp,
   type ViewStyle,
@@ -36,6 +38,16 @@ export interface ScreenProps {
   tabBarSpacing?: boolean;
   /** Pull-to-refresh — forwarded straight to the ScrollView. Requires `scrollable`. */
   refreshControl?: ReactElement<RefreshControlProps>;
+  /**
+   * Infinite scroll. Fires once each time the content bottom comes within
+   * `endReachedOffset` of the viewport, and re-arms only after the user has
+   * scrolled back out of that zone — so a screen can keep loading pages
+   * without a "load more" button and without firing on every frame.
+   * Requires `scrollable`.
+   */
+  onEndReached?: () => void;
+  /** Distance from the bottom, in px, that counts as "reached". */
+  endReachedOffset?: number;
 }
 
 /**
@@ -53,10 +65,30 @@ const ScreenComponent = ({
   header,
   tabBarSpacing = false,
   refreshControl,
+  onEndReached,
+  endReachedOffset = 320,
 }: ScreenProps) => {
   const body = padded ? styles.padded : undefined;
   const tabSpace = useTabBarSpace();
   const tabPad = tabBarSpacing ? { paddingBottom: tabSpace } : undefined;
+
+  // Latched so one long flick fires `onEndReached` once, not on every frame.
+  const endReachedArmed = useRef(true);
+  const handleScroll = onEndReached
+    ? ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+        const distanceToEnd =
+          contentSize.height - contentOffset.y - layoutMeasurement.height;
+        if (distanceToEnd <= endReachedOffset) {
+          if (endReachedArmed.current) {
+            endReachedArmed.current = false;
+            onEndReached();
+          }
+        } else {
+          endReachedArmed.current = true;
+        }
+      }
+    : undefined;
 
   return (
     <SafeAreaView style={[styles.safe, style]} edges={edges}>
@@ -94,6 +126,8 @@ const ScreenComponent = ({
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
             refreshControl={refreshControl}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           >
             {children}
           </ScrollView>

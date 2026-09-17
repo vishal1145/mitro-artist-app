@@ -23,7 +23,11 @@ export interface LoadFailedProps {
  * with nothing to do but back out of the screen and come back in, which is a
  * dead end dressed up as a message.
  */
-const LoadFailedComponent = ({ message, onRetry, isRetrying }: LoadFailedProps) => (
+const LoadFailedComponent = ({
+  message,
+  onRetry,
+  isRetrying,
+}: LoadFailedProps) => (
   <View style={styles.wrap} accessibilityRole="summary">
     <View style={styles.icon}>
       <Feather name="wifi-off" size={rf(20)} color={colors.error} />
@@ -32,7 +36,12 @@ const LoadFailedComponent = ({ message, onRetry, isRetrying }: LoadFailedProps) 
     <Text variant="bodyLg" align="center" style={styles.title}>
       Couldn&apos;t load this
     </Text>
-    <Text variant="bodySm" color="textMuted" align="center" style={styles.message}>
+    <Text
+      variant="bodySm"
+      color="textMuted"
+      align="center"
+      style={styles.message}
+    >
       {message ?? 'Check your connection and try again.'}
     </Text>
 

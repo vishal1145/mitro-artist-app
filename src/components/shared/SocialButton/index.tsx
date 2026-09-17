@@ -1,6 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { memo } from 'react';
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { GoogleGlyph } from '@components/ui/GoogleGlyph';
 import { Text } from '@components/ui/Text';

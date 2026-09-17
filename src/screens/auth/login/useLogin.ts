@@ -3,11 +3,8 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 
-import { DEMO_AUTH } from '@constants';
 import { useLoginMutation } from '@hooks/useAuthMutations';
-import { USE_MOCK } from '@services/api';
-import { useAuthStore } from '@store';
-import type { AuthSession, SocialProviderId } from '@app-types/api';
+import type { SocialProviderId } from '@app-types/api';
 import { getErrorMessage } from '@utils/errorHandler';
 import { logger } from '@utils/logger';
 import { hidePopupToast, showPopupToast } from '@utils/toast';
@@ -18,7 +15,6 @@ import type { UseLoginResult } from './types';
 /** All login logic. The screen component renders state; it holds none. */
 export const useLogin = (): UseLoginResult => {
   const router = useRouter();
-  const authenticate = useAuthStore((s) => s.authenticate);
   const { mutateAsync: login, isPending } = useLoginMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
@@ -42,31 +38,6 @@ export const useLogin = (): UseLoginResult => {
       // never looks like it failed again before the request has resolved.
       hidePopupToast();
 
-      // --- Demo bypass, mock mode only -------------------------------------
-      // Lets the screens be exercised without a backend. Never reachable once
-      // USE_MOCK is false, so it can't shadow a real account in production.
-      const identifier = values.identifier.trim().toLowerCase();
-      if (
-        USE_MOCK &&
-        identifier === DEMO_AUTH.identifier &&
-        values.password === DEMO_AUTH.password
-      ) {
-        const demoSession: AuthSession = {
-          user: {
-            id: 'demo-artist',
-            name: 'Alex Rivera',
-            username: 'creator',
-            approvalStatus: 'Approved',
-          },
-          tokens: { accessToken: 'demo-access-token' },
-        };
-        logger.info('Demo login success');
-        await authenticate(demoSession);
-        router.replace('/(app)/(tabs)/home');
-        return;
-      }
-      // ---------------------------------------------------------------------
-
       try {
         // One field either way — the server decides whether it's a mobile
         // number or a stage name.
@@ -88,7 +59,7 @@ export const useLogin = (): UseLoginResult => {
         showPopupToast(message, 'error');
       }
     },
-    [authenticate, login, router],
+    [login, router],
   );
 
   const onSocialLogin = useCallback((provider: SocialProviderId) => {

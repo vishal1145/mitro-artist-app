@@ -4,7 +4,14 @@ import { memo, useMemo, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients, radius, size as sizes } from '@theme';
+import {
+  colors,
+  fontFamily,
+  gradientDirection,
+  gradients,
+  radius,
+  size as sizes,
+} from '@theme';
 import { rf } from '@utils/responsive';
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -33,12 +40,13 @@ const SIZE: Record<AvatarSize, number> = {
 };
 
 /** Text variant that best fits each diameter. */
-const TEXT_VARIANT: Record<AvatarSize, 'caption' | 'link' | 'h2' | 'display'> = {
-  sm: 'caption',
-  md: 'link',
-  lg: 'h2',
-  xl: 'display',
-};
+const TEXT_VARIANT: Record<AvatarSize, 'caption' | 'link' | 'h2' | 'display'> =
+  {
+    sm: 'caption',
+    md: 'link',
+    lg: 'h2',
+    xl: 'display',
+  };
 
 /** Derive up to two uppercase initials from a display name. */
 const toInitials = (name: string): string =>
@@ -91,7 +99,11 @@ const AvatarComponent = ({
         </View>
       ) : solidFill ? (
         <View style={[styles.circle, circleStyle, solidFill]}>
-          <Text variant={TEXT_VARIANT[size]} color="white" style={styles.initials}>
+          <Text
+            variant={TEXT_VARIANT[size]}
+            color="white"
+            style={styles.initials}
+          >
             {label}
           </Text>
         </View>
@@ -103,7 +115,11 @@ const AvatarComponent = ({
           end={gradientDirection.diagonal.end}
           style={[styles.circle, circleStyle]}
         >
-          <Text variant={TEXT_VARIANT[size]} color="white" style={styles.initials}>
+          <Text
+            variant={TEXT_VARIANT[size]}
+            color="white"
+            style={styles.initials}
+          >
             {label}
           </Text>
         </LinearGradient>

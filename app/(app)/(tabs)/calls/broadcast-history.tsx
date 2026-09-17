@@ -1,124 +1,186 @@
-import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
-  EmptyState,
-  InfoCallout,
-  LoadFailed,
-  PageHeader,
-  ProgressBar,
-  Screen,
-  SectionLabel,
-  Skeleton,
-} from '@components/shared';
-import { Text } from '@components/ui';
+  CalloutStrong,
+  CalloutText,
+  CardDetail,
+  HelpIcon,
+  HistoryCard,
+  LearnLink,
+  ListHead,
+  MetricGrid,
+  MetricTile,
+  SummaryCell,
+  SummaryStrip,
+  WebCallout,
+} from '@components/history';
+import { LoadFailed, PageHeader, Screen, Skeleton } from '@components/shared';
+import { LucideIcon, Text, type LucideIconName } from '@components/ui';
 import {
   useBroadcastAnalytics,
-  useBroadcastHistory,
+  useBroadcastHistoryPaged,
   useBroadcastHistorySummary,
 } from '@hooks/useInsights';
 import { useFulfillRewardOrderMutation, usePendingRewardOrders } from '@hooks/useRewardOrders';
-import { colors, fontFamily, layout, radius } from '@theme';
+import {
+  colors,
+  fontFamily,
+  gradientDirection,
+  layout,
+  palette,
+  webColors,
+  webGradients,
+} from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
-import { duration, grouped, shortDateTime } from '@utils/format';
+import { grouped, webDateTime, webDuration } from '@utils/format';
 import { rf } from '@utils/responsive';
 import { showToast } from '@utils/toast';
 
 import type { BroadcastAnalytics, BroadcastHistoryItem, RewardOrder } from '@app-types/api';
 
-const HISTORY_TAKE = 30;
+/** `HISTORY_PAGE_SIZE` on the web's `CreatorBroadcastHistoryScreen`. */
+const PAGE_SIZE = 20;
 
-/** One metric tile inside an expanded broadcast's analytics grid. */
+/** One `.metric-tile` — same five, same order, same icons and inks as the web. */
 interface Tile {
   key: string;
-  icon: keyof typeof Feather.glyphMap;
-  tint: string;
+  icon: LucideIconName;
+  color: string;
   label: string;
   value: string;
-  caption: string;
   barPct: number;
+  caption: string;
+  /** The web's per-tile `hint` string. */
+  hint: string;
 }
 
 const analyticsTiles = (a: BroadcastAnalytics): Tile[] => {
   const maxTk = Math.max(a.highlightedMessageTokens, a.rewardOrderTokens, a.funWheelSpinTokens, 1);
+  const tokenBar = (tokens: number) => Math.min(100, Math.round((tokens / maxTk) * 100));
   return [
     {
       key: 'chat',
+      hint: "How many chat messages viewers sent during this broadcast. Free to send — this doesn't earn coins on its own.",
       icon: 'message-circle',
-      tint: colors.cyan,
+      color: webColors.cyan,
       label: 'Chat messages',
       value: grouped(a.chatMessageCount),
-      caption: 'sent',
       barPct: Math.min(100, Math.round((a.chatMessageCount / 5) * 100)),
+      caption: 'sent',
     },
     {
       key: 'highlighted',
+      hint: "Messages a viewer paid to highlight so it stands out in chat, plus the coins they earned you.",
       icon: 'star',
-      tint: colors.gold,
+      color: webColors.gold,
       label: 'Highlighted',
       value: grouped(a.highlightedMessageCount),
+      barPct: tokenBar(a.highlightedMessageTokens),
       caption: `${grouped(a.highlightedMessageTokens)} tk`,
-      barPct: Math.min(100, Math.round((a.highlightedMessageTokens / maxTk) * 100)),
     },
     {
       key: 'rewards',
-      icon: 'gift',
-      tint: colors.purple,
+      hint: "Shoutouts, song requests, and other rewards fans purchased during this broadcast, plus the coins earned.",
+      icon: 'check',
+      color: webColors.purple,
       label: 'Reward orders',
       value: grouped(a.rewardOrderCount),
+      barPct: tokenBar(a.rewardOrderTokens),
       caption: `${grouped(a.rewardOrderTokens)} tk`,
-      barPct: Math.min(100, Math.round((a.rewardOrderTokens / maxTk) * 100)),
     },
     {
       key: 'funwheel',
-      icon: 'rotate-cw',
-      tint: colors.cyan,
+      hint: "How many times viewers paid to spin the fun wheel during this broadcast, plus the coins earned.",
+      icon: 'clock-3',
+      color: webColors.cyan,
       label: 'Fun-wheel spins',
       value: grouped(a.funWheelSpinCount),
+      barPct: tokenBar(a.funWheelSpinTokens),
       caption: `${grouped(a.funWheelSpinTokens)} tk`,
-      barPct: Math.min(100, Math.round((a.funWheelSpinTokens / maxTk) * 100)),
     },
     {
       key: 'viewers',
-      icon: 'users',
-      tint: colors.green,
+      hint: "Total distinct viewers who watched any part of this broadcast, and the highest number watching at the same time.",
+      icon: 'user-round',
+      color: webColors.green,
       label: 'Unique viewers',
       value: grouped(a.totalUniqueViewers),
+      barPct: Math.min(
+        100,
+        Math.round((a.totalUniqueViewers / Math.max(a.peakViewerCount, 1)) * 100),
+      ),
       caption: `${a.peakViewerCount} at peak`,
-      barPct: Math.min(100, Math.round((a.totalUniqueViewers / Math.max(a.peakViewerCount, 1)) * 100)),
     },
   ];
 };
 
-/** Solo broadcast history — lifetime totals, reward queue, and every past show with analytics. */
+/** `SummaryStripSkeleton` + `BroadcastHistorySkeleton`. */
+const ListSkeleton = () => (
+  <>
+    <View style={styles.skelStrip}>
+      <Skeleton height={70} round={14} style={styles.skelCell} />
+      <Skeleton height={70} round={14} style={styles.skelCell} />
+    </View>
+    <View style={styles.skelList}>
+      <Skeleton height={68} round={14} />
+      <Skeleton height={68} round={14} />
+      <Skeleton height={68} round={14} />
+    </View>
+  </>
+);
+
+/** `AnalyticsSkeleton` — the tile grid that stands in while analytics load. */
+const AnalyticsSkeleton = () => (
+  <View style={styles.skelTiles}>
+    {[0, 1, 2, 3].map((i) => (
+      <Skeleton key={i} height={92} round={12} style={styles.skelTile} />
+    ))}
+  </View>
+);
+
+/**
+ * Solo broadcast history — a replica of the Artist Web's
+ * `CreatorBroadcastHistoryScreen` at phone widths. Same three reads the web
+ * makes (history page, DB-aggregated lifetime summary, pending reward orders)
+ * plus per-show analytics fetched only when a row is expanded.
+ */
 const BroadcastHistoryScreen = () => {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fulfillingId, setFulfillingId] = useState<string | null>(null);
 
   const {
-    data: history,
+    data: historyPages,
     isLoading: loadingHistory,
     isError: historyError,
     error: historyErrorObj,
     refetch: refetchHistory,
     isRefetching,
-  } = useBroadcastHistory(HISTORY_TAKE, 0);
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useBroadcastHistoryPaged(PAGE_SIZE);
+  /** Every page walked so far, flattened into the single list the UI renders. */
+  const history = useMemo(() => historyPages?.pages.flat() ?? [], [historyPages]);
   const { data: summary, isLoading: loadingSummary } = useBroadcastHistorySummary();
   const { data: pendingOrders, isLoading: loadingOrders } = usePendingRewardOrders();
   const { data: analytics, isLoading: loadingAnalytics } = useBroadcastAnalytics(expandedId);
   const fulfillMutation = useFulfillRewardOrderMutation();
 
-  const toggleExpand = (broadcastId: string) =>
+  const toggleAnalytics = (broadcastId: string) =>
     setExpandedId((current) => (current === broadcastId ? null : broadcastId));
 
   const handleFulfill = async (order: RewardOrder) => {
     setFulfillingId(order.id);
     try {
       const result = await fulfillMutation.mutateAsync(order.id);
-      showToast(result.message ?? `Marked "${order.rewardName}" delivered.`, 'success');
+      showToast(
+        result.message ?? `Marked "${order.rewardName}" as delivered to ${order.buyerDisplayName}.`,
+        'success',
+      );
     } catch (e) {
       showToast(getErrorMessage(e), 'error');
     } finally {
@@ -126,8 +188,7 @@ const BroadcastHistoryScreen = () => {
     }
   };
 
-  const summaryAvgLength =
-    summary?.avgDurationSeconds != null ? duration(summary.avgDurationSeconds) : '—';
+  const hasPending = !loadingOrders && !!pendingOrders && pendingOrders.length > 0;
 
   return (
     <Screen
@@ -136,377 +197,487 @@ const BroadcastHistoryScreen = () => {
       padded={false}
       contentContainerStyle={styles.content}
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={() => void refetchHistory()} tintColor={colors.pink} />
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={() => void refetchHistory()}
+          tintColor={colors.pink}
+        />
       }
-      header={<PageHeader title="Broadcasts" onBack={() => router.back()} />}
+      onEndReached={() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      }}
+      header={<PageHeader title="Broadcast History" onBack={() => router.back()} />}
     >
-      <View style={styles.callout}>
-        <InfoCallout icon="info" tone="info">
-          Every past solo broadcast you&apos;ve hosted, with peak viewers and earnings for each
-          show at a glance. Tap Analytics on any show to see the chat, reward, and fun-wheel
-          breakdown that made up its total.
-        </InfoCallout>
-      </View>
+      <WebCallout>
+        <CalloutText>
+          This is the full record of every <CalloutStrong>solo broadcast</CalloutStrong> you&apos;ve
+          hosted, with <CalloutStrong>peak viewers</CalloutStrong> and{' '}
+          <CalloutStrong>earnings</CalloutStrong> for each session at a glance. Tap{' '}
+          <CalloutStrong>Analytics</CalloutStrong> on any show to expand it and see the breakdown of
+          chat activity, reactions, reward orders, and fun-wheel spins that made up that
+          session&apos;s total.{' '}
+          <LearnLink
+            label="Learn more about session analytics"
+            onPress={() =>
+              showToast("Session analytics export isn't part of this concept pass yet", 'info')
+            }
+          />
+        </CalloutText>
+      </WebCallout>
 
       {loadingSummary ? (
-        <View style={styles.statGrid}>
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={74} round={radius.card} style={styles.statSkel} />
-          ))}
+        <View style={[styles.skelStrip, styles.stripMargin]}>
+          <Skeleton height={70} round={14} style={styles.skelCell} />
+          <Skeleton height={70} round={14} style={styles.skelCell} />
         </View>
       ) : (
-        <View style={styles.statGrid}>
-          <View style={styles.statRow}>
-            <StatCell icon="radio" tint={colors.pink} label="Shows" value={String(summary?.totalShows ?? 0)} />
-            <StatCell
-              icon="dollar-sign"
-              tint={colors.gold}
-              label="Total earned"
-              value={`${grouped(summary?.totalRevenueTokens ?? 0)} tk`}
-            />
-          </View>
-          <View style={styles.statRow}>
-            <StatCell
-              icon="users"
-              tint={colors.cyan}
-              label="Unique viewers"
-              value={grouped(summary?.totalUniqueViewers ?? 0)}
-            />
-            <StatCell icon="clock" tint={colors.green} label="Avg length" value={summaryAvgLength} />
-          </View>
-        </View>
+        <SummaryStrip style={styles.stripMargin}>
+          <SummaryCell
+            icon="radio"
+            tint="cyan"
+            label="Shows"
+            hint="Total number of solo broadcasts you've hosted and ended, all-time."
+            value={grouped(summary?.totalShows ?? 0)}
+          />
+          <SummaryCell
+            icon="coins"
+            tint="gold"
+            label="Total earned"
+            hint="Combined coins earned across every broadcast below — chat highlights, reactions, reward orders, and fun-wheel spins."
+            value={`${grouped(summary?.totalRevenueTokens ?? 0)} tk`}
+          />
+          <SummaryCell
+            icon="user-round"
+            tint="purple"
+            label="Unique viewers"
+            hint="Sum of unique viewers across all your broadcasts. The same fan watching two different shows counts twice here."
+            value={grouped(summary?.totalUniqueViewers ?? 0)}
+          />
+          <SummaryCell
+            icon="clock-3"
+            tint="green"
+            label="Avg length"
+            hint="Average duration of your broadcasts, from when you went live to when the show ended."
+            value={webDuration(summary?.avgDurationSeconds ?? null)}
+          />
+        </SummaryStrip>
       )}
 
-      {!loadingOrders && pendingOrders && pendingOrders.length > 0 ? (
+      {hasPending ? (
         <>
-          <View style={styles.callout}>
-            <InfoCallout icon="alert-triangle" tone="warning">
-              Fulfill rewards promptly — fans notice when a shoutout or song request never
-              arrives. Quick delivery keeps them confident enough to tip and book again.
-            </InfoCallout>
-          </View>
+          <WebCallout tone="gold">
+            <CalloutText>
+              <CalloutStrong>Fulfill rewards promptly</CalloutStrong> — fans notice when a shoutout
+              or song request never arrives, and that erodes trust fast. Quick delivery keeps fans
+              confident enough to tip and book again on your next broadcast.
+            </CalloutText>
+          </WebCallout>
 
-          <View style={styles.rewardsCard}>
-            <Text variant="label" color="textMuted">
-              TO FULFILL
-            </Text>
-            <Text variant="h3" style={styles.rewardsHeading}>
-              Pending Reward Deliveries
-            </Text>
-            {pendingOrders.map((order, i) => (
-              <View key={order.id} style={[styles.pendingRow, i === 0 ? null : styles.pendingRowDivider]}>
-                <Text variant="bodySm" color="textSecondary" style={styles.pendingWho} numberOfLines={2}>
-                  <Text variant="bodySm" color="textPrimary" style={styles.strong}>
-                    {order.rewardName}
-                  </Text>{' '}
-                  for {order.buyerDisplayName} ·{' '}
-                  <Text variant="bodySm" color="gold" style={styles.strong}>
-                    {grouped(order.priceCharged)} tk
+          <LinearGradient
+            colors={webGradients.rewardsCard}
+            start={gradientDirection.diagonal.start}
+            end={gradientDirection.diagonal.end}
+            style={styles.rewardsCard}
+          >
+            <View style={styles.rewardsEyebrow}>
+              <LucideIcon name="check" size={rf(12)} color={webColors.gold} />
+              <Text style={styles.rewardsEyebrowText}>To fulfill</Text>
+            </View>
+            <Text style={styles.rewardsHeading}>Pending Reward Deliveries</Text>
+
+            <View style={styles.pendingList}>
+              {pendingOrders.map((order) => (
+                <View key={order.id} style={styles.pendingRow}>
+                  <Text style={styles.pendingWho}>
+                    <Text style={styles.pendingName}>{order.rewardName}</Text> for{' '}
+                    {order.buyerDisplayName} ·{' '}
+                    <Text style={styles.pendingAmt}>{grouped(order.priceCharged)} tk</Text>
                   </Text>
-                </Text>
-                <Pressable
-                  style={styles.fulfillBtn}
-                  onPress={() => handleFulfill(order)}
-                  disabled={fulfillingId === order.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Mark ${order.rewardName} fulfilled`}
-                >
-                  <Feather name="check" size={rf(12)} color={colors.textPrimary} />
-                  <Text variant="bodySm" color="textPrimary">
-                    {fulfillingId === order.id ? 'Marking…' : 'Mark fulfilled'}
-                  </Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
+                  <Pressable
+                    style={styles.btnGhost}
+                    onPress={() => void handleFulfill(order)}
+                    disabled={fulfillingId === order.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mark ${order.rewardName} fulfilled`}
+                  >
+                    <LucideIcon name="check" size={rf(12)} color={webColors.green} />
+                    <Text style={styles.btnGhostText}>
+                      {fulfillingId === order.id ? 'Marking…' : 'Mark fulfilled'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          </LinearGradient>
         </>
       ) : null}
 
-      <SectionLabel divider style={styles.sectionLabel}>
-        PAST BROADCASTS
-      </SectionLabel>
+      <View>
+        <ListHead eyebrow="Past shows" heading="Broadcast History" />
 
-      {loadingHistory ? (
-        <View style={styles.showSkel}>
-          <Skeleton height={64} round={radius.card} />
-          <Skeleton height={64} round={radius.card} />
-          <Skeleton height={64} round={radius.card} />
-        </View>
-      ) : historyError ? (
-        <LoadFailed message={getErrorMessage(historyErrorObj)} onRetry={refetchHistory} />
-      ) : !history || history.length === 0 ? (
-        <EmptyState
-          icon="video"
-          title="No broadcasts yet"
-          description="They'll show up here once you end a live show."
-        />
-      ) : (
-        history.map((item: BroadcastHistoryItem) => {
-          const isExpanded = expandedId === item.broadcastId;
-          return (
-            <View key={item.broadcastId} style={[styles.showCard, isExpanded ? styles.showCardOpen : null]}>
-              <Pressable
-                style={styles.showRow}
-                onPress={() => toggleExpand(item.broadcastId)}
-                accessibilityRole="button"
-                accessibilityLabel={`${item.title}, ${isExpanded ? 'hide' : 'show'} analytics`}
-              >
-                <View style={styles.showIcon}>
-                  <Feather name="radio" size={rf(16)} color={colors.pink} />
-                </View>
-                <View style={styles.showMain}>
-                  <Text variant="bodyLg" color="textPrimary" numberOfLines={1} style={styles.strong}>
-                    {item.title}
-                  </Text>
-                  <Text variant="bodySm" color="textMuted" numberOfLines={2}>
-                    {item.startedAtUtc ? shortDateTime(item.startedAtUtc) : 'Unknown start'} ·{' '}
-                    {duration(item.durationSeconds)} · Peak {item.peakViewerCount} viewers ·{' '}
-                    {item.totalUniqueViewers} total
-                    {item.endReason ? ` · ${item.endReason}` : ''}
-                  </Text>
-                </View>
-                <View style={styles.showRight}>
-                  <Text
-                    variant="bodySm"
-                    color={item.totalRevenueTokens > 0 ? 'green' : 'textMuted'}
-                    style={styles.strong}
-                  >
-                    {item.totalRevenueTokens > 0 ? `+${grouped(item.totalRevenueTokens)}` : '0'}
-                  </Text>
-                  <Feather
-                    name={isExpanded ? 'chevron-up' : 'bar-chart-2'}
-                    size={rf(14)}
-                    color={colors.textMuted}
-                  />
-                </View>
-              </Pressable>
+        <View style={styles.showList}>
+          {loadingHistory ? (
+            <ListSkeleton />
+          ) : historyError ? (
+            <LoadFailed message={getErrorMessage(historyErrorObj)} onRetry={refetchHistory} />
+          ) : !history || history.length === 0 ? (
+            <Text style={styles.rewardsEmpty}>
+              No ended broadcasts yet. They&apos;ll show up here once you end a live show.
+            </Text>
+          ) : (
+            history.map((item: BroadcastHistoryItem) => {
+              const isOpen = expandedId === item.broadcastId;
+              const hasEarnings = item.totalRevenueTokens > 0;
+              return (
+                <HistoryCard key={item.broadcastId}>
+                  <View style={styles.showRow}>
+                    <View style={styles.showIcon}>
+                      <LucideIcon name="radio" size={rf(18)} color={webColors.green} />
+                    </View>
 
-              {isExpanded ? (
-                <View style={styles.showDetail}>
-                  {loadingAnalytics || !analytics || analytics.broadcastId !== item.broadcastId ? (
-                    <View style={styles.analyticsSkel}>
-                      <Skeleton height={70} round={radius.md} />
-                      <Skeleton height={70} round={radius.md} />
+                    <Pressable
+                      style={styles.showMain}
+                      onPress={() => toggleAnalytics(item.broadcastId)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.title}, ${isOpen ? 'hide' : 'show'} analytics`}
+                    >
+                      <Text numberOfLines={1} style={styles.showTitle}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.showMeta}>
+                        {item.startedAtUtc ? webDateTime(item.startedAtUtc) : 'Unknown start'}
+                        {' · '}
+                        {webDuration(item.durationSeconds)}
+                        {' · Peak '}
+                        {item.peakViewerCount} viewers ·{' '}
+                        {item.totalUniqueViewers} total · {item.status}
+                        {item.endReason ? ` (${item.endReason})` : ''}
+                      </Text>
+                    </Pressable>
+
+                    <View style={styles.showRight}>
+                      <View style={styles.showEarnRow}>
+                        <Text style={hasEarnings ? styles.showEarn : styles.showEarnZero}>
+                          {hasEarnings ? `+${grouped(item.totalRevenueTokens)}` : '0'}
+                        </Text>
+                        <HelpIcon
+                          hint="Total coins this specific broadcast earned — chat highlights, reactions, reward orders, and fun-wheel spins combined."
+                          size={11}
+                        />
+                      </View>
+                      <Pressable
+                        onPress={() => toggleAnalytics(item.broadcastId)}
+                        accessibilityRole="button"
+                        accessibilityState={{ expanded: isOpen }}
+                        style={isOpen ? styles.analyticsBtnOn : styles.analyticsBtn}
+                      >
+                        {isOpen ? (
+                          <LinearGradient
+                            colors={webGradients.activePill}
+                            start={gradientDirection.diagonal.start}
+                            end={gradientDirection.diagonal.end}
+                            style={StyleSheet.absoluteFill}
+                          />
+                        ) : null}
+                        <LucideIcon
+                          name="bar-chart-3"
+                          size={rf(12)}
+                          color={isOpen ? palette.white : webColors.muted}
+                        />
+                        <Text style={isOpen ? styles.analyticsTextOn : styles.analyticsText}>
+                          {isOpen ? 'Hide' : 'Analytics'}
+                        </Text>
+                      </Pressable>
                     </View>
-                  ) : (
-                    <View style={styles.metricGrid}>
-                      {analyticsTiles(analytics).map((t) => (
-                        <View key={t.key} style={styles.metricTile}>
-                          <View style={styles.metricTop}>
-                            <Feather name={t.icon} size={rf(12)} color={t.tint} />
-                            <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-                              {t.label}
-                            </Text>
-                          </View>
-                          <Text variant="h3" style={styles.metricValue}>
-                            {t.value}
-                          </Text>
-                          <ProgressBar value={t.barPct / 100} height={4} style={styles.metricBar} />
-                          <Text variant="bodySm" color="textMuted">
-                            {t.caption}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ) : null}
+                  </View>
+
+                  {isOpen ? (
+                    <CardDetail>
+                      {loadingAnalytics ||
+                      !analytics ||
+                      analytics.broadcastId !== item.broadcastId ? (
+                        <AnalyticsSkeleton />
+                      ) : (
+                        <MetricGrid>
+                          {analyticsTiles(analytics).map((tile) => (
+                            <MetricTile
+                              key={tile.key}
+                              icon={tile.icon}
+                              iconColor={tile.color}
+                              label={tile.label}
+                              value={tile.value}
+                              barPct={tile.barPct}
+                              caption={tile.caption}
+                              hint={tile.hint}
+                            />
+                          ))}
+                        </MetricGrid>
+                      )}
+                    </CardDetail>
+                  ) : null}
+                </HistoryCard>
+              );
+            })
+          )}
+
+          {/* Older shows land here on their own as the artist reaches the
+              bottom — same auto-load the Transactions ledger uses. */}
+          {isFetchingNextPage ? (
+            <View style={styles.loadMore}>
+              <ActivityIndicator size="small" color={webColors.pinkHot} />
             </View>
-          );
-        })
-      )}
+          ) : null}
+        </View>
+      </View>
     </Screen>
   );
 };
 
-const StatCell = ({
-  icon,
-  tint,
-  label,
-  value,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  tint: string;
-  label: string;
-  value: string;
-}) => (
-  <View style={styles.statCell}>
-    <View style={styles.statIcon}>
-      <Feather name={icon} size={rf(15)} color={tint} />
-    </View>
-    <View style={styles.statText}>
-      <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-        {label}
-      </Text>
-      <Text variant="h3" style={styles.statValue} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
-  </View>
-);
-
 const styles = StyleSheet.create({
+  /* `.creator-main` is 12px at phone widths; `.creator-view` stacks at 20px. */
   content: {
-    paddingHorizontal: layout.screenPadding,
+    gap: 20,
+    /* `Screen` leaves its header slot flush and expects the first element to
+       supply the gap — without this the callout touched the page title. */
+    paddingTop: 16,
     paddingBottom: 24,
+    paddingHorizontal: layout.screenPadding,
   },
-
-  callout: {
-    marginTop: 12,
-  },
-
-  statGrid: {
-    marginTop: 16,
-    gap: 10,
-  },
-  statSkel: {
-    marginBottom: 10,
-  },
-  statRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statCell: {
-    flex: 1,
-    flexDirection: 'row',
+  /** Footer spinner while the next page of shows lands. */
+  loadMore: {
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.card,
+    paddingVertical: 20,
+  },
+  back: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: webColors.chip,
+    borderColor: webColors.circleBorder,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    padding: 12,
-  },
-  statIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.surfaceSoft,
-    alignItems: 'center',
+    height: 40,
     justifyContent: 'center',
-  },
-  statText: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  statValue: {
-    fontFamily: fontFamily.extrabold,
+    // `Screen` pads its header slot by `layout.screenPadding` (24); this page
+    // runs at the web's 12px gutter, so pull the button back into line.
+    marginLeft: 12 - layout.screenPadding,
+    width: 40,
   },
 
-  rewardsCard: {
-    marginTop: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.borderGold,
-    borderRadius: radius.card,
-    padding: 16,
+  /** `.bcast-history-page .summary-strip { margin: 16px 0 }`. */
+  stripMargin: {
+    marginVertical: 16,
   },
-  rewardsHeading: {
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  pendingRow: {
+
+  /* skeletons ------------------------------------------------------------- */
+  skelStrip: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-  },
-  pendingRowDivider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-  },
-  pendingWho: {
-    flex: 1,
-  },
-  strong: {
-    fontFamily: fontFamily.bold,
-  },
-  fulfillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surfaceSoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-
-  sectionLabel: {
-    marginTop: 20,
-    marginBottom: 12,
-  },
-
-  showSkel: {
     gap: 12,
   },
-  showCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  showCardOpen: {
-    borderColor: colors.borderHot,
-  },
-  showRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-  },
-  showIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.pinkSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  showMain: {
+  skelCell: {
     flex: 1,
-    gap: 3,
-    minWidth: 0,
   },
-  showRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-
-  showDetail: {
-    paddingHorizontal: 14,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    paddingTop: 14,
-  },
-  analyticsSkel: {
+  skelList: {
     gap: 10,
   },
-  metricGrid: {
+  skelTiles: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    paddingTop: 14,
   },
-  metricTile: {
-    width: '47%',
-    backgroundColor: colors.surfaceSoft,
-    borderRadius: radius.md,
-    padding: 10,
-    gap: 6,
+  skelTile: {
+    flexBasis: '47%',
+    flexGrow: 1,
   },
-  metricTop: {
-    flexDirection: 'row',
+
+  /* rewards-card ---------------------------------------------------------- */
+  rewardsCard: {
+    borderColor: webColors.panelBorder,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  rewardsEyebrow: {
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: webColors.goldChip,
+    borderColor: webColors.goldCalloutBorder,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
     gap: 6,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  metricValue: {
+  rewardsEyebrowText: {
+    color: webColors.gold,
     fontFamily: fontFamily.extrabold,
+    fontSize: rf(10.5),
+    letterSpacing: 0.53,
+    lineHeight: rf(14),
+    textTransform: 'uppercase',
   },
-  metricBar: {
-    marginVertical: 2,
+  rewardsHeading: {
+    color: webColors.textStrong,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(16),
+    lineHeight: rf(21),
+    marginBottom: 12,
+  },
+
+  pendingList: {
+    gap: 8,
+  },
+  pendingRow: {
+    alignItems: 'center',
+    backgroundColor: webColors.innerCard,
+    borderColor: webColors.hairline06,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+  },
+  pendingWho: {
+    color: webColors.muted,
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(12.6),
+    lineHeight: rf(18),
+  },
+  pendingName: {
+    color: webColors.textStrong,
+    fontFamily: fontFamily.bold,
+  },
+  pendingAmt: {
+    color: webColors.gold,
+    fontFamily: fontFamily.semibold,
+  },
+  btnGhost: {
+    alignItems: 'center',
+    borderColor: webColors.greenGhostBorder,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  btnGhostText: {
+    color: webColors.green,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(11.5),
+    lineHeight: rf(16),
+  },
+  rewardsEmpty: {
+    color: webColors.dim,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    lineHeight: rf(20),
+    paddingVertical: 10,
+    textAlign: 'center',
+  },
+
+  /* show list ------------------------------------------------------------- */
+  showList: {
+    gap: 10,
+  },
+  showRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  showIcon: {
+    alignItems: 'center',
+    backgroundColor: webColors.greenPill,
+    borderColor: webColors.greenChipBorder,
+    borderRadius: 11,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  showMain: {
+    flex: 1,
+    minWidth: 0,
+  },
+  showTitle: {
+    color: webColors.textStrong,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(14),
+    lineHeight: rf(19),
+    marginBottom: 2,
+  },
+  showMeta: {
+    color: webColors.dim,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(11.5),
+    lineHeight: rf(16),
+  },
+  showRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  /** `.show-earn { display: inline-flex; align-items: center; gap: 3px }`. */
+  showEarnRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 3,
+  },
+  showEarn: {
+    color: webColors.green,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(14),
+    lineHeight: rf(19),
+  },
+  showEarnZero: {
+    color: webColors.dim,
+    fontFamily: fontFamily.medium,
+    fontSize: rf(14),
+    lineHeight: rf(19),
+  },
+  analyticsBtn: {
+    alignItems: 'center',
+    backgroundColor: webColors.surfaceSoft,
+    borderColor: webColors.panelBorder,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+  },
+  analyticsBtnOn: {
+    alignItems: 'center',
+    borderColor: palette.transparent,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    overflow: 'hidden',
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+  },
+  analyticsText: {
+    color: webColors.muted,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(11.5),
+    lineHeight: rf(16),
+  },
+  analyticsTextOn: {
+    color: palette.white,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(11.5),
+    lineHeight: rf(16),
   },
 });
 

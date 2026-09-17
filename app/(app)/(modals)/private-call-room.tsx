@@ -14,7 +14,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgoraVideoView } from '@components/call/AgoraVideoView';
 import {
@@ -114,11 +114,9 @@ const PrivateCallRoomScreen = () => {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [videoKey, setVideoKey] = useState(0);
-  const [panel, setPanel] = useState<'activity' | 'guest' | null>(null);
+  const [panel, setPanel] = useState<'activity' | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const insets = useSafeAreaInsets();
   const [manageOpen, setManageOpen] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
   const [peerReconnecting, setPeerReconnecting] = useState(false);
   /** The artist's OWN link dropped — the backend is told so billing pauses. */
   const [selfReconnecting, setSelfReconnecting] = useState(false);
@@ -131,6 +129,8 @@ const PrivateCallRoomScreen = () => {
   const startedRef = useRef(false);
   const endedRef = useRef(false);
   const connectedRef = useRef(false);
+  /** Presence/realtime (hub + heartbeat + delivery poll) started once, on mount. */
+  const presenceStartedRef = useRef(false);
   const lostReportedRef = useRef(false);
   const feedRef = useRef<ScrollView>(null);
   const videoAvailable = isAgoraAvailable();
@@ -225,7 +225,15 @@ const PrivateCallRoomScreen = () => {
        * backend for a fresh publisher token for that same call.
        */
       let conn = connection;
-      if (!conn) {
+      if (conn) {
+        // Fresh accept: mark the call active and refresh the Agora token, exactly
+        // like the web does on every entry. This `connect()` is what flips the
+        // call to "active" for the fan — without it the fan sees "this call isn't
+        // active" and can't send rewards or spin the wheel. It's idempotent, so
+        // calling it right after Accept is safe.
+        const marked = await privateCallApi.connect(conn.privateCallId);
+        if (marked.success) conn = marked.data;
+      } else {
         const active = await activePrivateCallStore.get();
         if (active) {
           const again = await privateCallApi.connect(active.privateCallId);
@@ -254,14 +262,25 @@ const PrivateCallRoomScreen = () => {
         ratePerMin: Number(params.ratePerMin) || ratePerMin,
       });
 
+      // Video-connected UI only. The fan can already send rewards / spin the
+      // wheel before this fires — that path runs in `startRealtime` below.
       const onConnected = () => {
         if (connectedRef.current || endedRef.current) return;
         connectedRef.current = true;
         setStatus('connected');
         setVideoKey((k) => k + 1);
         rebindTimer = setTimeout(() => setVideoKey((k) => k + 1), 1200);
-
         elapsedTimer = setInterval(() => setElapsed((s) => s + 1), 1000);
+      };
+
+      // Presence + realtime — hub group-join, heartbeat, and the delivery-poll
+      // backstop. Started immediately on mount, independent of the Agora video
+      // join (mirrors the web). Gating this on the video channel is exactly why
+      // the app artist was receiving no gifts / fun-wheel spins.
+      const startRealtime = () => {
+        if (presenceStartedRef.current || endedRef.current) return;
+        presenceStartedRef.current = true;
+
         heartbeatTimer = setInterval(
           () => privateCallApi.heartbeat(conn.privateCallId),
           HEARTBEAT_MS,
@@ -309,7 +328,7 @@ const PrivateCallRoomScreen = () => {
               },
             ]);
             showToast(
-              `${p.displayName} sent "${p.rewardName}" for ${p.priceCharged} tokens!`,
+              `${p.displayName} sent "${p.rewardName}" for ${p.priceCharged} coins!`,
               'success',
             );
           },
@@ -387,6 +406,10 @@ const PrivateCallRoomScreen = () => {
           });
         }, ACTIVE_POLL_MS);
       };
+
+      // Mark the call live and open the reward / fun-wheel pushes right away —
+      // never wait on the video channel for this.
+      startRealtime();
 
       if (videoAvailable) {
         joinPrivateCallChannel(
@@ -672,7 +695,7 @@ const PrivateCallRoomScreen = () => {
         )}
 
         <Pressable
-          style={[styles.fsPill, isFullscreen && { top: insets.top + 8 }]}
+          style={[styles.fsPill, isFullscreen && styles.fsPillFull]}
           onPress={() => setIsFullscreen((v) => !v)}
           hitSlop={10}
           accessibilityRole="button"
@@ -694,6 +717,7 @@ const PrivateCallRoomScreen = () => {
           onToggleCam={toggleCam}
           onToggleMic={toggleMic}
           onFlipCamera={videoAvailable ? switchCamera : undefined}
+          topOffset={isFullscreen ? 6 : undefined}
         />
 
         {/* Fan-state badge — the web's `pcall-corner-badges`. Only the mic
@@ -764,54 +788,6 @@ const PrivateCallRoomScreen = () => {
         </RoomPanel>
       ) : null}
 
-      {!isFullscreen && panel === 'guest' ? (
-        <RoomPanel title="GUEST (1)" onClose={() => setPanel(null)}>
-          <ScrollView
-            style={styles.feed}
-            contentContainerStyle={styles.viewerList}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.viewerRow}>
-              <Avatar initials={fanName.slice(0, 1).toUpperCase()} size="sm" />
-              <View style={styles.viewerBody}>
-                <Text variant="caption" color="textPrimary" numberOfLines={1}>
-                  {fanName}
-                </Text>
-                <Text
-                  variant="label"
-                  color={
-                    connected && remoteUid !== null ? 'green' : 'textMuted'
-                  }
-                >
-                  {peerReconnecting
-                    ? 'reconnecting'
-                    : remoteUid !== null
-                      ? 'connected'
-                      : connected
-                        ? 'joining'
-                        : 'connecting'}
-                </Text>
-              </View>
-              <View style={styles.guestStateRow}>
-                <Feather
-                  name={fanVideoLive ? 'video' : 'video-off'}
-                  size={rf(15)}
-                  color={fanVideoLive ? colors.textPrimary : live.mutedIcon}
-                />
-                <Feather
-                  name={remoteAudioOn ? 'mic' : 'mic-off'}
-                  size={rf(15)}
-                  color={remoteAudioOn ? colors.textPrimary : live.mutedIcon}
-                />
-              </View>
-            </View>
-            <Text variant="bodySm" color="textMuted" style={styles.viewerEmpty}>
-              Private calls are 1:1 — only {fanName} is in this room with you.
-            </Text>
-          </ScrollView>
-        </RoomPanel>
-      ) : null}
-
       {/* ── Round action bar ── */}
       {!isFullscreen ? (
         <View style={styles.roundBar}>
@@ -831,24 +807,11 @@ const PrivateCallRoomScreen = () => {
             active={panel === 'activity'}
           />
           <RoundChip
-            variant="neutral"
-            icon="user"
-            label="Guest"
-            onPress={() => setPanel((p) => (p === 'guest' ? null : 'guest'))}
-            active={panel === 'guest'}
-          />
-          <RoundChip
             variant="gift"
             icon="gift"
             label="Manage rewards"
             onPress={() => setManageOpen(true)}
             badge={pendingCount}
-          />
-          <RoundChip
-            variant="stats"
-            icon="bar-chart-2"
-            label="Call stats"
-            onPress={() => setStatsOpen(true)}
           />
         </View>
       ) : null}
@@ -955,52 +918,6 @@ const PrivateCallRoomScreen = () => {
               </View>
             )),
           )}
-        </View>
-      </BottomSheet>
-
-      {/* Call stats bottom sheet */}
-      <BottomSheet
-        visible={statsOpen}
-        onClose={() => setStatsOpen(false)}
-        title="Call stats"
-        snapPoints={[0.36]}
-      >
-        <View style={styles.statsSheet}>
-          <View style={styles.statCell}>
-            <View
-              style={[styles.statIc, { backgroundColor: colors.successChip }]}
-            >
-              <Feather name="dollar-sign" size={rf(16)} color={colors.green} />
-            </View>
-            <Text variant="label" color="textMuted">
-              EARNED
-            </Text>
-            <Text variant="h2" color="green">
-              {cost.total}
-            </Text>
-          </View>
-          <View style={styles.statCell}>
-            <View style={[styles.statIc, { backgroundColor: colors.cyanSoft }]}>
-              <Feather name="clock" size={rf(16)} color={colors.cyan} />
-            </View>
-            <Text variant="label" color="textMuted">
-              MINUTE
-            </Text>
-            <Text variant="h2" color="textPrimary">
-              {cost.minute}
-            </Text>
-          </View>
-          <View style={styles.statCell}>
-            <View style={[styles.statIc, { backgroundColor: colors.pinkSoft }]}>
-              <Feather name="tag" size={rf(16)} color={colors.pink} />
-            </View>
-            <Text variant="label" color="textMuted">
-              RATE
-            </Text>
-            <Text variant="h2" color="textPrimary">
-              {ratePerMin}
-            </Text>
-          </View>
         </View>
       </BottomSheet>
 
@@ -1147,7 +1064,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: live.overlayPillBorder,
   },
-  fsPillFull: { top: 44 },
+  /* Fullscreen sits inside the same SafeAreaView, so the status-bar inset is
+     already paid for — the controls ride the very top edge of the stage. */
+  fsPillFull: { top: 6 },
   fsPillText: {
     fontFamily: fontFamily.bold,
     fontSize: rf(12.5),
@@ -1202,11 +1121,6 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: spacing.xl,
   },
-  viewerList: { padding: spacing.sm, gap: spacing.sm },
-  viewerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  viewerBody: { flex: 1, minWidth: 0 },
-  viewerEmpty: { padding: spacing.md },
-  guestStateRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
   // Round action bar
   roundBar: {

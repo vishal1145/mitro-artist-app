@@ -3,57 +3,33 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Screen, SectionLabel } from '@components/shared';
+import { Screen, SectionLabel, Skeleton } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
+import { useBroadcastAnalytics } from '@hooks/useInsights';
+import { usePendingRewardOrders } from '@hooks/useRewardOrders';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { grouped, initialsFrom, webDuration } from '@utils/format';
 import { pressable } from '@utils/press';
 import { rf } from '@utils/responsive';
 
+import type { BroadcastAnalytics } from '@app-types/api';
+
 type FeatherIconName = keyof typeof Feather.glyphMap;
 
-const STATS: { icon: FeatherIconName; label: string; value: string }[] = [
-  { icon: 'eye', label: 'Peak viewers', value: '1,204' },
-  { icon: 'message-circle', label: 'Messages', value: '348' },
-  { icon: 'user-plus', label: 'New followers', value: '52' },
-  { icon: 'gift', label: 'Rewards', value: '18' },
-];
-
-const SUPPORTERS: {
-  initials: string;
-  name: string;
-  amount: string;
-  tag: string;
-  tagIcon: FeatherIconName;
-  tagTint: string;
-  color: string;
-}[] = [
-  {
-    initials: 'JD',
-    name: 'Jaxon D.',
-    amount: '300 tk',
-    tag: 'MVP',
-    tagIcon: 'star',
-    tagTint: colors.gold,
-    color: colors.violet,
-  },
-  {
-    initials: 'SV',
-    name: 'Sarah V.',
-    amount: '150 tk',
-    tag: 'HYPE',
-    tagIcon: 'zap',
-    tagTint: colors.pink,
-    color: colors.pink,
-  },
-  {
-    initials: 'MR',
-    name: 'Mike R.',
-    amount: '84 tk',
-    tag: 'SONG',
-    tagIcon: 'music',
-    tagTint: colors.green,
-    color: colors.cyan,
-  },
+/**
+ * The four post-stream figures, straight off
+ * `GET /api/artist/broadcast/{id}/analytics`.
+ *
+ * "New followers" used to sit here but the analytics payload has no such
+ * field, so it is gone rather than guessed.
+ */
+const statsOf = (
+  a: BroadcastAnalytics,
+): { icon: FeatherIconName; label: string; value: string }[] => [
+  { icon: 'eye', label: 'Peak viewers', value: grouped(a.peakViewerCount) },
+  { icon: 'message-circle', label: 'Messages', value: grouped(a.chatMessageCount) },
+  { icon: 'heart', label: 'Reactions', value: grouped(a.reactionCount) },
+  { icon: 'gift', label: 'Rewards', value: grouped(a.rewardOrderCount) },
 ];
 
 /** Post-stream recap. Flat sections — the numbers carry the page, not boxes. */
@@ -63,6 +39,12 @@ const BroadcastSummaryScreen = () => {
 
   /** Leaving the summary always resets to the dashboard — the stream is over. */
   const toDashboard = () => router.replace('/(app)/(tabs)/home');
+
+  const { data: analytics, isLoading } = useBroadcastAnalytics(broadcastId ?? null);
+  const { data: pendingOrders } = usePendingRewardOrders();
+
+  // Reward orders carry their broadcast, so the queue narrows to this show.
+  const owed = (pendingOrders ?? []).filter((o) => o.broadcastId === broadcastId);
 
   return (
     <Screen scrollable padded={false} contentContainerStyle={styles.content}>
@@ -82,13 +64,25 @@ const BroadcastSummaryScreen = () => {
       <Text variant="numHero" align="center">
         That&apos;s a wrap!
       </Text>
-      <Text variant="bodySm" color="textMuted" align="center" style={styles.subtitle}>
-        Friday Night Freestyle · 42 min
-      </Text>
+      {isLoading || !analytics ? (
+        <Skeleton height={14} width="60%" round={6} style={styles.subtitleSkel} />
+      ) : (
+        <Text variant="bodySm" color="textMuted" align="center" style={styles.subtitle}>
+          {analytics.title} · {webDuration(analytics.durationSeconds)}
+        </Text>
+      )}
 
       {/* Earnings */}
       <View style={styles.earned}>
-        <Text style={styles.earnedValue}>+674</Text>
+        {isLoading || !analytics ? (
+          <Skeleton height={rf(52)} width="45%" round={10} />
+        ) : (
+          <Text style={styles.earnedValue}>
+            {analytics.totalRevenueTokens > 0
+              ? `+${grouped(analytics.totalRevenueTokens)}`
+              : '0'}
+          </Text>
+        )}
         <Text variant="label" color="green" style={styles.earnedUnit}>
           TK EARNED
         </Text>
@@ -96,7 +90,7 @@ const BroadcastSummaryScreen = () => {
 
       {/* Stats — two flat columns, no cards */}
       <View style={styles.stats}>
-        {STATS.map((s) => (
+        {(analytics ? statsOf(analytics) : []).map((s) => (
           <View key={s.label} style={styles.stat}>
             <View style={styles.statTop}>
               <Feather name={s.icon} size={rf(13)} color={colors.textMuted} />
@@ -111,31 +105,47 @@ const BroadcastSummaryScreen = () => {
         ))}
       </View>
 
+      {/* "Top supporters" was a fixture — the backend exposes no per-fan
+          leaderboard for a broadcast. The real, actionable list after a show
+          is what the artist still owes, which reward orders do provide. */}
       <SectionLabel divider style={styles.sectionLabel}>
-        TOP SUPPORTERS
+        REWARDS TO DELIVER
       </SectionLabel>
 
-      {SUPPORTERS.map((s, i) => (
-        <View key={s.initials} style={[styles.row, i === 0 ? null : styles.rowDivider]}>
-          <Avatar initials={s.initials} name={s.name} size="md" color={s.color} />
+      {owed.length === 0 ? (
+        <Text variant="bodySm" color="textMuted" style={styles.emptyNote}>
+          {isLoading
+            ? 'Checking for reward orders…'
+            : 'Nothing left to deliver from this show.'}
+        </Text>
+      ) : (
+        owed.map((order, i) => (
+          <View key={order.id} style={[styles.row, i === 0 ? null : styles.rowDivider]}>
+            <Avatar
+              initials={initialsFrom(order.buyerDisplayName)}
+              name={order.buyerDisplayName}
+              size="md"
+              color={colors.violet}
+            />
 
-          <View style={styles.rowText}>
-            <Text variant="bodyLg" color="textPrimary">
-              {s.name}
-            </Text>
-            <Text variant="bodySm" color="textMuted">
-              {s.amount}
-            </Text>
-          </View>
+            <View style={styles.rowText}>
+              <Text variant="bodyLg" color="textPrimary">
+                {order.rewardName}
+              </Text>
+              <Text variant="bodySm" color="textMuted">
+                for {order.buyerDisplayName}
+              </Text>
+            </View>
 
-          <View style={styles.tag}>
-            <Feather name={s.tagIcon} size={rf(11)} color={s.tagTint} />
-            <Text variant="label" color="textMuted">
-              {s.tag}
-            </Text>
+            <View style={styles.tag}>
+              <Feather name="gift" size={rf(11)} color={colors.gold} />
+              <Text variant="label" color="textMuted">
+                {grouped(order.priceCharged)} TK
+              </Text>
+            </View>
           </View>
-        </View>
-      ))}
+        ))
+      )}
 
       {/* One container with an explicit `gap` owns the spacing between the
           three footer blocks. Per-element margins kept collapsing against one
@@ -158,20 +168,17 @@ const BroadcastSummaryScreen = () => {
         </LinearGradient>
       </Pressable>
 
+      {/* The separate analytics page is gone — per-show figures live in
+          Broadcast History, the same place the web keeps them. */}
       <Pressable
         style={pressable(styles.ghost)}
-        onPress={() =>
-          router.replace({
-            pathname: '/(app)/(tabs)/home/broadcast-detail',
-            params: { broadcastId: broadcastId ?? 'bc_live' },
-          })
-        }
+        onPress={() => router.replace('/(app)/(tabs)/calls/broadcast-history')}
         accessibilityRole="button"
-        accessibilityLabel="View full analytics"
+        accessibilityLabel="View broadcast history"
       >
         {/* Centred on the Text itself — not inherited from the parent. */}
         <Text variant="bodyLg" color="pink" align="center" style={styles.strong}>
-          View full analytics
+          View broadcast history
         </Text>
       </Pressable>
       </View>
@@ -197,6 +204,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 6,
+  },
+  subtitleSkel: {
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  emptyNote: {
+    paddingVertical: 14,
   },
 
   earned: {

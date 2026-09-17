@@ -16,26 +16,64 @@ export interface InfoCalloutProps {
   onLinkPress?: () => void;
 }
 
-const TONE: Record<CalloutTone, { bg: string; border: string; icon: string; link: keyof typeof colors }> = {
-  success: { bg: colors.successSoft, border: colors.successBorder, icon: colors.success, link: 'success' },
-  warning: { bg: colors.warningSoft, border: colors.warningBorder, icon: colors.warning, link: 'warning' },
-  info: { bg: colors.infoSoft, border: colors.infoBorder, icon: colors.info, link: 'info' },
-  neutral: { bg: colors.surface, border: colors.border, icon: colors.textSecondary, link: 'primary' },
+const TONE: Record<
+  CalloutTone,
+  { bg: string; border: string; icon: string; link: keyof typeof colors }
+> = {
+  success: {
+    bg: colors.successSoft,
+    border: colors.successBorder,
+    icon: colors.success,
+    link: 'success',
+  },
+  warning: {
+    bg: colors.warningSoft,
+    border: colors.warningBorder,
+    icon: colors.warning,
+    link: 'warning',
+  },
+  info: {
+    bg: colors.infoSoft,
+    border: colors.infoBorder,
+    icon: colors.info,
+    link: 'info',
+  },
+  neutral: {
+    bg: colors.surface,
+    border: colors.border,
+    icon: colors.textSecondary,
+    link: 'primary',
+  },
 };
 
 /** Tinted informational box: leading icon + rich body text + optional link. */
-const InfoCalloutComponent = ({ icon, tone = 'neutral', children, linkLabel, onLinkPress }: InfoCalloutProps) => {
+const InfoCalloutComponent = ({
+  icon,
+  tone = 'neutral',
+  children,
+  linkLabel,
+  onLinkPress,
+}: InfoCalloutProps) => {
   const t = TONE[tone];
 
   return (
-    <View style={[styles.card, { backgroundColor: t.bg, borderColor: t.border }]}>
-      {icon ? <Feather name={icon} size={rf(18)} color={t.icon} style={styles.icon} /> : null}
+    <View
+      style={[styles.card, { backgroundColor: t.bg, borderColor: t.border }]}
+    >
+      {icon ? (
+        <Feather name={icon} size={rf(18)} color={t.icon} style={styles.icon} />
+      ) : null}
       <View style={styles.body}>
         <Text variant="caption" color="textSecondary">
           {children}
         </Text>
         {linkLabel ? (
-          <Pressable onPress={onLinkPress} hitSlop={spacing.xs} accessibilityRole="link" accessibilityLabel={linkLabel}>
+          <Pressable
+            onPress={onLinkPress}
+            hitSlop={spacing.xs}
+            accessibilityRole="link"
+            accessibilityLabel={linkLabel}
+          >
             <Text variant="caption" color={t.link} style={styles.link}>
               {linkLabel}
             </Text>

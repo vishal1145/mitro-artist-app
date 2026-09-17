@@ -110,7 +110,7 @@ const IncomingCallRequestScreen = () => {
         <View style={styles.priceRow}>
           <Feather name="zap" size={rf(13)} color={colors.gold} />
           <Text variant="bodySm" color="textPrimary" align="center">
-            {initialCharge} tokens for the first 5 minutes
+            {initialCharge} coins for the first 5 minutes
             <Text variant="bodySm" color="textMuted"> ({pricePerMinute}/min after)</Text>
           </Text>
         </View>

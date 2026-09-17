@@ -39,11 +39,29 @@ export class AuthError extends Error {
   }
 }
 
-/** Shape our API returns for errors (best-effort; all fields optional). */
+/**
+ * Shape our API returns for errors (best-effort; all fields optional).
+ *
+ * The artist API is ASP.NET, so a failed model binding comes back as RFC 9110
+ * ProblemDetails — `title` + `errors`, and no `message` at all:
+ *
+ *   { "title": "One or more validation errors occurred.",
+ *     "status": 400,
+ *     "errors": { "StageName": ["The field StageName must be … '6'."] } }
+ *
+ * Reading only `message`/`error` left these bodies looking empty, so a 400
+ * fell through to the generic "Something went wrong." and the artist was told
+ * nothing — the sign-up register step does exactly this for a short stage
+ * name. Web reads the same four fields in the same order (see
+ * `getApiErrorMessage` in Mitro.Artist.UI/src/services/apiClient.ts).
+ */
 interface ApiErrorBody {
   message?: string;
   error?: string;
+  detail?: string;
+  title?: string;
   code?: string;
+  errors?: Record<string, string[] | string>;
 }
 
 export interface NormalizedError {
@@ -53,7 +71,7 @@ export interface NormalizedError {
   isNetworkError: boolean;
 }
 
-const isAxiosError = (error: unknown): error is AxiosError<ApiErrorBody> =>
+const isAxiosError = (error: unknown): error is AxiosError<ApiErrorBody | string> =>
   typeof error === 'object' &&
   error !== null &&
   (error as AxiosError).isAxiosError === true;
@@ -79,12 +97,43 @@ const messageForStatus = (status: number): string => {
  * 5xx keeps the generic copy: those messages describe server internals and
  * shouldn't reach the user.
  */
-const clientMessage = (status: number, body?: ApiErrorBody): string | null => {
+/** First message out of a ProblemDetails `errors` bag, whatever field it's on. */
+const validationMessage = (errors?: ApiErrorBody['errors']): string | null => {
+  if (!errors) {
+    return null;
+  }
+  for (const value of Object.values(errors)) {
+    const entries = Array.isArray(value) ? value : [value];
+    for (const entry of entries) {
+      if (typeof entry === 'string' && entry.trim().length > 0) {
+        return entry.trim();
+      }
+    }
+  }
+  return null;
+};
+
+const text = (raw: unknown): string | null =>
+  typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null;
+
+const clientMessage = (
+  status: number,
+  body?: ApiErrorBody | string,
+): string | null => {
   if (status >= 500) {
     return null;
   }
-  const raw = body?.message ?? body?.error;
-  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null;
+  // Some endpoints answer 4xx with a bare string rather than JSON.
+  if (typeof body === 'string') {
+    return text(body);
+  }
+  return (
+    validationMessage(body?.errors) ??
+    text(body?.message) ??
+    text(body?.error) ??
+    text(body?.detail) ??
+    text(body?.title)
+  );
 };
 
 /** Normalize any thrown value into a typed, safe error descriptor. */
@@ -107,16 +156,15 @@ export const normalizeError = (error: unknown): NormalizedError => {
     }
 
     const status = error.response.status;
-    logger.warn('API error', {
-      status,
-      url: error.config?.url,
-      code: error.response.data?.code,
-    });
+    const body = error.response.data;
+    const code = typeof body === 'string' ? undefined : body?.code;
+
+    logger.warn('API error', { status, url: error.config?.url, code });
 
     return {
-      message: clientMessage(status, error.response.data) ?? messageForStatus(status),
+      message: clientMessage(status, body) ?? messageForStatus(status),
       status,
-      code: error.response.data?.code,
+      code,
       isNetworkError: false,
     };
   }

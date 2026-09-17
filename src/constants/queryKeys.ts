@@ -12,6 +12,8 @@ export const queryKeys = {
   profile: {
     all: ['profile'] as const,
     me: () => [...queryKeys.profile.all, 'me'] as const,
+    subcategories: (categoryId: string) =>
+      [...queryKeys.profile.all, 'subcategories', categoryId] as const,
     categories: () => [...queryKeys.profile.all, 'categories'] as const,
     photos: () => [...queryKeys.profile.all, 'photos'] as const,
   },
@@ -25,6 +27,11 @@ export const queryKeys = {
     summary: () => [...queryKeys.earnings.all, 'summary'] as const,
     transactions: (take: number, skip: number) =>
       [...queryKeys.earnings.all, 'transactions', take, skip] as const,
+  },
+  kyc: {
+    all: ['kyc'] as const,
+    status: () => [...queryKeys.kyc.all, 'status'] as const,
+    bankAccount: () => [...queryKeys.kyc.all, 'bankAccount'] as const,
   },
   broadcast: {
     all: ['broadcast'] as const,

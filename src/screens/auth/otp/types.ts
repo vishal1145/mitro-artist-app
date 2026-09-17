@@ -5,6 +5,15 @@ export interface UseOtpResult {
   error: string | null;
   locked: boolean;
   attemptsLeft: number;
+  /**
+   * True only when the server rejected the CODE itself.
+   *
+   * The sign-up flow verifies and then registers, and a registration failure
+   * ("Stage name already exists.") used to render with " N attempt(s) left."
+   * appended — which reads as though the code were wrong. The screen uses
+   * this to decide whether the attempts counter belongs on the message.
+   */
+  codeRejected: boolean;
   cooldownSec: number;
   canResend: boolean;
   mobile: string;

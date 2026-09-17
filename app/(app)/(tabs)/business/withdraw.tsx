@@ -5,7 +5,9 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Header, ListRow, Screen } from '@components/shared';
 import { Card, GradientButton, Text } from '@components/ui';
+import { useEarningsSummary } from '@hooks/useInsights';
 import { colors, fontFamily, radius, spacing } from '@theme';
+import { grouped } from '@utils/format';
 import { rf, wp } from '@utils/responsive';
 
 const PLATFORM_FEE = 20;
@@ -17,9 +19,12 @@ const CHIPS = ['25%', '50%', '100%', 'Custom'] as const;
 const WithdrawScreen = () => {
   const router = useRouter();
   const { availableTk } = useLocalSearchParams<{ availableTk?: string }>();
+  const { data: earnings } = useEarningsSummary();
 
-  const available = Number(availableTk) || 819;
-  const [amount, setAmount] = useState(String(available));
+  // Real balance from /earnings/summary — same source as the Earnings hero.
+  const available = earnings?.availableTokens ?? (Number(availableTk) || 0);
+  const pending = earnings?.pendingTokens ?? 0;
+  const [amount, setAmount] = useState('');
   const [activeChip, setActiveChip] = useState<string>('100%');
 
   const parsed = Number(amount) || 0;
@@ -50,7 +55,7 @@ const WithdrawScreen = () => {
         </Text>
         <View style={styles.heroValue}>
           <Text variant="display" style={styles.heroNumber}>
-            {available}
+            {grouped(available)}
           </Text>
           <Text variant="h3" color="textSecondary">
             tk
@@ -59,7 +64,7 @@ const WithdrawScreen = () => {
         <View style={styles.heroPending}>
           <Feather name="clock" size={rf(14)} color={colors.warning} />
           <Text variant="caption" color="textMuted">
-            674 tk still pending
+            {grouped(pending)} tk still pending
           </Text>
         </View>
       </Card>
@@ -108,18 +113,18 @@ const WithdrawScreen = () => {
       <Card style={styles.destination}>
         <ListRow
           icon="briefcase"
-          title="HDFC Bank ****4829"
-          subtitle="Primary account"
+          title="No account linked"
+          subtitle="Add a payout account in KYC & Payouts"
           chevron={false}
           right={
             <Pressable
               onPress={() => router.push('/(app)/(tabs)/me/kyc-payouts')}
               hitSlop={spacing.xs}
               accessibilityRole="button"
-              accessibilityLabel="Change bank account"
+              accessibilityLabel="Add bank account"
             >
               <Text variant="label" color="primary">
-                Change
+                Add
               </Text>
             </Pressable>
           }

@@ -3,7 +3,8 @@ import { memo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Badge, Card, Text, type BadgeTone } from '@components/ui';
-import { colors, radius, spacing } from '@theme';
+import { Skeleton } from '@components/shared/Skeleton';
+import { colors, radius, spacing, typography } from '@theme';
 import { rf, wp } from '@utils/responsive';
 
 export interface StatTileProps {
@@ -15,33 +16,63 @@ export interface StatTileProps {
   tint?: string;
   sub?: string;
   badge?: { label: string; tone?: BadgeTone };
+  /** While true, the value shows a skeleton block instead of text. */
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Compact metric card: icon chip + mono label + large value, optional badge/sub. */
-const StatTileComponent = ({ icon, label, value, unit, unitColor = 'textMuted', tint, sub, badge, style }: StatTileProps) => (
+const StatTileComponent = ({
+  icon,
+  label,
+  value,
+  unit,
+  unitColor = 'textMuted',
+  tint,
+  sub,
+  badge,
+  loading,
+  style,
+}: StatTileProps) => (
   <Card style={[styles.card, style]}>
     <View style={styles.top}>
       <View style={styles.chip}>
-        <Feather name={icon} size={rf(16)} color={tint ?? colors.textSecondary} />
+        <Feather
+          name={icon}
+          size={rf(16)}
+          color={tint ?? colors.textSecondary}
+        />
       </View>
-      <Text variant="label" color="textMuted" numberOfLines={1} style={styles.label}>
+      <Text
+        variant="label"
+        color="textMuted"
+        numberOfLines={1}
+        style={styles.label}
+      >
         {label}
       </Text>
     </View>
 
     <View style={styles.valueRow}>
-      <Text variant="h2" style={styles.value}>
-        {value}
-      </Text>
-      {unit ? (
-        <Text variant="caption" color={unitColor} style={styles.unit}>
-          {unit}
-        </Text>
-      ) : null}
+      {loading ? (
+        <Skeleton width={68} height={rf(22)} round={7} />
+      ) : (
+        <>
+          <Text variant="h2" style={styles.value}>
+            {value}
+          </Text>
+          {unit ? (
+            <Text variant="caption" color={unitColor} style={styles.unit}>
+              {unit}
+            </Text>
+          ) : null}
+        </>
+      )}
     </View>
 
-    {badge ? <Badge label={badge.label} tone={badge.tone ?? 'neutral'} /> : null}
+    {badge ? (
+      <Badge label={badge.label} tone={badge.tone ?? 'neutral'} />
+    ) : null}
     {sub ? (
       <Text variant="caption" color="textMuted">
         {sub}
@@ -79,7 +110,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   value: {
-    fontSize: rf(19),
+    ...typography.metric,
   },
   unit: {
     marginBottom: rf(3),

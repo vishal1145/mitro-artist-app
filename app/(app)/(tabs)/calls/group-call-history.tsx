@@ -1,73 +1,121 @@
-import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
-  EmptyState,
-  InfoCallout,
-  LoadFailed,
-  PageHeader,
-  ProgressBar,
-  Screen,
-  SectionLabel,
-  SegmentedControl,
-  Skeleton,
-} from '@components/shared';
-import { Text } from '@components/ui';
+  BreakdownRow,
+  CalloutStrong,
+  CalloutText,
+  CardDetail,
+  FilterPills,
+  HistoryCard,
+  LearnLink,
+  ListHead,
+  MetricChip,
+  MetricGrid,
+  SummaryCell,
+  SummaryStrip,
+  WebCallout,
+  WebEmptyState,
+} from '@components/history';
+import { LoadFailed, PageHeader, Screen, Skeleton } from '@components/shared';
+import { LucideIcon, Text } from '@components/ui';
 import {
   useGroupCallAnalytics,
-  useGroupCallHistory,
+  useGroupCallHistoryPaged,
   useGroupCallHistorySummary,
 } from '@hooks/useGroupCallHistory';
-import { colors, fontFamily, layout, radius } from '@theme';
+import { colors, fontFamily, layout, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
-import { duration, grouped, shortDateTime } from '@utils/format';
+import { grouped, webDateTime, webDuration } from '@utils/format';
 import { rf } from '@utils/responsive';
+import { showToast } from '@utils/toast';
 
 import type { GroupCallHistoryFilter, GroupCallHistoryItem } from '@app-types/api';
 
-const FILTER_LABELS = ['All', 'Ended', 'Cancelled'] as const;
-const LABEL_TO_FILTER: Record<(typeof FILTER_LABELS)[number], GroupCallHistoryFilter> = {
-  All: 'all',
-  Ended: 'ended',
-  Cancelled: 'cancelled',
-};
-const FILTER_TO_LABEL: Record<GroupCallHistoryFilter, (typeof FILTER_LABELS)[number]> = {
-  all: 'All',
-  ended: 'Ended',
-  cancelled: 'Cancelled',
+/** `PAGE_SIZE` on the web's `GroupCallHistoryScreen`. */
+const PAGE_SIZE = 20;
+
+/** `.filter-pills` — the web's three buttons, in its order. */
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'ended', label: 'Ended' },
+  { key: 'cancelled', label: 'Cancelled' },
+] as const satisfies readonly { key: GroupCallHistoryFilter; label: string }[];
+
+/** `statusChipClass()` — anything unrecognised falls back to the `ended` chip. */
+const statusChip = (status: string) => {
+  if (status === 'cancelled' || status === 'failed') {
+    return chipStyles.cancelled;
+  }
+  if (status === 'terminated') {
+    return chipStyles.terminated;
+  }
+  return chipStyles.ended;
 };
 
-const statusTone = (status: string): { bg: string; text: keyof typeof colors } => {
-  if (status === 'ended') return { bg: colors.successChip, text: 'green' };
-  if (status === 'cancelled' || status === 'failed') return { bg: colors.redSoft, text: 'danger' };
-  if (status === 'terminated') return { bg: colors.warningChip, text: 'gold' };
-  return { bg: colors.surfaceSoft, text: 'textMuted' };
-};
+/** `GcallSummaryStripSkeleton` + `GcallHistorySkeleton`, in the app's shimmer. */
+const ListSkeleton = () => (
+  <>
+    <View style={styles.skelStrip}>
+      <Skeleton height={70} round={14} style={styles.skelCell} />
+      <Skeleton height={70} round={14} style={styles.skelCell} />
+    </View>
+    <View style={styles.skelList}>
+      <Skeleton height={68} round={14} />
+      <Skeleton height={68} round={14} />
+      <Skeleton height={68} round={14} />
+    </View>
+  </>
+);
 
-/** Past group calls — filterable, with lifetime totals and per-call revenue breakdown. */
+/** `GcallAnalyticsSkeleton` — six chips over the breakdown rows. */
+const AnalyticsSkeleton = () => (
+  <View style={styles.skelAnalytics}>
+    <View style={styles.skelChips}>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <Skeleton key={i} height={58} round={12} style={styles.skelChip} />
+      ))}
+    </View>
+    <Skeleton height={20} round={6} />
+    <Skeleton height={20} round={6} />
+    <Skeleton height={20} round={6} />
+    <Skeleton height={30} round={8} />
+  </View>
+);
+
+/**
+ * Past group calls — a replica of the Artist Web's `GroupCallHistoryScreen`
+ * at phone widths. Data comes from the same three endpoints the web calls:
+ * history (status-filtered, server-side), the DB-aggregated lifetime summary,
+ * and per-call analytics fetched only once a row is expanded.
+ */
 const GroupCallHistoryScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState<GroupCallHistoryFilter>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const {
-    data: history,
+    data: historyPages,
     isLoading: loadingHistory,
     isError: historyError,
     error: historyErrorObj,
     refetch: refetchHistory,
     isRefetching,
-  } = useGroupCallHistory(filter);
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGroupCallHistoryPaged(filter, PAGE_SIZE);
+  /** Every page walked so far, flattened into the single list the UI renders. */
+  const history = useMemo(() => historyPages?.pages.flat() ?? [], [historyPages]);
   const { data: summary, isLoading: loadingSummary } = useGroupCallHistorySummary(filter);
   const { data: analytics, isLoading: loadingAnalytics } = useGroupCallAnalytics(expandedId);
 
   const toggleExpand = (groupCallId: string) =>
     setExpandedId((current) => (current === groupCallId ? null : groupCallId));
 
-  const summaryAvgLength =
-    summary?.avgDurationSeconds != null ? duration(summary.avgDurationSeconds) : '—';
+  const isLoading = loadingHistory || loadingSummary;
+  const isEmpty = !history || history.length === 0;
 
   return (
     <Screen
@@ -76,427 +124,483 @@ const GroupCallHistoryScreen = () => {
       padded={false}
       contentContainerStyle={styles.content}
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={() => void refetchHistory()} tintColor={colors.pink} />
-      }
-      header={
-        <PageHeader
-          title="Group Call History"
-          onBack={() => router.back()}
-          right={
-            <Pressable
-              onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
-              style={styles.newBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Schedule a new session"
-            >
-              <Text variant="bodySm" color="white" style={styles.newLabel}>
-                + New
-              </Text>
-            </Pressable>
-          }
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={() => void refetchHistory()}
+          tintColor={colors.pink}
         />
       }
+      onEndReached={() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      }}
+      header={<PageHeader title="Group Call History" onBack={() => router.back()} />}
     >
-      <View style={styles.callout}>
-        <InfoCallout icon="info" tone="info">
-          The full ledger of your past group sessions, newest first. Tap any call to see the
-          participant requests, approvals, refunds, and exactly which revenue stream — entry,
-          highlighted, rewards, or fun wheel — contributed to its earnings.
-        </InfoCallout>
-      </View>
+      <FilterPills options={FILTERS} value={filter} onChange={setFilter} />
 
-      <SegmentedControl
-        style={styles.filters}
-        options={FILTER_LABELS}
-        value={FILTER_TO_LABEL[filter]}
-        onChange={(label) => setFilter(LABEL_TO_FILTER[label as (typeof FILTER_LABELS)[number]])}
-      />
-
-      {loadingSummary ? (
-        <View style={styles.statRow}>
-          <Skeleton height={74} round={radius.card} style={styles.statSkel} />
-          <Skeleton height={74} round={radius.card} style={styles.statSkel} />
-          <Skeleton height={74} round={radius.card} style={styles.statSkel} />
-        </View>
-      ) : (
-        <View style={styles.statRow}>
-          <StatCell icon="video" tint={colors.cyan} label="Calls" value={String(summary?.totalCalls ?? 0)} />
-          <StatCell
-            icon="dollar-sign"
-            tint={colors.gold}
-            label="Earned"
-            value={`${grouped(summary?.totalRevenueTokens ?? 0)} tk`}
-          />
-          <StatCell icon="clock" tint={colors.green} label="Avg length" value={summaryAvgLength} />
-        </View>
-      )}
-
-      <SectionLabel divider style={styles.sectionLabel}>
-        PAST CALLS
-      </SectionLabel>
-
-      {loadingHistory ? (
-        <View style={styles.showSkel}>
-          <Skeleton height={64} round={radius.card} />
-          <Skeleton height={64} round={radius.card} />
-          <Skeleton height={64} round={radius.card} />
-        </View>
+      {isLoading ? (
+        <ListSkeleton />
       ) : historyError ? (
         <LoadFailed message={getErrorMessage(historyErrorObj)} onRetry={refetchHistory} />
-      ) : !history || history.length === 0 ? (
-        <EmptyState
-          icon="users"
-          title="No group calls yet"
-          description={filter === 'all' ? 'Past group calls will show up here.' : 'No group calls match this filter.'}
+      ) : isEmpty ? (
+        <WebEmptyState
+          icon="calendar-days"
+          message={
+            filter === 'all' ? 'No past group calls yet.' : 'No group calls match this filter.'
+          }
         />
       ) : (
-        history.map((item: GroupCallHistoryItem) => {
-          const isExpanded = expandedId === item.groupCallId;
-          const tone = statusTone(item.status);
-          return (
-            <View key={item.groupCallId} style={[styles.showCard, isExpanded ? styles.showCardOpen : null]}>
-              <Pressable
-                style={styles.showRow}
-                onPress={() => toggleExpand(item.groupCallId)}
-                accessibilityRole="button"
-                accessibilityLabel={`${item.title}, ${isExpanded ? 'hide' : 'show'} analytics`}
-              >
-                <View style={styles.showIcon}>
-                  <Feather name="video" size={rf(16)} color={colors.cyan} />
-                </View>
-                <View style={styles.showMain}>
-                  <View style={styles.titleRow}>
-                    <Text variant="bodyLg" color="textPrimary" numberOfLines={1} style={[styles.strong, styles.titleText]}>
-                      {item.title}
-                    </Text>
-                    <View style={[styles.statusChip, { backgroundColor: tone.bg }]}>
-                      <Text variant="label" color={tone.text}>
-                        {item.status}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-                    {item.startedAtUtc ? shortDateTime(item.startedAtUtc) : 'Never started'} ·{' '}
-                    {duration(item.durationSeconds ?? 0)}
-                  </Text>
-                </View>
-                <View style={styles.showRight}>
-                  <Text
-                    variant="bodySm"
-                    color={item.totalRevenueTokens > 0 ? 'green' : 'textMuted'}
-                    style={styles.strong}
-                  >
-                    {item.totalRevenueTokens > 0 ? `+${grouped(item.totalRevenueTokens)} tk` : '0 tk'}
-                  </Text>
-                  <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={rf(14)} color={colors.textMuted} />
-                </View>
-              </Pressable>
+        <>
+          <WebCallout>
+            <CalloutText>
+              This is the{' '}
+              <CalloutStrong>full ledger of your past group sessions</CalloutStrong>, newest
+              first. Tap any row to expand it and see the participant requests, approvals, and
+              refunds for that call, plus exactly which <CalloutStrong>revenue stream</CalloutStrong>{' '}
+              — Entry, Highlighted, Rewards, or Fun wheel — contributed to its earnings.{' '}
+              <LearnLink
+                label="Learn more about revenue streams"
+                onPress={() =>
+                  showToast(
+                    "Revenue stream breakdown guide isn't part of this concept pass yet",
+                    'info',
+                  )
+                }
+              />
+            </CalloutText>
+          </WebCallout>
 
-              {isExpanded ? (
-                <View style={styles.showDetail}>
-                  {loadingAnalytics || !analytics || analytics.groupCallId !== item.groupCallId ? (
-                    <View style={styles.analyticsSkel}>
-                      <Skeleton height={70} round={radius.md} />
-                      <Skeleton height={90} round={radius.md} />
-                    </View>
-                  ) : (
-                    <>
-                      <View style={styles.metricGrid}>
-                        <MetricChip label="Peak participants" value={grouped(analytics.peakParticipantCount)} />
-                        <MetricChip label="Total requests" value={grouped(analytics.totalRequests)} />
-                        <MetricChip label="Approved" value={grouped(analytics.totalApproved)} tint="green" />
-                        <MetricChip
-                          label="Rejected"
-                          value={grouped(analytics.totalRejected)}
-                          tint={analytics.totalRejected > 0 ? 'gold' : undefined}
-                        />
-                        <MetricChip
-                          label="Refunds"
-                          value={`${grouped(analytics.refundCount)} (${grouped(analytics.refundedTokens)} tk)`}
-                          tint={analytics.refundCount > 0 ? 'gold' : undefined}
-                        />
-                        <MetricChip label="Net earnings" value={`${grouped(analytics.netArtistEarningTokens)} tk`} tint="green" />
+          <SummaryStrip>
+            <SummaryCell
+              icon="video"
+              tint="cyan"
+              label="Calls"
+              value={grouped(summary?.totalCalls ?? 0)}
+              hint="Total number of group call sessions you've created, across every status (ended, cancelled, etc.)."
+
+            />
+            <SummaryCell
+              icon="coins"
+              tint="gold"
+              label="Total earned"
+              value={`${grouped(summary?.totalRevenueTokens ?? 0)} tk`}
+              hint="Sum of the total revenue coins across all your past group calls."
+
+            />
+            <SummaryCell
+              icon="clock-3"
+              tint="green"
+              label="Avg length"
+              value={webDuration(summary?.avgDurationSeconds ?? null)}
+              hint="Average duration of your past group calls, from start to end."
+
+            />
+          </SummaryStrip>
+
+          <View>
+            <ListHead eyebrow="Past shows" heading="Group Call History" />
+
+            <View style={styles.callList}>
+              {history.map((item: GroupCallHistoryItem) => {
+                const isOpen = expandedId === item.groupCallId;
+                const hasEarnings = item.totalRevenueTokens > 0;
+                return (
+                  <HistoryCard key={item.groupCallId}>
+                    <Pressable
+                      style={styles.callRow}
+                      onPress={() => toggleExpand(item.groupCallId)}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: isOpen }}
+                      accessibilityLabel={`${item.title}, ${isOpen ? 'collapse' : 'expand'} details`}
+                    >
+                      <View style={styles.callIcon}>
+                        <LucideIcon name="video" size={rf(18)} color={webColors.purple} />
                       </View>
 
-                      {(analytics.totalRejected > 0 || analytics.refundCount > 0) ? (
-                        <InfoCallout tone="warning">
-                          If a request is rejected or the call is cancelled, that participant is
-                          refunded — only approved, completed activity counts toward net earnings.
-                        </InfoCallout>
-                      ) : null}
-
-                      <View style={styles.breakdown}>
-                        <Text variant="label" color="textMuted" style={styles.breakdownHead}>
-                          REVENUE BREAKDOWN
+                      <View style={styles.callMain}>
+                        <View style={styles.callTitleRow}>
+                          <Text numberOfLines={1} style={styles.callTitle}>
+                            {item.title}
+                          </Text>
+                          <View style={statusChip(item.status)}>
+                            <Text style={statusChipInk(item.status)}>{item.status}</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.callMeta}>
+                          {item.startedAtUtc ? webDateTime(item.startedAtUtc) : 'never started'}
+                          {' · '}
+                          {webDuration(item.durationSeconds)}
                         </Text>
-                        {[
-                          { label: 'Highlighted', value: analytics.highlightedMessageRevenueTokens },
-                          { label: 'Rewards', value: analytics.rewardRevenueTokens },
-                          { label: 'Fun wheel', value: analytics.funWheelRevenueTokens },
-                        ].map((row) => {
-                          const pct =
-                            analytics.totalRevenueTokens > 0
-                              ? Math.round((row.value / analytics.totalRevenueTokens) * 100)
-                              : 0;
-                          return (
-                            <View key={row.label} style={styles.bdRow}>
-                              <Text variant="bodySm" color="textMuted" style={styles.bdLabel}>
-                                {row.label}
-                              </Text>
-                              <ProgressBar value={pct / 100} height={5} style={styles.bdBar} />
-                              <Text variant="bodySm" color="textPrimary" style={styles.bdAmt}>
-                                {grouped(row.value)} tk
-                              </Text>
-                            </View>
-                          );
-                        })}
-                        <View style={styles.bdTotal}>
-                          <Feather name="dollar-sign" size={rf(13)} color={colors.gold} />
-                          <Text variant="bodySm" color="textPrimary" style={styles.strong}>
-                            Total
-                          </Text>
-                          <Text variant="bodySm" color="gold" style={[styles.strong, styles.bdTotalAmt]}>
-                            {grouped(analytics.totalRevenueTokens)} tokens
-                          </Text>
+                      </View>
+
+                      <View style={styles.callRight}>
+                        <Text style={hasEarnings ? styles.callEarn : styles.callEarnZero}>
+                          {hasEarnings ? `+${grouped(item.totalRevenueTokens)} tk` : '0 tk'}
+                        </Text>
+                        <View style={isOpen ? styles.chevOpen : undefined}>
+                          <LucideIcon
+                            name="chevron-down"
+                            size={rf(16)}
+                            color={isOpen ? webColors.textStrong : webColors.dim}
+                          />
                         </View>
                       </View>
-                    </>
-                  )}
-                  {item.endReason ? (
-                    <Text variant="bodySm" color="textMuted" style={styles.endReason}>
-                      Ended: {item.endReason}
-                    </Text>
-                  ) : null}
+                    </Pressable>
+
+                    {isOpen ? (
+                      <CardDetail>
+                        {loadingAnalytics ||
+                        !analytics ||
+                        analytics.groupCallId !== item.groupCallId ? (
+                          <AnalyticsSkeleton />
+                        ) : (
+                          <>
+                            <MetricGrid>
+                              <MetricChip
+                                label="Peak participants"
+                                hint="The highest number of participants in the room at the same time during this call."
+                                value={grouped(analytics.peakParticipantCount)}
+                              />
+                              <MetricChip
+                                label="Total requests"
+                                hint="Total number of fans who requested to join this call."
+                                value={grouped(analytics.totalRequests)}
+                              />
+                              <MetricChip
+                                label="Approved"
+                                hint="Requests you approved, letting the fan into the call."
+                                value={grouped(analytics.totalApproved)}
+                                tone="good"
+                              />
+                              <MetricChip
+                                label="Rejected"
+                                hint="Requests you rejected — that fan was refunded automatically."
+                                value={grouped(analytics.totalRejected)}
+                                tone={analytics.totalRejected > 0 ? 'warn' : undefined}
+                              />
+                              <MetricChip
+                                label="Refunds"
+                                hint="Refunds issued for this call (rejected requests or early cancellations), and the coins refunded."
+                                value={`${grouped(analytics.refundCount)} (${grouped(analytics.refundedTokens)} tk)`}
+                                tone={analytics.refundCount > 0 ? 'warn' : undefined}
+                              />
+                              <MetricChip
+                                label="Net earnings"
+                                hint="What you actually earned from this call after refunds — only approved, completed activity counts."
+                                value={`${grouped(analytics.netArtistEarningTokens)} tk`}
+                                tone="good"
+                              />
+                            </MetricGrid>
+
+                            <View style={styles.detailCallout}>
+                              <WebCallout tone="gold">
+                                <CalloutText>
+                                  If a request is rejected or the call is cancelled, that
+                                  participant is refunded — only{' '}
+                                  <CalloutStrong>approved, completed</CalloutStrong> activity
+                                  counts toward net earnings.
+                                </CalloutText>
+                              </WebCallout>
+                            </View>
+
+                            <View style={styles.breakdown}>
+                              <Text style={styles.breakdownHead}>Revenue breakdown</Text>
+                              {(
+                                [
+                                  {
+                                    label: 'Highlighted',
+                                    value: analytics.highlightedMessageRevenueTokens,
+                                    hint: 'Coins fans paid to highlight/pin their chat message during the call.',
+                                  },
+                                  {
+                                    label: 'Rewards',
+                                    value: analytics.rewardRevenueTokens,
+                                    hint: 'Coins fans spent sending you rewards/gifts during the call.',
+                                  },
+                                  {
+                                    label: 'Fun wheel',
+                                    value: analytics.funWheelRevenueTokens,
+                                    hint: 'Coins fans spent spinning the Fun Wheel during the call.',
+                                  },
+                                ] as const
+                              ).map((row) => (
+                                <BreakdownRow
+                                  key={row.label}
+                                  label={row.label}
+                                  hint={row.hint}
+                                  amount={`${grouped(row.value)} tk`}
+                                  pct={
+                                    analytics.totalRevenueTokens > 0
+                                      ? (row.value / analytics.totalRevenueTokens) * 100
+                                      : 0
+                                  }
+                                />
+                              ))}
+                              <View style={styles.bdTotal}>
+                                <LucideIcon name="coins" size={rf(15)} color={webColors.gold} />
+                                <Text style={styles.bdTotalLabel}>Total</Text>
+                                <Text style={styles.bdTotalAmt}>
+                                  {grouped(analytics.totalRevenueTokens)} coins
+                                </Text>
+                              </View>
+                            </View>
+                          </>
+                        )}
+
+                        {item.endReason ? (
+                          <Text style={styles.gcallNote}>Ended: {item.endReason}</Text>
+                        ) : null}
+                      </CardDetail>
+                    ) : null}
+                  </HistoryCard>
+                );
+              })}
+
+              {/* Older calls land here on their own as the artist reaches the
+                  bottom — same auto-load the Transactions ledger uses. */}
+              {isFetchingNextPage ? (
+                <View style={styles.loadMore}>
+                  <ActivityIndicator size="small" color={webColors.pinkHot} />
                 </View>
               ) : null}
             </View>
-          );
-        })
+          </View>
+        </>
       )}
     </Screen>
   );
 };
 
-const StatCell = ({
-  icon,
-  tint,
-  label,
-  value,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  tint: string;
-  label: string;
-  value: string;
-}) => (
-  <View style={styles.statCell}>
-    <View style={styles.statIcon}>
-      <Feather name={icon} size={rf(15)} color={tint} />
-    </View>
-    <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-      {label}
-    </Text>
-    <Text variant="h3" style={styles.statValue} numberOfLines={1}>
-      {value}
-    </Text>
-  </View>
-);
-
-const MetricChip = ({
-  label,
-  value,
-  tint,
-}: {
-  label: string;
-  value: string;
-  tint?: keyof typeof colors;
-}) => (
-  <View style={styles.metricChip}>
-    <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-      {label}
-    </Text>
-    <Text variant="bodyLg" color={tint ?? 'textPrimary'} style={styles.strong}>
-      {value}
-    </Text>
-  </View>
-);
-
-const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: 24,
-  },
-
-  newBtn: {
-    backgroundColor: colors.pink,
-    borderRadius: radius.pill,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  newLabel: {
-    fontFamily: fontFamily.bold,
-  },
-
-  callout: {
-    marginTop: 12,
-  },
-
-  filters: {
-    marginTop: 16,
-  },
-
-  statRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
-  },
-  statSkel: {
-    flex: 1,
-  },
-  statCell: {
-    flex: 1,
-    gap: 6,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    padding: 12,
-  },
-  statIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.surfaceSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statValue: {
-    fontFamily: fontFamily.extrabold,
-  },
-
-  sectionLabel: {
-    marginTop: 20,
-    marginBottom: 12,
-  },
-
-  showSkel: {
-    gap: 12,
-  },
-  showCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  showCardOpen: {
-    borderColor: colors.borderHot,
-  },
-  showRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-  },
-  showIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.cyanSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  showMain: {
-    flex: 1,
-    gap: 3,
-    minWidth: 0,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  titleText: {
-    flex: 1,
-  },
-  statusChip: {
-    borderRadius: radius.pill,
+/** `.status-chip.{ended,cancelled,terminated}` fills. */
+const chipStyles = StyleSheet.create({
+  ended: {
+    alignSelf: 'flex-start',
+    backgroundColor: webColors.neutralChip,
+    borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  showRight: {
-    alignItems: 'flex-end',
-    gap: 6,
+  cancelled: {
+    alignSelf: 'flex-start',
+    backgroundColor: webColors.redChip,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  strong: {
-    fontFamily: fontFamily.bold,
+  terminated: {
+    alignSelf: 'flex-start',
+    backgroundColor: webColors.goldChip,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+});
+
+/** The matching chip ink — `--premium-muted` / `#ff8a97` / `--premium-gold`. */
+const chipInk = StyleSheet.create({
+  ended: {
+    color: webColors.muted,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10),
+    letterSpacing: 0.4,
+    lineHeight: rf(14),
+    textTransform: 'uppercase',
+  },
+  cancelled: {
+    color: webColors.redInk,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10),
+    letterSpacing: 0.4,
+    lineHeight: rf(14),
+    textTransform: 'uppercase',
+  },
+  terminated: {
+    color: webColors.gold,
+    fontFamily: fontFamily.extrabold,
+    fontSize: rf(10),
+    letterSpacing: 0.4,
+    lineHeight: rf(14),
+    textTransform: 'uppercase',
+  },
+});
+
+const statusChipInk = (status: string) => {
+  if (status === 'cancelled' || status === 'failed') {
+    return chipInk.cancelled;
+  }
+  if (status === 'terminated') {
+    return chipInk.terminated;
+  }
+  return chipInk.ended;
+};
+
+const styles = StyleSheet.create({
+  /* `.creator-main` is 12px at phone widths; `.creator-view` stacks at 20px. */
+  content: {
+    gap: 20,
+    /* `Screen` leaves its header slot flush and expects the first element to
+       supply the gap — without this the callout touched the page title. */
+    paddingTop: 16,
+    paddingBottom: 24,
+    paddingHorizontal: layout.screenPadding,
+  },
+  back: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: webColors.chip,
+    borderColor: webColors.circleBorder,
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    // `Screen` pads its header slot by `layout.screenPadding` (24); this page
+    // runs at the web's 12px gutter, so pull the button back into line.
+    marginLeft: 12 - layout.screenPadding,
+    width: 40,
   },
 
-  showDetail: {
-    paddingHorizontal: 14,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    paddingTop: 14,
+  /* skeletons ------------------------------------------------------------- */
+  skelStrip: {
+    flexDirection: 'row',
     gap: 12,
   },
-  analyticsSkel: {
-    gap: 10,
+  skelCell: {
+    flex: 1,
   },
-  metricGrid: {
+  skelList: {
+    gap: 16,
+  },
+  skelAnalytics: {
+    gap: 10,
+    paddingTop: 14,
+  },
+  skelChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 6,
   },
-  metricChip: {
-    width: '47%',
-    backgroundColor: colors.surfaceSoft,
-    borderRadius: radius.md,
-    padding: 10,
-    gap: 4,
-  },
-  gcalloutInner: {
-    marginTop: 0,
+  skelChip: {
+    flexBasis: '47%',
+    flexGrow: 1,
   },
 
-  breakdown: {
-    backgroundColor: colors.surfaceSoft,
-    borderRadius: radius.md,
-    padding: 12,
+  /* call list ------------------------------------------------------------- */
+  callList: {
     gap: 10,
+  },
+  /** Footer spinner while the next page of calls lands. */
+  loadMore: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  callRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  callIcon: {
+    alignItems: 'center',
+    backgroundColor: webColors.purpleChip,
+    borderColor: webColors.purpleChipBorder,
+    borderRadius: 11,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  callMain: {
+    flex: 1,
+    minWidth: 0,
+  },
+  callTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 2,
+    minWidth: 0,
+  },
+  callTitle: {
+    color: webColors.textStrong,
+    flexShrink: 1,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(14),
+    lineHeight: rf(19),
+  },
+  callMeta: {
+    color: webColors.dim,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(11.5),
+    lineHeight: rf(16),
+  },
+  callRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  callEarn: {
+    color: webColors.gold,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(14),
+    lineHeight: rf(19),
+  },
+  callEarnZero: {
+    color: webColors.dim,
+    fontFamily: fontFamily.medium,
+    fontSize: rf(14),
+    lineHeight: rf(19),
+  },
+  chevOpen: {
+    transform: [{ rotate: '180deg' }],
+  },
+
+  /* detail ---------------------------------------------------------------- */
+  detailCallout: {
+    marginTop: 16,
+  },
+  breakdown: {
+    marginTop: 16,
   },
   breakdownHead: {
-    marginBottom: 2,
-  },
-  bdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bdLabel: {
-    width: 80,
-  },
-  bdBar: {
-    flex: 1,
-  },
-  bdAmt: {
-    width: 70,
-    textAlign: 'right',
+    color: webColors.dim,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(11),
+    letterSpacing: 0.66,
+    lineHeight: rf(15),
+    marginBottom: 10,
+    textTransform: 'uppercase',
   },
   bdTotal: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    borderTopColor: webColors.hairline06,
     borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
     paddingTop: 10,
-    marginTop: 2,
+  },
+  bdTotalLabel: {
+    color: webColors.textStrong,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(13),
+    lineHeight: rf(18),
   },
   bdTotalAmt: {
+    color: webColors.gold,
+    fontFamily: fontFamily.bold,
+    fontSize: rf(13),
+    lineHeight: rf(18),
     marginLeft: 'auto',
   },
-  endReason: {
-    fontStyle: 'italic',
+  gcallNote: {
+    color: webColors.textSoft,
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13.5),
+    lineHeight: rf(20),
+    marginTop: 12,
   },
 });
 

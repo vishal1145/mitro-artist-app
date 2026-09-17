@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgoraVideoView } from '@components/call/AgoraVideoView';
 import { ActivityRow, RoomPanel, RoomStartGate, RoundChip, StageControls } from '@components/live';
@@ -99,7 +99,6 @@ const GroupCallRoomScreen = () => {
   const [videoKey, setVideoKey] = useState(0);
   const [panel, setPanel] = useState<'chat' | 'participants' | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const insets = useSafeAreaInsets();
   const [statsOpen, setStatsOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
@@ -498,7 +497,7 @@ const GroupCallRoomScreen = () => {
         )}
 
         <Pressable
-          style={[styles.fsPill, isFullscreen && { top: insets.top + 8 }]}
+          style={[styles.fsPill, isFullscreen && styles.fsPillFull]}
           onPress={() => setIsFullscreen((v) => !v)}
           hitSlop={10}
           accessibilityLabel={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
@@ -515,6 +514,7 @@ const GroupCallRoomScreen = () => {
           onToggleMic={toggleMic}
           onFlipCamera={videoAvailable && !isAudioOnly ? switchCamera : undefined}
           showCamera={!isAudioOnly}
+          topOffset={isFullscreen ? 6 : undefined}
         />
 
         {status !== 'live' ? (
@@ -763,7 +763,9 @@ const styles = StyleSheet.create({
   gatePlaceholderTitle: { fontFamily: fontFamily.bold, fontSize: rf(15), color: colors.white },
   gatePlaceholderHint: { lineHeight: rf(18) },
   fsPill: { position: 'absolute', top: 12, left: 12, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 12, borderRadius: 999, backgroundColor: callUi.glassPill, borderWidth: 1, borderColor: callUi.glassPillBorder },
-  fsPillFull: { top: 44 },
+  /* Fullscreen is inside the same SafeAreaView — the status-bar inset is
+     already paid for, so the controls ride the stage's very top edge. */
+  fsPillFull: { top: 6 },
   fsPillText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: callUi.white },
   connectingPill: { position: 'absolute', bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8, height: 34, paddingHorizontal: 14, borderRadius: 999, backgroundColor: callUi.glassPill, borderWidth: 1, borderColor: callUi.glassPillBorder },
   connectingText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: callUi.white },

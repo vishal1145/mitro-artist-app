@@ -7,13 +7,7 @@ import { rf } from '@utils/responsive';
 
 /** Accent tones available for the chip tint. */
 export type IconChipTone =
-  | 'pink'
-  | 'violet'
-  | 'purple'
-  | 'cyan'
-  | 'gold'
-  | 'green'
-  | 'red';
+  'pink' | 'violet' | 'purple' | 'cyan' | 'gold' | 'green' | 'red';
 
 export interface IconChipProps {
   icon: keyof typeof Feather.glyphMap;
@@ -35,9 +29,17 @@ const TONE: Record<IconChipTone, { fill: string; icon: string }> = {
 };
 
 /** 48x48 rounded chip, radius 14, tinted at 15% with a solid accent icon. */
-const IconChipComponent = ({ icon, tone = 'pink', color, style }: IconChipProps) => {
+const IconChipComponent = ({
+  icon,
+  tone = 'pink',
+  color,
+  style,
+}: IconChipProps) => {
   const t = TONE[tone];
-  const fillStyle = useMemo<ViewStyle>(() => ({ backgroundColor: t.fill }), [t.fill]);
+  const fillStyle = useMemo<ViewStyle>(
+    () => ({ backgroundColor: t.fill }),
+    [t.fill],
+  );
 
   return (
     <View style={[styles.chip, fillStyle, style]}>

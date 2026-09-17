@@ -11,10 +11,7 @@ export interface LoaderProps {
 }
 
 /** Standard loading indicator for the async "loading" state. */
-const LoaderComponent = ({
-  message,
-  fullscreen = true,
-}: LoaderProps) => {
+const LoaderComponent = ({ message, fullscreen = true }: LoaderProps) => {
   return (
     <View
       style={[styles.container, fullscreen ? styles.fullscreen : null]}

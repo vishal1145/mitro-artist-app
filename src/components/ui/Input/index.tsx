@@ -9,7 +9,15 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, layout, radius, size, spacing, HIT_TARGET } from '@theme';
+import {
+  colors,
+  HIT_TARGET,
+  layout,
+  radius,
+  size,
+  spacing,
+  typography,
+} from '@theme';
 import { rf } from '@utils/responsive';
 
 import type { InputProps } from './types';
@@ -140,7 +148,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       </View>
 
       {/* Message row only occupies space when there is something to say. */}
-      <View style={[styles.footer, hasError || hint || showCounter ? styles.footerSpaced : null]}>
+      <View
+        style={[
+          styles.footer,
+          hasError || hint || showCounter ? styles.footerSpaced : null,
+        ]}
+      >
         <View style={styles.footerMessage}>
           {hasError ? (
             <Text
@@ -213,10 +226,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   input: {
+    ...typography.input,
     flex: 1,
     color: colors.textPrimary,
-    fontFamily: fontFamily.medium,
-    fontSize: rf(14),
     paddingVertical: spacing.sm,
   },
   toggle: {
@@ -234,9 +246,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   message: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
+    ...typography.bodySm,
   },
   footerMessage: {
     flex: 1,

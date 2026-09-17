@@ -15,7 +15,9 @@ const TINT = [colors.red, colors.red, colors.gold, colors.green] as const;
  * Three-segment password strength bar.
  * Scoring: 8+ characters, contains a number, contains a symbol.
  */
-const PasswordStrengthMeterComponent = ({ score }: PasswordStrengthMeterProps) => {
+const PasswordStrengthMeterComponent = ({
+  score,
+}: PasswordStrengthMeterProps) => {
   const clamped = Math.max(0, Math.min(score, 3));
 
   const barStyles = useMemo<ViewStyle[]>(

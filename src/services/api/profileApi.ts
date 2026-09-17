@@ -1,5 +1,6 @@
 import type {
   ArtistCategory,
+  ArtistSubcategory,
   ArtistPhoto,
   ArtistProfile,
   ChangePasswordPayload,
@@ -9,6 +10,7 @@ import type {
   SendChangePhoneOtpPayload,
   SendOtpResponse,
   SetAvatarPayload,
+  UpdateCategoryPayload,
   UpdateProfilePayload,
   SavePhotoPayload,
   UploadUrlPayload,
@@ -46,12 +48,44 @@ export const profileApi = {
     }
   },
 
+  /**
+   * Second-level categories under one primary category.
+   *
+   * `GET /api/artist/subcategories?categoryId=…`. Bare array, like
+   * `getCategories`. The endpoint's 200 is untyped in swagger, so the shape is
+   * taken from its sibling route on the same controller.
+   */
+  async getSubcategories(categoryId: string): Promise<Result<ArtistSubcategory[]>> {
+    try {
+      const res = await api.get<ArtistSubcategory[]>(ENDPOINTS.profile.subcategories, {
+        params: { categoryId },
+      });
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
   async updateProfile(
     payload: UpdateProfilePayload,
   ): Promise<Result<MessageResponse>> {
     try {
       const res = await api.put<MessageResponse>(
         ENDPOINTS.profile.update,
+        payload,
+      );
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  async updateCategory(
+    payload: UpdateCategoryPayload,
+  ): Promise<Result<MessageResponse>> {
+    try {
+      const res = await api.post<MessageResponse>(
+        ENDPOINTS.profile.updateCategory,
         payload,
       );
       return { success: true, data: res.data };

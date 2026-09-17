@@ -1,10 +1,17 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients } from '@theme';
-import { rf } from '@utils/responsive';
+import { colors, gradientDirection, gradients, typography } from '@theme';
 
 export type ConfirmTone = 'danger' | 'primary';
 
@@ -74,7 +81,12 @@ const ConfirmDialogComponent = ({
             styles.card,
             {
               transform: [
-                { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                {
+                  scale: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.92, 1],
+                  }),
+                },
               ],
             },
           ]}
@@ -140,15 +152,12 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   title: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(17),
+    ...typography.h2,
     color: '#FFFFFF',
     marginBottom: 12,
   },
   message: {
-    fontFamily: fontFamily.body,
-    fontSize: rf(14),
-    lineHeight: rf(20),
+    ...typography.body,
     color: '#AAAAAA',
     marginBottom: 24,
   },
@@ -158,6 +167,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   cancel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -166,8 +178,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   cancelLabel: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(13),
+    ...typography.buttonSm,
+    /* See `confirmLabel` — same descender clipping, same remedy. */
+    lineHeight: 20,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
     color: '#FFFFFF',
   },
   disabled: {
@@ -178,14 +193,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   confirmFill: {
+    minHeight: 44,
     paddingHorizontal: 16,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /**
+   * `confirm` clips to its rounded corners (`overflow: 'hidden'`), so the
+   * label has to fit inside the box exactly. `buttonSm`'s 18px line box is
+   * tight for bold 13px Plus Jakarta Sans, and Android's extra font padding
+   * pushed the glyphs down far enough that the descender in "Log out" was
+   * sheared off at the bottom edge. Same failure the Save Profile button hit:
+   * give the line room, drop the font padding, and centre it in the box.
+   */
   confirmLabel: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(13),
+    ...typography.buttonSm,
+    lineHeight: 20,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
     color: '#FFFFFF',
   },
 });

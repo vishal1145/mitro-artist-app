@@ -16,7 +16,11 @@ export interface ProgressBarProps {
  * Seat / capacity meter. The fill runs pink -> violet left to right, so the
  * gradient direction is the reverse of the CTA's.
  */
-const ProgressBarComponent = ({ value, height = 6, style }: ProgressBarProps) => {
+const ProgressBarComponent = ({
+  value,
+  height = 6,
+  style,
+}: ProgressBarProps) => {
   const pct = Math.max(0, Math.min(1, value)) * 100;
 
   return (
