@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { LogoBadge } from '@components/ui/LogoBadge';
 import { Text } from '@components/ui/Text';
 import { useConversations } from '@hooks/usePrivateMessages';
-import { colors, fontFamily, radius } from '@theme';
+import { colors, fontFamily, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface EarningsBarProps {
@@ -37,7 +37,10 @@ const EarningsBarComponent = ({
 }: EarningsBarProps) => {
   const router = useRouter();
   const { data: convos } = useConversations();
-  const messagesUnread = (convos ?? []).reduce((n, c) => n + (c.unreadCount ?? 0), 0);
+  const messagesUnread = (convos ?? []).reduce(
+    (n, c) => n + (c.unreadCount ?? 0),
+    0,
+  );
 
   return (
     <View style={styles.row}>
@@ -87,7 +90,11 @@ const EarningsBarComponent = ({
           accessibilityRole="button"
           accessibilityLabel="Messages"
         >
-          <Feather name="message-circle" size={rf(18)} color={colors.textSecondary} />
+          <Feather
+            name="message-circle"
+            size={rf(18)}
+            color={colors.textSecondary}
+          />
           {messagesUnread > 0 ? <View style={styles.dot} /> : null}
         </Pressable>
       </View>
@@ -134,14 +141,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   amount: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(13),
+    ...typography.buttonSm,
     color: colors.gold,
   },
   caption: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(9),
-    letterSpacing: 0.8,
+    ...typography.label,
   },
   right: {
     flexDirection: 'row',

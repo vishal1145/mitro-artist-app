@@ -38,12 +38,20 @@ export const AppErrorBoundary = ({ error, retry }: AppErrorBoundaryProps) => {
         Something broke on this screen
       </Text>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollBody}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollBody}
+      >
         <Text variant="bodySm" color="error" selectable style={styles.message}>
           {error.message || 'Unknown error'}
         </Text>
         {error.stack ? (
-          <Text variant="bodySm" color="textMuted" selectable style={styles.stack}>
+          <Text
+            variant="bodySm"
+            color="textMuted"
+            selectable
+            style={styles.stack}
+          >
             {error.stack}
           </Text>
         ) : null}

@@ -3,16 +3,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  EarningsBar,
-  InsightLine,
-  ProgressBar,
-  Screen,
-  SectionLabel,
-} from '@components/shared';
+import { EarningsBar, Screen } from '@components/shared';
 import { Text } from '@components/ui';
+import { useGroupCallHistorySummary } from '@hooks/useGroupCallHistory';
+import { useBroadcastHistorySummary } from '@hooks/useInsights';
+import { useProfile } from '@hooks/useProfile';
+import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius, typography } from '@theme';
+import { grouped } from '@utils/format';
 import { rf } from '@utils/responsive';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
@@ -22,24 +21,37 @@ type Href =
   | '/(app)/(tabs)/calls/private-calls'
   | '/(app)/(tabs)/calls/broadcast-history';
 
+/** Sub-line split so the highlighted fragment can carry its own colour. */
+interface Sub {
+  lead: string;
+  strong?: string;
+  strongColor?: 'pink' | 'cyan';
+  tail?: string;
+}
+
 interface Entry {
   icon: FeatherIconName;
   tint: string;
   fill: string;
   title: string;
   route: Href;
-  /** Sub-line split so the highlighted fragment can carry its own colour. */
-  sub: { lead: string; strong?: string; strongColor?: 'pink' | 'cyan'; tail?: string };
+  sub: Sub;
 }
 
-const ENTRIES: Entry[] = [
+/**
+ * Static half of each row — icon, colour, label, destination.
+ *
+ * No seeded sub-line: every figure below comes from the API, so there is
+ * nothing here to fall back to and nothing that could flash a stale number
+ * before the real one lands.
+ */
+const ENTRIES: Omit<Entry, 'sub'>[] = [
   {
     icon: 'users',
     tint: colors.pink,
     fill: colors.pinkSoft,
     title: 'Group Sessions',
     route: '/(app)/(tabs)/calls/group-call-history',
-    sub: { lead: '9 hosted · 14.2k tk' },
   },
   {
     icon: 'phone',
@@ -47,7 +59,6 @@ const ENTRIES: Entry[] = [
     fill: colors.violetSoft,
     title: 'Private Calls',
     route: '/(app)/(tabs)/calls/private-calls',
-    sub: { lead: 'Currently ', strong: 'OFF', strongColor: 'pink' },
   },
   {
     icon: 'video',
@@ -55,31 +66,53 @@ const ENTRIES: Entry[] = [
     fill: colors.cyanSoft,
     title: 'Broadcasts',
     route: '/(app)/(tabs)/calls/broadcast-history',
-    sub: {
-      lead: '12 shows · ',
-      strong: '845',
-      strongColor: 'cyan',
-      tail: ' viewers',
-    },
   },
 ];
-
-/** Next scheduled session, surfaced so the artist can start it in one tap. */
-const UP_NEXT = {
-  id: 'gs_101',
-  title: 'Mixing Masterclass: Vocals',
-  when: 'Today 7:00 PM',
-  seats: '8/10 seats',
-  price: '4,000 tk',
-  filled: 8,
-  total: 10,
-};
 
 /** Calls tab root — the hub for sessions, private calls and broadcasts. */
 const CallsHubScreen = () => {
   const router = useRouter();
   const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
-  const seatsLeft = UP_NEXT.total - UP_NEXT.filled;
+
+  // Same summaries the web reads on its history screens + the artist profile.
+  const { data: gcSummary } = useGroupCallHistorySummary('all');
+  const { data: bcSummary } = useBroadcastHistorySummary();
+  const { data: profile } = useProfile();
+  // Private Calls and Schedule are two of web's three gated destinations; the
+  // history rows beside them are read-only and stay open.
+  const { guard } = useVerificationGate();
+
+  // Each sub-line is built from live data only. While a summary is still in
+  // flight its row shows an em dash rather than a plausible-looking number.
+  const subFor = (title: string): Sub => {
+    if (title === 'Group Sessions') {
+      return {
+        lead: gcSummary
+          ? `${grouped(gcSummary.totalCalls)} hosted · ${grouped(gcSummary.totalRevenueTokens)} tk`
+          : '—',
+      };
+    }
+    if (title === 'Private Calls') {
+      if (!profile) {
+        return { lead: '—' };
+      }
+      const on = profile.acceptsPrivateCalls;
+      return { lead: 'Currently ', strong: on ? 'ON' : 'OFF', strongColor: on ? 'cyan' : 'pink' };
+    }
+    if (title === 'Broadcasts') {
+      return bcSummary
+        ? {
+            lead: `${grouped(bcSummary.totalShows)} shows · `,
+            strong: grouped(bcSummary.totalUniqueViewers),
+            strongColor: 'cyan',
+            tail: ' viewers',
+          }
+        : { lead: '—' };
+    }
+    return { lead: '—' };
+  };
+
+  const entries: Entry[] = ENTRIES.map((entry) => ({ ...entry, sub: subFor(entry.title) }));
 
   return (
     <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
@@ -99,7 +132,7 @@ const CallsHubScreen = () => {
         </Text>
 
         <Pressable
-          onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
+          onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))}
           accessibilityRole="button"
           accessibilityLabel="Schedule a session"
           style={styles.scheduleBtn}
@@ -116,19 +149,20 @@ const CallsHubScreen = () => {
         </Pressable>
       </View>
 
-      <InsightLine
-        style={styles.insight}
-        lead="Mixing Masterclass starts 7 PM"
-        tail=" — 2 seats left"
-      />
-
       {/* Areas */}
       <View style={styles.entries}>
-        {ENTRIES.map((entry) => (
+        {entries.map((entry) => (
           <Pressable
             key={entry.title}
             style={styles.entry}
-            onPress={() => router.push(entry.route)}
+            onPress={() => {
+              const go = () => router.push(entry.route);
+              if (entry.route === '/(app)/(tabs)/calls/private-calls') {
+                guard(go);
+              } else {
+                go();
+              }
+            }}
             accessibilityRole="button"
             accessibilityLabel={entry.title}
           >
@@ -156,61 +190,6 @@ const CallsHubScreen = () => {
             <Feather name="chevron-right" size={rf(16)} color={colors.textMuted} />
           </Pressable>
         ))}
-      </View>
-
-      <SectionLabel divider style={styles.sectionLabel}>
-        UP NEXT
-      </SectionLabel>
-
-      {/* Next session — highlighted so the primary action is unmissable */}
-      <View style={styles.upNext}>
-        <View style={styles.startsRow}>
-          <View style={styles.startsDot} />
-          <Text variant="label" color="pink">
-            STARTS TODAY
-          </Text>
-        </View>
-
-        <Text variant="h3" style={styles.upNextTitle}>
-          {UP_NEXT.title}
-        </Text>
-
-        <Text variant="bodySm" color="textMuted" style={styles.upNextMeta}>
-          {UP_NEXT.when} · {UP_NEXT.seats} ·{' '}
-          <Text variant="bodySm" color="gold" style={styles.strong}>
-            {UP_NEXT.price}
-          </Text>
-        </Text>
-
-        <View style={styles.seatRow}>
-          <ProgressBar value={UP_NEXT.filled / UP_NEXT.total} />
-          <Text variant="bodySm" color="textMuted">
-            {seatsLeft} seats left
-          </Text>
-        </View>
-
-        <Pressable
-          /*
-           * Goes through the schedule form, not straight into the room — a
-           * call can't be opened without a title, pin price and refund
-           * threshold. The form itself sends the artist on into the room if
-           * one is already running.
-           */
-          onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')}
-          accessibilityRole="button"
-          accessibilityLabel={`Start ${UP_NEXT.title}`}
-          style={styles.startBtn}
-        >
-          <LinearGradient
-            colors={gradients.cta}
-            start={gradientDirection.horizontal.start}
-            end={gradientDirection.horizontal.end}
-            style={styles.startFill}
-          >
-            <Feather name="play" size={rf(15)} color={colors.white} />
-            <Text style={styles.startLabel}>Start session</Text>
-          </LinearGradient>
-        </Pressable>
       </View>
     </Screen>
   );
@@ -243,13 +222,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   scheduleLabel: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.8,
+    ...typography.label,
     color: colors.white,
-  },
-  insight: {
-    marginTop: 16,
   },
   strong: {
     fontFamily: fontFamily.bold,
@@ -281,64 +255,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
 
-  sectionLabel: {
-    marginTop: 12,
-    marginBottom: 12,
-  },
-
-  // Pink-bordered card with a soft glow — the one thing to act on right now.
-  upNext: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.borderHot,
-    borderRadius: radius.card,
-    padding: 18,
-    shadowColor: colors.pink,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  startsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  startsDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.pink,
-  },
-  upNextTitle: {
-    marginTop: 10,
-  },
-  upNextMeta: {
-    marginTop: 4,
-  },
-  seatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 16,
-  },
-  startBtn: {
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-    marginTop: 18,
-  },
-  startFill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 52,
-  },
-  startLabel: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(13),
-    color: colors.white,
-  },
 });
 
 export default CallsHubScreen;

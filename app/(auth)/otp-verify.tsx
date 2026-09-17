@@ -14,6 +14,7 @@ const OtpVerifyScreen = () => {
     error,
     locked,
     attemptsLeft,
+    codeRejected,
     cooldownSec,
     canResend,
     mobile,
@@ -61,7 +62,7 @@ const OtpVerifyScreen = () => {
         {error ? (
           <Text variant="caption" color="error" accessibilityRole="alert">
             {error}
-            {!locked ? ` ${attemptsLeft} attempt(s) left.` : ''}
+            {codeRejected && !locked ? ` ${attemptsLeft} attempt(s) left.` : ''}
           </Text>
         ) : null}
         {locked ? (

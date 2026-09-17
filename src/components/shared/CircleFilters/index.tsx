@@ -1,10 +1,16 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients } from '@theme';
+import { colors, gradientDirection, gradients, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface CircleFilterOption {
@@ -26,7 +32,12 @@ export interface CircleFiltersProps {
 const SIZE = 52;
 
 /** Row of circular icon filters with labels beneath. Selected one is gradient-filled. */
-const CircleFiltersComponent = ({ options, value, onChange, style }: CircleFiltersProps) => (
+const CircleFiltersComponent = ({
+  options,
+  value,
+  onChange,
+  style,
+}: CircleFiltersProps) => (
   <View style={[styles.row, style]}>
     {options.map((opt) => {
       const active = opt.value === value;
@@ -52,7 +63,11 @@ const CircleFiltersComponent = ({ options, value, onChange, style }: CircleFilte
               </LinearGradient>
             ) : (
               <View style={[styles.circle, styles.circleIdle]}>
-                <Feather name={opt.icon} size={rf(19)} color={colors.textMuted} />
+                <Feather
+                  name={opt.icon}
+                  size={rf(19)}
+                  color={colors.textMuted}
+                />
               </View>
             )}
 
@@ -131,8 +146,7 @@ const styles = StyleSheet.create({
     borderColor: colors.screen,
   },
   badgeText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(9),
+    ...typography.badge,
     color: colors.white,
   },
 });

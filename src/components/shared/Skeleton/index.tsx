@@ -26,7 +26,10 @@ const usePulse = (): SharedValue<number> => {
   const opacity = useSharedValue(MIN_OPACITY);
 
   opacity.value = withRepeat(
-    withTiming(MAX_OPACITY, { duration: DURATION, easing: Easing.inOut(Easing.quad) }),
+    withTiming(MAX_OPACITY, {
+      duration: DURATION,
+      easing: Easing.inOut(Easing.quad),
+    }),
     -1,
     true,
   );
@@ -48,7 +51,12 @@ export interface SkeletonProps {
  * Size and radius should mirror the real content, so the layout doesn't jump
  * when data arrives. Preferred over spinners for any list or content area.
  */
-const SkeletonComponent = ({ width = '100%', height = 16, round, style }: SkeletonProps) => {
+const SkeletonComponent = ({
+  width = '100%',
+  height = 16,
+  round,
+  style,
+}: SkeletonProps) => {
   const opacity = usePulse();
   const pulse = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
@@ -69,6 +77,107 @@ const SkeletonComponent = ({ width = '100%', height = 16, round, style }: Skelet
 export const Skeleton = memo(SkeletonComponent);
 
 /* -------------------------------------------------------------------------- */
+/*  Primitives — the building blocks every screen skeleton composes from      */
+/* -------------------------------------------------------------------------- */
+
+export interface SkeletonTextProps {
+  /** Line width — pass a % to track a fluid text column. */
+  width?: number | `${number}%`;
+  /** Line thickness. Defaults to a body-text line. */
+  height?: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** A single text line. Radius stays tight (6) like the web `.mitro-skel-line`. */
+const SkeletonTextComponent = ({
+  width = '100%',
+  height = 12,
+  style,
+}: SkeletonTextProps) => (
+  <Skeleton width={width} height={height} round={6} style={style} />
+);
+
+export const SkeletonText = memo(SkeletonTextComponent);
+
+export interface SkeletonCircleProps {
+  /** Diameter — used for avatars and round icon slots. */
+  size?: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** A round placeholder — avatars, round icon badges. */
+const SkeletonCircleComponent = ({ size = 44, style }: SkeletonCircleProps) => (
+  <Skeleton width={size} height={size} round={size / 2} style={style} />
+);
+
+export const SkeletonCircle = memo(SkeletonCircleComponent);
+
+export interface SkeletonBoxProps {
+  /** Square/rounded icon tile — width defaults to the same as height. */
+  size?: number;
+  width?: number | `${number}%`;
+  height?: number;
+  round?: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** A rounded square — icon tiles, thumbnails. */
+const SkeletonBoxComponent = ({
+  size = 36,
+  width,
+  height,
+  round = 12,
+  style,
+}: SkeletonBoxProps) => (
+  <Skeleton
+    width={width ?? size}
+    height={height ?? size}
+    round={round}
+    style={style}
+  />
+);
+
+export const SkeletonBox = memo(SkeletonBoxComponent);
+
+export interface SkeletonButtonProps {
+  width?: number | `${number}%`;
+  height?: number;
+  round?: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** A button/pill placeholder. */
+const SkeletonButtonComponent = ({
+  width = 130,
+  height = 44,
+  round = 12,
+  style,
+}: SkeletonButtonProps) => (
+  <Skeleton width={width} height={height} round={round} style={style} />
+);
+
+export const SkeletonButton = memo(SkeletonButtonComponent);
+
+export interface SkeletonImageProps {
+  width?: number | `${number}%`;
+  height?: number;
+  round?: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** An image/media placeholder — reserve the exact box the image will fill. */
+const SkeletonImageComponent = ({
+  width = '100%',
+  height = 160,
+  round = radius.sm,
+  style,
+}: SkeletonImageProps) => (
+  <Skeleton width={width} height={height} round={round} style={style} />
+);
+
+export const SkeletonImage = memo(SkeletonImageComponent);
+
+/* -------------------------------------------------------------------------- */
 /*  Presets — one per shape the app actually renders                          */
 /* -------------------------------------------------------------------------- */
 
@@ -82,7 +191,12 @@ export interface SkeletonCardProps {
 const SkeletonCardComponent = ({ height = 132, style }: SkeletonCardProps) => (
   <View style={[styles.card, style]}>
     <Skeleton width="46%" height={14} />
-    <Skeleton width="100%" height={height - 78} round={radius.sm} style={styles.cardBody} />
+    <Skeleton
+      width="100%"
+      height={height - 78}
+      round={radius.sm}
+      style={styles.cardBody}
+    />
     <Skeleton width="30%" height={12} />
   </View>
 );
@@ -97,7 +211,10 @@ export interface SkeletonListRowProps {
 }
 
 /** Stands in for a `ListRow` / `TimelineRow`: leading slot, two text lines. */
-const SkeletonListRowComponent = ({ avatar = true, trailing = false }: SkeletonListRowProps) => (
+const SkeletonListRowComponent = ({
+  avatar = true,
+  trailing = false,
+}: SkeletonListRowProps) => (
   <View style={styles.row}>
     {avatar ? <Skeleton width={44} height={44} round={22} /> : null}
     <View style={styles.rowText}>
@@ -138,6 +255,42 @@ const SkeletonRowsComponent = ({ count = 4, style }: SkeletonGroupProps) => (
 
 export const SkeletonRows = memo(SkeletonRowsComponent);
 
+/**
+ * Stands in for a notification row: left accent bar, 36×36 rounded icon tile,
+ * a title line with a short trailing "time" block, and two body lines. Mirrors
+ * the loaded `.note` row so the list doesn't jump when data arrives.
+ */
+const SkeletonNotificationRowComponent = () => (
+  <View style={styles.noteRow}>
+    <View style={styles.noteAccent} />
+    <SkeletonBox size={36} round={12} />
+    <View style={styles.noteText}>
+      <View style={styles.noteHead}>
+        <SkeletonText width="52%" height={13} />
+        <SkeletonText width={32} height={11} />
+      </View>
+      <SkeletonText width="90%" height={11} />
+      <SkeletonText width="66%" height={11} />
+    </View>
+  </View>
+);
+
+export const SkeletonNotificationRow = memo(SkeletonNotificationRowComponent);
+
+/** Repeats the notification row — the notifications list / dashboard bell card. */
+const SkeletonNotificationRowsComponent = ({
+  count = 5,
+  style,
+}: SkeletonGroupProps) => (
+  <View style={[styles.noteRows, style]}>
+    {Array.from({ length: count }, (_, i) => (
+      <SkeletonNotificationRow key={i} />
+    ))}
+  </View>
+);
+
+export const SkeletonNotificationRows = memo(SkeletonNotificationRowsComponent);
+
 const styles = StyleSheet.create({
   block: {
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -175,5 +328,36 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     gap: spacing.xs,
+  },
+
+  noteRows: {
+    gap: spacing.sm,
+  },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingLeft: 14,
+    paddingVertical: 12,
+  },
+  noteAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  noteText: {
+    flex: 1,
+    gap: 6,
+    paddingTop: 2,
+  },
+  noteHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
   },
 });

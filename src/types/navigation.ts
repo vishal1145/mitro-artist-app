@@ -5,7 +5,6 @@
  */
 
 export type AuthRoute =
-  | '/(auth)/onboarding'
   | '/(auth)/login'
   | '/(auth)/register'
   | '/(auth)/forgot-password'

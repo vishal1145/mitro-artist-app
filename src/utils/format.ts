@@ -82,6 +82,42 @@ export const duration = (seconds: number): string => {
 };
 
 /**
+ * Seconds → "32m 10s", the exact shape the Artist Web's history pages use
+ * (`formatDuration` / `formatBroadcastDuration`). Returns "—" for a null
+ * duration, which is how the web renders a call that never started.
+ *
+ * Distinct from `duration` above on purpose: this one always shows both
+ * units and never rolls up into hours, because the web doesn't.
+ */
+export const webDuration = (seconds: number | null | undefined): string => {
+  if (seconds == null) {
+    return '—';
+  }
+  const safe = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(safe / 60)}m ${safe % 60}s`;
+};
+
+/**
+ * ISO timestamp → "9/11/2026, 1:26 PM".
+ *
+ * Mirrors the history pages' `toLocaleString(undefined, { year: "numeric",
+ * month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })`.
+ */
+export const webDateTime = (iso: string): string => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const day = date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  });
+  const time = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${day}, ${time}`;
+};
+
+/**
  * ISO timestamp → a compact age stamp: "NOW" / "5M" / "3H" / "2D", falling
  * back to `shortDate` past a week. Used on notification rows, where the full
  * `shortDateTime` is too wide for the trailing column.

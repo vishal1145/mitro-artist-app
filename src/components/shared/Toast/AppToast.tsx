@@ -76,7 +76,10 @@ const TONE: Record<PopupToastType, ToneVisual> = {
   },
 };
 
-const PopupToast = ({ text1, props }: ToastConfigParams<{ type?: PopupToastType }>) => {
+const PopupToast = ({
+  text1,
+  props,
+}: ToastConfigParams<{ type?: PopupToastType }>) => {
   const insets = useSafeAreaInsets();
   const tone = TONE[props?.type ?? 'info'];
 
@@ -94,7 +97,11 @@ const PopupToast = ({ text1, props }: ToastConfigParams<{ type?: PopupToastType 
             a translucent fill alone would let the screen bleed through. */}
         <View
           pointerEvents="none"
-          style={[StyleSheet.absoluteFill, styles.tint, { backgroundColor: tone.fill }]}
+          style={[
+            StyleSheet.absoluteFill,
+            styles.tint,
+            { backgroundColor: tone.fill },
+          ]}
         />
 
         <Feather name={tone.icon} size={rf(16)} color={tone.tint} />

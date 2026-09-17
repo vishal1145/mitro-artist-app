@@ -19,7 +19,7 @@ import {
 } from '@services/agora/agoraEngine';
 import { activeBroadcastStore } from '@services/broadcast/activeBroadcast';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, radius } from '@theme';
+import { colors, layout, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 // Matches the artist web's Go Live category chips (text-only pills).
@@ -331,7 +331,7 @@ const GoLiveScreen = () => {
             maxLength={6}
             accessibilityLabel="Highlighted message price"
           />
-          <Text style={styles.fieldHint}>How many tokens a viewer pays to pin a message during this stream.</Text>
+          <Text style={styles.fieldHint}>How many coins a viewer pays to pin a message during this stream.</Text>
         </View>
 
         {/* Reward menu (web .golive-rewards) */}
@@ -374,7 +374,7 @@ const GoLiveScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 14 },
+  content: { paddingHorizontal: layout.screenPadding },
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 12 },
   headerLeft: { flex: 1 },
@@ -384,7 +384,9 @@ const styles = StyleSheet.create({
   stepperTrack: { flexDirection: 'row', gap: 5 },
   stepDot: { width: 22, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.16)' },
   stepDotFilled: { backgroundColor: colors.pink },
-  stepperText: { fontFamily: fontFamily.bold, fontSize: rf(10.5) },
+  stepperText: {
+    ...typography.label,
+  },
 
   // Preview stage — dark, radial-tinted, min 320
   stage: {
@@ -405,15 +407,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   previewCaption: {
+    ...typography.bodySm,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.1)',
     backgroundColor: 'rgba(255,255,255,0.03)',
     color: 'rgba(255,250,255,0.72)',
-    fontFamily: fontFamily.body,
-    fontSize: rf(12),
-    lineHeight: rf(17),
   },
   previewBadge: {
     position: 'absolute',
@@ -431,9 +431,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   previewBadgeDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.green },
-  previewBadgeText: { fontFamily: fontFamily.bold, fontSize: rf(11), color: colors.white },
+  previewBadgeText: {
+    ...typography.label,
+  },
   stagePlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 10 },
-  stageHeadline: { fontFamily: fontFamily.bold, fontSize: rf(15), color: '#FFFAFF', textAlign: 'center' },
+  stageHeadline: {
+    ...typography.h3,
+  },
   stageHint: { color: 'rgba(255,250,255,0.72)', lineHeight: rf(18), paddingHorizontal: 8 },
 
   // Controls
@@ -450,7 +454,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   controlBtnMuted: { borderColor: 'rgba(239,68,68,0.45)', backgroundColor: 'rgba(239,68,68,0.14)' },
-  controlText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: colors.textSecondary },
+  controlText: {
+    ...typography.bodySm,
+  },
   controlTextMuted: { color: '#FF8A97' },
 
   // Checklist
@@ -467,20 +473,29 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  checksLead: { fontFamily: fontFamily.bold, fontSize: rf(12), color: colors.textSecondary },
+  checksLead: {
+    ...typography.bodySm,
+  },
   check: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  checkLabel: { fontFamily: fontFamily.semibold, fontSize: rf(12) },
+  checkLabel: {
+    ...typography.bodySm,
+  },
 
   backBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   formCard: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)', borderRadius: radius.md, backgroundColor: '#0E0C1A', paddingHorizontal: 14, paddingVertical: 16, gap: 12, marginTop: 16 },
-  formHeading: { fontFamily: fontFamily.extrabold, fontSize: rf(16.5), color: '#FFFAFF' },
-  formIntro: { fontFamily: fontFamily.body, fontSize: rf(12.5), lineHeight: rf(18), color: 'rgba(255,250,255,0.72)', marginTop: 3 },
+  formHeading: {
+    ...typography.h2,
+  },
+  formIntro: {
+    ...typography.bodySm,
+  },
   field: { gap: 6 },
-  fieldLabel: { fontFamily: fontFamily.bold, fontSize: rf(10.5), letterSpacing: 0.6, color: 'rgba(255,255,255,0.5)' },
+  fieldLabel: {
+    ...typography.label,
+  },
   input: {
+    ...typography.input,
     color: '#FFFAFF',
-    fontFamily: fontFamily.semibold,
-    fontSize: rf(14),
     backgroundColor: 'rgba(5,4,11,0.6)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
@@ -488,7 +503,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  fieldHint: { fontFamily: fontFamily.body, fontSize: rf(11.5), color: 'rgba(255,250,255,0.6)', marginTop: 2 },
+  fieldHint: {
+    ...typography.bodySm,
+  },
 
   catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   catPill: {
@@ -503,14 +520,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   catPillActive: { borderColor: 'transparent' },
-  catLabel: { fontFamily: fontFamily.bold, fontSize: rf(12), color: 'rgba(255,250,255,0.72)' },
+  catLabel: {
+    ...typography.bodySm,
+  },
   catLabelActive: { color: '#FFFFFF' },
 
   textarea: {
+
+    ...typography.input,
     color: '#FFFAFF',
-    fontFamily: fontFamily.body,
-    fontSize: rf(14),
-    lineHeight: rf(19),
     minHeight: 72,
     backgroundColor: 'rgba(5,4,11,0.6)',
     borderWidth: 1,
@@ -518,13 +536,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
+
   },
 
   // Reward menu (web .golive-rewards)
   rewards: { gap: 6, paddingTop: 10, marginTop: 2, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
   rewardsHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rewardsTitle: { fontFamily: fontFamily.extrabold, fontSize: rf(15), color: '#FFFAFF' },
-  rewardsIntro: { fontFamily: fontFamily.body, fontSize: rf(12.5), lineHeight: rf(17), color: 'rgba(255,250,255,0.72)' },
+  rewardsTitle: {
+    ...typography.h3,
+  },
+  rewardsIntro: {
+    ...typography.bodySm,
+  },
   rewardSummary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -538,8 +561,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 2,
   },
-  rewardSummaryText: { flex: 1, fontFamily: fontFamily.semibold, fontSize: rf(13), color: '#FFFAFF' },
+  rewardSummaryText: {
+    ...typography.bodySm,
+    flex: 1,
+  },
   manageBtn: {
+    flexShrink: 0,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.24)',
@@ -547,7 +574,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  manageBtnText: { fontFamily: fontFamily.bold, fontSize: rf(12), color: '#FFFAFF' },
+  manageBtnText: {
+    ...typography.bodySm,
+  },
 
   // Go Live (web .golive-submit)
   cta: {
@@ -563,9 +592,15 @@ const styles = StyleSheet.create({
   },
   ctaDisabled: { opacity: 0.5 },
   ctaFill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  ctaLabel: { fontFamily: fontFamily.extrabold, fontSize: rf(15), color: colors.white },
-  submitCaption: { fontFamily: fontFamily.body, fontSize: rf(12), lineHeight: rf(17), color: 'rgba(255,250,255,0.72)', textAlign: 'center', marginTop: 2 },
-  ctaNoteGreen: { fontFamily: fontFamily.semibold, fontSize: rf(12), color: colors.green, textAlign: 'center', marginTop: 2 },
+  ctaLabel: {
+    ...typography.button,
+  },
+  submitCaption: {
+    ...typography.bodySm,
+  },
+  ctaNoteGreen: {
+    ...typography.bodySm,
+  },
 });
 
 export default GoLiveScreen;

@@ -4,8 +4,13 @@ import { memo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients } from '@theme';
-import { rf } from '@utils/responsive';
+import {
+  colors,
+  fontFamily,
+  gradientDirection,
+  gradients,
+  typography,
+} from '@theme';
 
 export interface RingAvatarProps {
   initials: string;
@@ -43,13 +48,19 @@ const RingAvatarComponent = ({
         colors={gradients.ring}
         start={gradientDirection.diagonal.start}
         end={gradientDirection.diagonal.end}
-        style={[styles.ring, { width: size, height: size, borderRadius: size / 2, padding: ring }]}
+        style={[
+          styles.ring,
+          { width: size, height: size, borderRadius: size / 2, padding: ring },
+        ]}
       >
         <LinearGradient
           colors={gradients.avatar}
           start={gradientDirection.diagonal.start}
           end={gradientDirection.diagonal.end}
-          style={[styles.inner, { width: inner, height: inner, borderRadius: inner / 2 }]}
+          style={[
+            styles.inner,
+            { width: inner, height: inner, borderRadius: inner / 2 },
+          ]}
         >
           {imageUrl ? (
             <Image
@@ -60,7 +71,9 @@ const RingAvatarComponent = ({
               accessibilityLabel="Profile picture"
             />
           ) : (
-            <Text style={[styles.initials, { fontSize: inner * 0.34 }]}>{initials}</Text>
+            <Text style={[styles.initials, { fontSize: inner * 0.34 }]}>
+              {initials}
+            </Text>
           )}
         </LinearGradient>
       </LinearGradient>
@@ -114,9 +127,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   badgeText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(9),
-    letterSpacing: 0.8,
+    ...typography.badge,
     color: colors.green,
   },
 });

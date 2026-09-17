@@ -172,11 +172,102 @@ export interface ArtistProfile {
   groupShowTokenPerMinute: number;
   /** Read-only here — no confirmed endpoint toggles it yet. */
   acceptsPrivateCalls: boolean;
+  /**
+   * Paid private messages. The source of truth the artist web reads back from
+   * `getMe()` — toggled through `privateMessageApi.setSettings`, never here.
+   */
+  acceptsPrivateMessages?: boolean;
+  /** What a fan pays to send one message. */
+  privateMessagePrice?: number;
   /** "pending" | "approved" | "rejected", as far as we've seen. */
   approvalStatus: string;
   rejectedReason: string | null;
   categoryId: string | null;
   categoryName: string | null;
+  /** Second level under `categoryId`; null when the artist hasn't picked one. */
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  /**
+   * KYC verification state, from the same `/profile/me` payload the web reads
+   * (`artistProfileService.getMe().kycStatus`): "" / "pending" / "approved" /
+   * "rejected". Drives the KYC nudge on the Me tab.
+   */
+  kycStatus?: string | null;
+}
+
+/**
+ * KYC verification state — `GET /api/artist/kyc`, same shape the web's
+ * `kycService.getKycStatus()` reads. Numbers come back masked.
+ */
+export interface KycStatus {
+  /** "" | "pending" | "approved" | "rejected". */
+  status: string;
+  approvalStatus?: string | null;
+  panNumber?: string | null;
+  aadhaarNumber?: string | null;
+  panFrontUploaded?: boolean;
+  aadhaarFrontUploaded?: boolean;
+  aadhaarBackUploaded?: boolean;
+  rejectionReason?: string | null;
+  adminMessage?: string | null;
+}
+
+/** The three KYC documents the backend accepts. */
+export type KycDocumentType = 'pan_front' | 'aadhaar_front' | 'aadhaar_back';
+
+/** `POST /api/artist/kyc/documents/upload-url`. */
+export interface KycUploadUrlPayload {
+  documentType: string;
+  fileName: string;
+  contentType: string;
+}
+
+/** Presign response — the app sends `objectKey` (fallback `publicUrl`) to pan/aadhaar. */
+export interface KycUploadUrlResponse {
+  uploadUrl: string;
+  objectKey?: string;
+  publicUrl?: string;
+  expiresAtUtc?: string;
+}
+
+/** `GET /api/artist/kyc/documents/{type}/view-url`. */
+export interface KycViewUrlResponse {
+  viewUrl?: string;
+  url?: string;
+}
+
+/** `PUT /api/artist/kyc/pan`. `panFrontKey` omitted keeps the stored document. */
+export interface SavePanPayload {
+  panNumber: string;
+  panFrontKey?: string;
+}
+
+/** `PUT /api/artist/kyc/aadhaar`. Keys omitted keep the stored documents. */
+export interface SaveAadhaarPayload {
+  aadhaarNumber: string;
+  aadhaarFrontKey?: string;
+  aadhaarBackKey?: string;
+}
+
+/** `PUT /api/artist/kyc/bank-account`. */
+export interface SaveBankAccountPayload {
+  accountHolderName: string;
+  accountNumber: string;
+  confirmAccountNumber: string;
+  ifscCode: string;
+  bankName: string;
+  branchName: string;
+  accountType: string;
+}
+
+/** Payout bank account — `GET /api/artist/kyc/bank-account`. Masked. */
+export interface BankAccount {
+  accountHolderName?: string | null;
+  accountNumber?: string | null;
+  ifscCode?: string | null;
+  bankName?: string | null;
+  branchName?: string | null;
+  accountType?: string | null;
 }
 
 /** `GET /api/artist/categories` — a bare array, no envelope. */
@@ -184,6 +275,17 @@ export interface ArtistCategory {
   id: string;
   name: string;
   description: string;
+}
+
+/**
+ * `GET /api/artist/subcategories?categoryId=…` — the second level under a
+ * primary category. Same controller and shape as `ArtistCategory`;
+ * `description` is optional because the endpoint's 200 is untyped in swagger.
+ */
+export interface ArtistSubcategory {
+  id: string;
+  name: string;
+  description?: string;
 }
 
 /**
@@ -209,6 +311,19 @@ export interface ChangePasswordPayload {
   oldPassword: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+/** `POST /api/artist/profile/category` — sets the primary category. */
+export interface UpdateCategoryPayload {
+  categoryId: string;
+  /**
+   * Optional second level under the primary category.
+   *
+   * Spelled `subcategoryId`, all lowercase, because that is what the server's
+   * `UpdateArtistCategoryRequest` declares (MyArtist.Artist.Api swagger) — a
+   * camel-cased `subCategoryId` is silently ignored.
+   */
+  subcategoryId?: string | null;
 }
 
 export interface ChangeStageNamePayload {
@@ -285,12 +400,31 @@ export interface CreateRewardPayload {
 /** `POST /settings/fun-wheel/activities`. The wheel is implied by the token. */
 export interface CreateActivityPayload {
   activityName: string;
+  /** Relative odds [1, 1000]; omitted defaults to 1 server-side. */
+  weight?: number;
+}
+
+/** `PUT /settings/fun-wheel/{wheelId}` — rename / reprice the wheel. */
+export interface UpdateFunWheelPayload {
+  wheelName: string;
+  pricePerSpin: number;
+}
+
+/**
+ * `PUT /settings/fun-wheel/activities/{activityId}`.
+ * Omit `weight` to leave the existing odds untouched, as the web does.
+ */
+export interface UpdateActivityPayload {
+  activityName: string;
+  weight?: number | null;
 }
 
 export interface FunWheelActivity {
   id: string;
   wheelId: string;
   activityName: string;
+  /** Relative odds; may be absent on older rows — treat missing as 1. */
+  weight?: number | null;
   description: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
@@ -653,4 +787,18 @@ export interface ReplyPrivateMessageResponse {
   message: string;
   messageId: string;
   createdAtUtc: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Runtime configuration                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `GET /api/artist/config` — values the backend owns rather than the build.
+ *
+ * Only `agoraAppId` is consumed today; anything else the server adds is
+ * carried but ignored, exactly as the artist web treats it.
+ */
+export interface ArtistRuntimeConfig {
+  agoraAppId?: string | null;
 }

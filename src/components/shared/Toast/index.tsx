@@ -1,7 +1,10 @@
-import { Feather } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
-import RNToast, { type ToastConfig, type ToastConfigParams } from 'react-native-toast-message';
+import RNToast, {
+  type ToastConfig,
+  type ToastConfigParams,
+} from 'react-native-toast-message';
 
+import { LucideIcon } from '@components/ui';
 import { Text } from '@components/ui/Text';
 import { colors, radius, spacing } from '@theme';
 import { notificationVisual } from '@utils/notifications';
@@ -10,13 +13,17 @@ import { POPUP_TOAST_TYPE } from '@utils/toast';
 
 import PopupToast from './AppToast';
 
-const AppNotificationToast = ({ text1, text2, props }: ToastConfigParams<{ type?: string }>) => {
+const AppNotificationToast = ({
+  text1,
+  text2,
+  props,
+}: ToastConfigParams<{ type?: string }>) => {
   const visual = notificationVisual(props?.type ?? '');
 
   return (
     <View style={styles.card}>
       <View style={[styles.iconWrap, { backgroundColor: visual.fill }]}>
-        <Feather name={visual.icon} size={rf(16)} color={visual.tint} />
+        <LucideIcon name={visual.icon} size={rf(16)} color={visual.tint} />
       </View>
       <View style={styles.textWrap}>
         {text1 ? (
@@ -39,8 +46,14 @@ const AppNotificationToast = ({ text1, text2, props }: ToastConfigParams<{ type?
  * in `showNotificationToast`) fires on tap anywhere in the card, not just an
  * inner element.
  */
-const AppNotificationToastPressable = (params: ToastConfigParams<{ type?: string }>) => (
-  <Pressable onPress={params.onPress} accessibilityRole="button" style={styles.pressable}>
+const AppNotificationToastPressable = (
+  params: ToastConfigParams<{ type?: string }>,
+) => (
+  <Pressable
+    onPress={params.onPress}
+    accessibilityRole="button"
+    style={styles.pressable}
+  >
     <AppNotificationToast {...params} />
   </Pressable>
 );

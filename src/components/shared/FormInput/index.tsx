@@ -9,8 +9,10 @@ import {
 import { Input } from '@components/ui/Input';
 import type { InputProps } from '@components/ui/Input/types';
 
-interface FormInputProps<T extends FieldValues>
-  extends Omit<InputProps, 'value' | 'onChangeText' | 'onBlur' | 'error'> {
+interface FormInputProps<T extends FieldValues> extends Omit<
+  InputProps,
+  'value' | 'onChangeText' | 'onBlur' | 'error'
+> {
   control: Control<T>;
   name: FieldPath<T>;
   /**
@@ -49,7 +51,9 @@ export const FormInput = <T extends FieldValues>({
           <Input
             {...inputProps}
             value={stringValue}
-            onChangeText={(next) => onChange(transform ? transform(next) : next)}
+            onChangeText={(next) =>
+              onChange(transform ? transform(next) : next)
+            }
             onBlur={onBlur}
             error={shouldShowError ? error?.message : undefined}
           />

@@ -2,7 +2,12 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { queryKeys } from '@constants/queryKeys';
 import { profileApi } from '@services/api';
-import type { ArtistCategory, ArtistPhoto, ArtistProfile } from '@app-types/api';
+import type {
+  ArtistCategory,
+  ArtistPhoto,
+  ArtistProfile,
+  ArtistSubcategory,
+} from '@app-types/api';
 import { AuthError } from '@utils/errorHandler';
 
 /**
@@ -41,6 +46,28 @@ export const useCategories = (): UseQueryResult<ArtistCategory[], Error> =>
       }
       return result.data;
     },
+    staleTime: Infinity,
+    retry: false,
+  });
+
+/**
+ * Subcategories for the chosen primary category. Disabled until one is
+ * picked — the endpoint needs a `categoryId` and returns nothing useful
+ * without it.
+ */
+export const useSubcategories = (
+  categoryId: string | null | undefined,
+): UseQueryResult<ArtistSubcategory[], Error> =>
+  useQuery({
+    queryKey: queryKeys.profile.subcategories(categoryId ?? ''),
+    queryFn: async () => {
+      const result = await profileApi.getSubcategories(categoryId as string);
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    enabled: Boolean(categoryId),
     staleTime: Infinity,
     retry: false,
   });

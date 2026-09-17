@@ -1,4 +1,10 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+  type UseInfiniteQueryResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 
 import { queryKeys } from '@constants/queryKeys';
 import { insightsApi } from '@services/api';
@@ -25,6 +31,42 @@ export const useGroupCallHistory = (
       }
       return result.data;
     },
+    staleTime: 60_000,
+    retry: false,
+  });
+
+/**
+ * The same list, paged — the screen walks the pages as the artist scrolls,
+ * exactly like the Transactions ledger. The filter is part of the query key,
+ * so switching tabs starts a fresh page walk rather than appending to the
+ * previous filter's rows.
+ */
+export const useGroupCallHistoryPaged = (
+  filter: GroupCallHistoryFilter,
+  pageSize = 20,
+): UseInfiniteQueryResult<InfiniteData<GroupCallHistoryItem[], number>, Error> =>
+  useInfiniteQuery({
+    queryKey: [
+      ...queryKeys.groupCall.all,
+      'history',
+      'paged',
+      pageSize,
+      filter,
+    ] as const,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const result = await insightsApi.getGroupCallHistory({
+        take: pageSize,
+        skip: pageParam,
+        status: filter,
+      });
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < pageSize ? undefined : allPages.length * pageSize,
     staleTime: 60_000,
     retry: false,
   });

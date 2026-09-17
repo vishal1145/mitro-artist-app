@@ -74,8 +74,23 @@ export const useOtp = (): UseOtpResult => {
     return () => clearInterval(id);
   }, [cooldownSec]);
 
+  const [codeRejected, setCodeRejected] = useState(false);
+
+  /** The CODE was refused. Only this path burns an attempt. */
   const rejectCode = useCallback((message: string) => {
     setAttempts((prev) => prev + 1);
+    setCodeRejected(true);
+    setError(message);
+    setCodeValue('');
+    submittedFor.current = null;
+  }, []);
+
+  /**
+   * A later step failed — registration, usually. The code was fine, so no
+   * attempt is spent and the message must not carry an attempts counter.
+   */
+  const failStep = useCallback((message: string) => {
+    setCodeRejected(false);
     setError(message);
     setCodeValue('');
     submittedFor.current = null;
@@ -144,10 +159,9 @@ export const useOtp = (): UseOtpResult => {
         }
       } catch (submitFailure) {
         // Reached when the call after verification fails — an expired window,
-        // or a stage name taken between screens. Use the server's wording.
-        setError(getErrorMessage(submitFailure));
-        setCodeValue('');
-        submittedFor.current = null;
+        // or a stage name taken between screens. Use the server's wording,
+        // and don't dress it up as a rejected code.
+        failStep(getErrorMessage(submitFailure));
       } finally {
         setSubmitting(false);
       }
@@ -155,6 +169,7 @@ export const useOtp = (): UseOtpResult => {
     [
       completeRegistration,
       completeResetVerification,
+      failStep,
       isRegister,
       isSubmitting,
       locked,
@@ -163,6 +178,7 @@ export const useOtp = (): UseOtpResult => {
 
   const setCode = useCallback((next: string) => {
     setError(null);
+    setCodeRejected(false);
     setCodeValue(next);
   }, []);
 
@@ -201,6 +217,7 @@ export const useOtp = (): UseOtpResult => {
     error,
     locked,
     attemptsLeft,
+    codeRejected,
     cooldownSec,
     canResend: cooldownSec <= 0 && !locked,
     mobile,

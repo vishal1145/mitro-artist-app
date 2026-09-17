@@ -9,19 +9,25 @@ import type { AuthSession, AuthTokens, User } from '@app-types/api';
 import { logger } from '@utils/logger';
 
 import { useNotificationStore } from './notificationStore';
+import { useIncomingCallStore } from './incomingCallStore';
 
 /**
  * Notifications piggyback on the auth lifecycle rather than owning their own:
  * the list/badge/hub connection only make sense for a signed-in artist, and
  * the push token only belongs on the device while that artist is signed in.
+ *
+ * The global incoming private-call watcher rides the same lifecycle — it only
+ * polls for requests while an artist is signed in, and must stop on logout.
  */
 const startNotifications = (): void => {
   void useNotificationStore.getState().init();
+  useIncomingCallStore.getState().start();
   void pushNotifications.register();
 };
 
 const stopNotifications = (): void => {
   useNotificationStore.getState().teardown();
+  useIncomingCallStore.getState().stop();
   void pushNotifications.unregister();
 };
 

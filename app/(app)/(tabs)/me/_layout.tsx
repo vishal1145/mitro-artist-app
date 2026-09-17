@@ -6,6 +6,7 @@ import { tabStackOptions } from '@navigation/stackOptions';
 const MeStackLayout = () => (
   <Stack screenOptions={tabStackOptions}>
     <Stack.Screen name="index" />
+    <Stack.Screen name="edit-profile" />
     <Stack.Screen name="followers" />
     <Stack.Screen name="messages" />
     <Stack.Screen name="photos" />

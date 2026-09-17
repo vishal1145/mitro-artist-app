@@ -1,7 +1,7 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
-import { AGORA_APP_ID } from '@constants/app';
+import { getAgoraAppId } from './agoraAppId';
 
 /**
  * Artist-side Agora engine. Unlike the fan app (which mostly joins as an
@@ -76,7 +76,7 @@ function getEngine() {
   if (!engine) {
     try {
       const created = mod.createAgoraRtcEngine();
-      created.initialize({ appId: AGORA_APP_ID });
+      created.initialize({ appId: getAgoraAppId() });
       created.setChannelProfile(mod.ChannelProfileType.ChannelProfileLiveBroadcasting);
       engine = created;
     } catch {
@@ -186,7 +186,7 @@ export function joinAsHost(
     setTimeout(() => handlers.onError?.(AGORA_UNAVAILABLE_MESSAGE), 0);
     return;
   }
-  if (!AGORA_APP_ID) {
+  if (!getAgoraAppId()) {
     setTimeout(() => handlers.onError?.('Live video is not available right now. Please try again later.'), 0);
     return;
   }
@@ -231,7 +231,7 @@ export function joinPrivateCallChannel(
     setTimeout(() => handlers.onError?.(AGORA_UNAVAILABLE_MESSAGE), 0);
     return;
   }
-  if (!AGORA_APP_ID) {
+  if (!getAgoraAppId()) {
     setTimeout(() => handlers.onError?.('Live video is not available right now. Please try again later.'), 0);
     return;
   }

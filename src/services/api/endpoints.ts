@@ -19,11 +19,20 @@ export const ENDPOINTS = {
     /** `?name=` — live availability check for the sign-up stage name. */
     stageNameCheck: '/api/artist/auth/stage-name-check',
   },
+  /**
+   * Runtime configuration the backend owns (app_setting table). Same route the
+   * artist web boots from — see its `agoraClientService.loadAppId()`.
+   */
+  config: '/api/artist/config',
   /** Authenticated artist routes. All require a Bearer token. */
   profile: {
     me: '/api/artist/profile/me',
     update: '/api/artist/profile/update',
     categories: '/api/artist/categories',
+    /** Second level, filtered by the chosen primary category. */
+    subcategories: '/api/artist/subcategories',
+    /** Sets the artist's primary category — same route the web posts to. */
+    updateCategory: '/api/artist/profile/category',
     changePassword: '/api/artist/change-password',
     changeStageName: '/api/artist/change-stage-name',
     sendChangePhoneOtp: '/api/artist/send-change-phone-otp',
@@ -37,18 +46,40 @@ export const ENDPOINTS = {
     photo: (photoId: string) => `/api/artist/photos/${photoId}`,
   },
   /**
-   * Creator settings. Read-only so far — no write endpoints confirmed for
-   * toggling a reward, adding one, or editing the wheel.
+   * Creator settings — the reward menu and the fun wheel.
+   *
+   * Full CRUD, matching the web's `artistSettingsService` 1:1. The app used to
+   * carry only the two GETs, which is why editing the wheel did nothing.
    */
   settings: {
     rewardMenu: '/api/artist/settings/reward-menu',
+    reward: (id: string) => `/api/artist/settings/reward-menu/${id}`,
+    rewardStatus: (id: string) => `/api/artist/settings/reward-menu/${id}/status`,
     funWheel: '/api/artist/settings/fun-wheel',
+    funWheelById: (wheelId: string) => `/api/artist/settings/fun-wheel/${wheelId}`,
+    funWheelStatus: (wheelId: string) =>
+      `/api/artist/settings/fun-wheel/${wheelId}/status`,
     funWheelActivities: '/api/artist/settings/fun-wheel/activities',
+    funWheelActivity: (activityId: string) =>
+      `/api/artist/settings/fun-wheel/activities/${activityId}`,
   },
   earnings: {
     summary: '/api/artist/earnings/summary',
     /** The full coin ledger, newest first. Paged with `?take=&skip=`. */
     transactions: '/api/artist/earnings/transactions',
+  },
+  /** KYC verification + payout bank account (read side). Same routes the web's
+   * `kycService` reads. Write/upload flow lives in the web only for now. */
+  kyc: {
+    status: '/api/artist/kyc',
+    bankAccount: '/api/artist/kyc/bank-account',
+    /** Presigned upload for a KYC document, then the doc key is sent to pan/aadhaar. */
+    documentsUploadUrl: '/api/artist/kyc/documents/upload-url',
+    documentViewUrl: (documentType: string) =>
+      `/api/artist/kyc/documents/${documentType}/view-url`,
+    pan: '/api/artist/kyc/pan',
+    aadhaar: '/api/artist/kyc/aadhaar',
+    submit: '/api/artist/kyc/submit',
   },
   /** Live broadcasting — artist (host) side. Hub: /hubs/broadcast. */
   broadcast: {
@@ -131,6 +162,8 @@ export const ENDPOINTS = {
   },
   /** Paid private messages — artist side (replies are free). Hub: /hubs/private-message. */
   privateMessages: {
+    /** PUT — accept-messages toggle + price per message. */
+    settings: '/api/artist/private-messages/settings',
     /** `?take=` — inbox, one row per fan, most recent first. */
     list: '/api/artist/private-messages',
     /** `?page=&pageSize=` — the thread with one fan. */

@@ -1,5 +1,11 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { Text } from '@components/ui/Text';
 import { colors, radius, spacing } from '@theme';
@@ -14,7 +20,13 @@ export interface SegmentedControlProps {
 }
 
 /** Horizontal single-select control. */
-const SegmentedControlComponent = ({ options, value, onChange, variant = 'pills', style }: SegmentedControlProps) => {
+const SegmentedControlComponent = ({
+  options,
+  value,
+  onChange,
+  variant = 'pills',
+  style,
+}: SegmentedControlProps) => {
   const inset = variant === 'inset';
 
   return (

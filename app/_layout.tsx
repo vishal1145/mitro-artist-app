@@ -28,7 +28,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppSplash } from '@components/AppSplash';
-import { AppErrorBoundary, NotificationToastHost } from '@components/shared';
+import { AppErrorBoundary, IncomingCallOverlay, NotificationToastHost } from '@components/shared';
+import { loadAgoraAppId, primeAgoraAppId } from '@services/agora/agoraAppId';
 import { attachInterceptors } from '@services/api';
 import { pushNotifications } from '@services/push/pushNotifications';
 import { queryClient } from '@services/queryClient';
@@ -77,7 +78,6 @@ const useAuthGuard = (): void => {
   const authHydrated = useAuthStore((s) => s.hydrated);
   const token = useAuthStore((s) => s.token);
   const appHydrated = useAppStore((s) => s.hydrated);
-  const hasOnboarded = useAppStore((s) => s.hasOnboarded);
 
   useEffect(() => {
     if (!authHydrated || !appHydrated) {
@@ -86,12 +86,13 @@ const useAuthGuard = (): void => {
 
     const inAuthGroup = segments[0] === '(auth)';
 
+    // Onboarding/welcome screen skipped — unauthenticated users go to login.
     if (!token && !inAuthGroup) {
-      router.replace(hasOnboarded ? '/(auth)/login' : '/(auth)/onboarding');
+      router.replace('/(auth)/login');
     } else if (token && inAuthGroup) {
       router.replace('/(app)/(tabs)/home');
     }
-  }, [authHydrated, appHydrated, token, hasOnboarded, segments, router]);
+  }, [authHydrated, appHydrated, token, segments, router]);
 };
 
 const RootLayout = () => {
@@ -129,7 +130,14 @@ const RootLayout = () => {
         await Promise.all([
           useAppStore.getState().bootstrap(),
           useAuthStore.getState().bootstrap(),
+          // Last known Agora App ID, straight off the device — ready before
+          // the network answers, so a cold start can still go live.
+          primeAgoraAppId(),
         ]);
+        // Refresh it from /api/artist/config in the background. Mirrors the
+        // artist web's `agoraClientService.loadAppId()` call in main.tsx:
+        // fire-and-forget, long before the artist reaches Go Live.
+        void loadAgoraAppId();
       } catch (error) {
         logger.error('App bootstrap failed', { error: String(error) });
       } finally {
@@ -139,6 +147,14 @@ const RootLayout = () => {
 
     void bootstrap();
   }, []);
+
+  // /api/artist/config is an authenticated route, so the boot-time fetch above
+  // is a no-op until there's a token. Refresh once there is one — a fresh
+  // install picks the App ID up the moment the artist signs in.
+  const token = useAuthStore((s) => s.token);
+  useEffect(() => {
+    if (token) void loadAgoraAppId();
+  }, [token]);
 
   // Independent of auth: a push tapped from a quit state has to deep-link
   // even before the auth store finishes hydrating. Wired once for the app's
@@ -180,6 +196,8 @@ const RootLayout = () => {
             </Stack>
             {/* Renders above every screen — toast-on-receipt for hub/push notifications. */}
             <NotificationToastHost />
+            {/* Global incoming private-call pop-up — floats over any screen, above the tab bar. */}
+            <IncomingCallOverlay />
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>

@@ -4,11 +4,12 @@ import { useRouter } from 'expo-router';
 import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Screen } from '@components/shared';
+import { HelpIcon } from '@components/history';
+import { PageHeader, Screen } from '@components/shared';
 import { Text } from '@components/ui';
 import { groupCallApi } from '@services/api/groupCallApi';
 import { activeGroupCallStore } from '@services/groupCall/activeGroupCall';
-import { fontFamily } from '@theme';
+import { layout, typography } from '@theme';
 import { showToast } from '@utils/toast';
 import { rf } from '@utils/responsive';
 
@@ -88,8 +89,8 @@ interface FieldProps {
   label: string;
   /** Renders the lowercase `<i>(optional)</i>` suffix the web label uses. */
   optional?: boolean;
-  /** Renders the `.gsched-help` question mark. */
-  help?: boolean;
+  /** The web's `.gsched-help` `title` text. Renders a tappable question mark. */
+  help?: string;
   hint?: string;
   children: ReactNode;
 }
@@ -99,7 +100,7 @@ const Field = memo(({ label, optional, help, hint, children }: FieldProps) => (
     <View style={styles.labelRow}>
       <Text style={styles.label}>{label}</Text>
       {optional ? <Text style={styles.labelOptional}>(optional)</Text> : null}
-      {help ? <Feather name="help-circle" size={rf(13)} color={web.help} /> : null}
+      {help ? <HelpIcon hint={help} size={13} /> : null}
     </View>
     {children}
     {hint ? <Text style={styles.hint}>{hint}</Text> : null}
@@ -124,7 +125,7 @@ const BoxInput = memo(({ value, onChangeText, placeholder, numeric, multiline }:
     keyboardType={numeric ? 'number-pad' : 'default'}
     multiline={multiline}
     textAlignVertical={multiline ? 'top' : 'center'}
-    style={[styles.input, multiline ? styles.inputMultiline : null]}
+    style={[styles.input, styles.inputText, multiline ? styles.inputMultiline : null]}
   />
 ));
 BoxInput.displayName = 'BoxInput';
@@ -387,26 +388,17 @@ const ScheduleSessionScreen = () => {
   }
 
   return (
-    <Screen tabBarSpacing scrollable contentContainerStyle={styles.content}>
-      {/* .gsched-header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          style={styles.back}
-        >
-          <Feather name="arrow-left" size={rf(18)} color={web.textStrong} />
-        </Pressable>
-        <View style={styles.headerCopy}>
-          <View style={styles.eyebrowRow}>
-            <Feather name="video" size={rf(13)} color={web.eyebrow} />
-            <Text style={styles.eyebrow}>Group Call</Text>
-          </View>
-          <Text style={styles.h1}>Schedule Group Session</Text>
-        </View>
-      </View>
-
+    <Screen
+      tabBarSpacing
+      scrollable
+      /* `content` owns the gutter — without this the Screen added its own on
+         top of it and this page sat twice as far from the edge. */
+      padded={false}
+      contentContainerStyle={styles.content}
+      header={
+        <PageHeader title="Schedule Session" onBack={() => router.back()} />
+      }
+    >
       {/* .gsched-card */}
       <View style={styles.card}>
         <LinearGradient
@@ -432,7 +424,7 @@ const ScheduleSessionScreen = () => {
 
           <Field
             label="Date & Time"
-            help
+            help="Sessions can only be scheduled for today — leave time blank to start on-demand."
             hint="Today only — blank time = starts on-demand, whenever you hit go."
           >
             <View style={styles.split}>
@@ -506,7 +498,7 @@ const ScheduleSessionScreen = () => {
 
           <Field
             label="Call Mode"
-            help
+            help="Choose whether fans can see your camera or only hear you."
             hint="Audio-only uses less bandwidth — good for talk-focused sessions."
           >
             <View style={styles.modeToggle}>
@@ -532,7 +524,7 @@ const ScheduleSessionScreen = () => {
                 <Text style={styles.approvalTitle}>
                   Require my approval before someone can join
                 </Text>
-                <Feather name="help-circle" size={rf(13)} color={web.help} />
+                <HelpIcon hint="Approve each fan before they enter the room." size={13} />
               </View>
               <Text style={styles.approvalNote}>
                 Off = fans join instantly up to your seat limit. On = they wait in a queue you
@@ -637,7 +629,7 @@ const ScheduleSessionScreen = () => {
 const styles = StyleSheet.create({
   /* .creator-main @media (max-width: 768px) { padding: 12px } + .gsched-page gap */
   content: {
-    paddingHorizontal: 12,
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: 24,
     gap: 20,
   },
@@ -667,18 +659,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   eyebrow: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(11),
-    lineHeight: rf(14),
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
+    ...typography.eyebrow,
     color: web.eyebrow,
   },
   h1: {
+    ...typography.h1,
     marginTop: 4,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
-    lineHeight: rf(26),
     color: web.textStrong,
   },
 
@@ -701,16 +687,12 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   h2: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(17),
-    lineHeight: rf(21),
+    ...typography.h2,
     color: web.textStrong,
   },
   cardHeadText: {
+    ...typography.bodySm,
     marginTop: 6,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(20),
     color: web.textSoft,
   },
 
@@ -732,32 +714,29 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   label: {
-    fontFamily: fontFamily.semibold,
-    fontSize: rf(11),
-    lineHeight: rf(14),
-    letterSpacing: 0.45,
-    textTransform: 'uppercase',
+    ...typography.label,
     color: web.textSoft,
   },
   labelOptional: {
-    fontFamily: fontFamily.semibold,
-    fontSize: rf(11),
-    lineHeight: rf(14),
+    ...typography.label,
     color: web.hint,
   },
 
   /* .gsched-field input / textarea */
+  // The field box. Shared with the two read-only <View> fields below, so it
+  // carries no text style of its own — see `inputText`.
   input: {
     minHeight: 36,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
     color: web.textStrong,
     borderWidth: 1,
     borderColor: web.inputBorder,
     borderRadius: 10,
     backgroundColor: web.inputBg,
+  },
+  inputText: {
+    ...typography.input,
   },
   inputMultiline: {
     minHeight: 60,
@@ -768,8 +747,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   disabledValue: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
+    ...typography.input,
     color: web.textSoft,
   },
 
@@ -786,18 +764,15 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   timeInput: {
+    ...typography.input,
     flex: 1,
     paddingVertical: 8,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
     color: web.textStrong,
   },
 
   /* .gsched-hint */
   hint: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(17),
+    ...typography.bodySm,
     color: web.hint,
   },
 
@@ -832,15 +807,11 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   modeText: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(16),
-    lineHeight: rf(20),
+    ...typography.body,
     color: web.textSoft,
   },
   modeTextActive: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(16),
-    lineHeight: rf(20),
+    ...typography.body,
     color: web.white,
   },
 
@@ -867,16 +838,12 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   approvalTitle: {
+    ...typography.bodyLg,
     flex: 1,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(18),
     color: web.textStrong,
   },
   approvalNote: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(17),
+    ...typography.bodySm,
     color: web.hint,
   },
 
@@ -931,9 +898,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   submitLabel: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(15),
-    lineHeight: rf(20),
+    ...typography.button,
     color: web.white,
   },
   checking: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -945,16 +910,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   blockedNoteText: {
+    ...typography.bodySm,
     flexShrink: 1,
-    fontFamily: fontFamily.semibold,
-    fontSize: rf(12),
-    lineHeight: rf(17),
     color: web.gold,
   },
   submitNote: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(17),
+    ...typography.bodySm,
     textAlign: 'center',
     color: web.hint,
   },
@@ -979,17 +940,13 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   h3: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(16),
-    lineHeight: rf(20),
+    ...typography.h3,
     color: web.textStrong,
   },
   sideSub: {
+    ...typography.bodySm,
     marginTop: 4,
     marginBottom: 14,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(17),
     color: web.hint,
   },
 
@@ -1003,17 +960,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   checkText: {
+    ...typography.body,
     flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(14),
-    lineHeight: rf(18),
     color: web.checkIdleText,
   },
   checkTextDone: {
+    ...typography.body,
     flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(14),
-    lineHeight: rf(18),
     color: web.textStrong,
   },
 
@@ -1030,16 +983,12 @@ const styles = StyleSheet.create({
     borderTopColor: web.mathBorder,
   },
   mathLabel: {
+    ...typography.bodySm,
     flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(18),
     color: web.textSoft,
   },
   mathValue: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(15),
-    lineHeight: rf(20),
+    ...typography.h3,
     color: web.gold,
   },
 });

@@ -1,15 +1,21 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import {
   InsightLine,
   PageHeader,
   Screen,
   SectionLabel,
-  SkeletonRows,
+  SkeletonNotificationRows,
 } from '@components/shared';
-import { Text } from '@components/ui';
+import { LucideIcon, Text } from '@components/ui';
 import { useNotificationStore } from '@store';
 import type { NotificationItem } from '@app-types/api';
 import { colors, fontFamily, layout, radius } from '@theme';
@@ -42,6 +48,9 @@ const NotificationsScreen = () => {
   const refresh = useNotificationStore((s) => s.refresh);
   const markRead = useNotificationStore((s) => s.markRead);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
+  const hasMore = useNotificationStore((s) => s.hasMore);
+  const loadingMore = useNotificationStore((s) => s.loadingMore);
+  const loadMore = useNotificationStore((s) => s.loadMore);
 
   // Web parity (Mitro.Artist.UI/src/main.tsx, CreatorNotificationsScreen):
   // tapping a row only flips it to read. The web's `.notif-row` onClick is
@@ -60,6 +69,13 @@ const NotificationsScreen = () => {
       scrollable
       padded={false}
       contentContainerStyle={styles.content}
+      // Same infinite scroll as the transaction ledger — the next page comes
+      // in as the artist nears the bottom, with no button to hunt for.
+      onEndReached={() => {
+        if (hasMore && !loadingMore) {
+          void loadMore();
+        }
+      }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -95,7 +111,7 @@ const NotificationsScreen = () => {
         lead={unreadCount ? `${unreadCount} need your attention` : 'You’re all caught up'}
       />
 
-      {!hydrated ? <SkeletonRows count={4} style={styles.skeleton} /> : null}
+      {!hydrated ? <SkeletonNotificationRows count={6} style={styles.skeleton} /> : null}
 
       {hydrated && items.length === 0 ? (
         <Text variant="bodySm" color="textMuted" align="center" style={styles.empty}>
@@ -134,7 +150,7 @@ const NotificationsScreen = () => {
                   <View style={[styles.accent, { backgroundColor: visual.tint }]} />
 
                   <View style={[styles.noteIcon, { backgroundColor: visual.fill }]}>
-                    <Feather name={visual.icon} size={rf(16)} color={visual.tint} />
+                    <LucideIcon name={visual.icon} size={rf(16)} color={visual.tint} />
                   </View>
 
                   <View style={styles.noteText}>
@@ -170,6 +186,12 @@ const NotificationsScreen = () => {
           </View>
         );
       })}
+
+      {hydrated && items.length > 0 && hasMore ? (
+        <View style={styles.loadMore}>
+          <ActivityIndicator size="small" color={colors.pink} />
+        </View>
+      ) : null}
     </Screen>
   );
 };
@@ -177,6 +199,12 @@ const NotificationsScreen = () => {
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: layout.screenPadding,
+  },
+  /** Footer spinner while the next page of notifications lands. */
+  loadMore: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
 
   markAll: {

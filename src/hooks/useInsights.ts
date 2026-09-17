@@ -1,4 +1,10 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  type UseInfiniteQueryResult,
+  type InfiniteData,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 
 import { queryKeys } from '@constants/queryKeys';
 import { insightsApi } from '@services/api';
@@ -50,6 +56,39 @@ export const useEarningsTransactions = (
     retry: false,
   });
 
+/**
+ * The same ledger, paged.
+ *
+ * `GET /api/artist/earnings/transactions` takes `take` + `skip`; the web only
+ * ever asks for the first 100 and stops, so anything older than that is simply
+ * unreachable there. Here the Transactions screen walks the pages, asking for
+ * the next one when the artist reaches the end of the list.
+ *
+ * A short page (fewer rows than `pageSize`) means the ledger is exhausted, so
+ * `getNextPageParam` returns undefined and `hasNextPage` goes false.
+ */
+export const useEarningsTransactionsPaged = (
+  pageSize = 25,
+): UseInfiniteQueryResult<InfiniteData<EarningsTransaction[], number>, Error> =>
+  useInfiniteQuery({
+    queryKey: [...queryKeys.earnings.all, 'transactions', 'paged', pageSize] as const,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const result = await insightsApi.getEarningsTransactions({
+        take: pageSize,
+        skip: pageParam,
+      });
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < pageSize ? undefined : allPages.length * pageSize,
+    staleTime: 30_000,
+    retry: false,
+  });
+
 /** Past broadcasts, newest first. */
 export const useBroadcastHistory = (
   take = 5,
@@ -64,6 +103,36 @@ export const useBroadcastHistory = (
       }
       return result.data;
     },
+    staleTime: 60_000,
+    retry: false,
+  });
+
+/**
+ * The same broadcast list, paged.
+ *
+ * `GET /api/artist/broadcast/history` takes `take` + `skip`. The screen walks
+ * the pages as the artist scrolls, exactly like the Transactions ledger: a
+ * short page means the history is exhausted, so `getNextPageParam` returns
+ * undefined and `hasNextPage` goes false.
+ */
+export const useBroadcastHistoryPaged = (
+  pageSize = 20,
+): UseInfiniteQueryResult<InfiniteData<BroadcastHistoryItem[], number>, Error> =>
+  useInfiniteQuery({
+    queryKey: [...queryKeys.broadcast.all, 'history', 'paged', pageSize] as const,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const result = await insightsApi.getBroadcastHistory({
+        take: pageSize,
+        skip: pageParam,
+      });
+      if (!result.success) {
+        throw new AuthError(result.error);
+      }
+      return result.data;
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < pageSize ? undefined : allPages.length * pageSize,
     staleTime: 60_000,
     retry: false,
   });

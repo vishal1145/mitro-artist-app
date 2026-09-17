@@ -11,8 +11,14 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients, radius } from '@theme';
-import { rf } from '@utils/responsive';
+import {
+  colors,
+  fontFamily,
+  gradientDirection,
+  gradients,
+  radius,
+  typography,
+} from '@theme';
 
 export interface AddRewardDialogProps {
   visible: boolean;
@@ -89,7 +95,12 @@ const AddRewardDialogComponent = ({
               styles.card,
               {
                 transform: [
-                  { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                  {
+                    scale: anim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.92, 1],
+                    }),
+                  },
                 ],
               },
             ]}
@@ -122,11 +133,16 @@ const AddRewardDialogComponent = ({
               keyboardType="number-pad"
               maxLength={4}
               style={styles.input}
-              accessibilityLabel="Token price"
+              accessibilityLabel="Coin price"
             />
 
             {error ? (
-              <Text variant="bodySm" color="error" align="center" style={styles.error}>
+              <Text
+                variant="bodySm"
+                color="error"
+                align="center"
+                style={styles.error}
+              >
                 {error}
               </Text>
             ) : null}
@@ -134,7 +150,10 @@ const AddRewardDialogComponent = ({
             <Pressable
               onPress={() => onSubmit(name.trim(), parsedTokens)}
               disabled={!canSave || isSaving}
-              style={[styles.confirm, !canSave || isSaving ? styles.busy : null]}
+              style={[
+                styles.confirm,
+                !canSave || isSaving ? styles.busy : null,
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Save reward"
             >
@@ -157,7 +176,11 @@ const AddRewardDialogComponent = ({
               accessibilityRole="button"
               accessibilityLabel="Cancel"
             >
-              <Text variant="bodyLg" color="textSecondary" style={styles.ghostLabel}>
+              <Text
+                variant="bodyLg"
+                color="textSecondary"
+                style={styles.ghostLabel}
+              >
                 Cancel
               </Text>
             </Pressable>
@@ -199,6 +222,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
+    ...typography.input,
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
@@ -206,8 +230,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     color: colors.textPrimary,
-    fontFamily: fontFamily.body,
-    fontSize: rf(11),
     marginBottom: 16,
   },
   error: {
@@ -231,8 +253,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   confirmLabel: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(13),
+    ...typography.buttonSm,
     color: colors.white,
   },
   ghost: {

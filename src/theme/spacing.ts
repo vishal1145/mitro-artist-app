@@ -66,8 +66,17 @@ export const size = {
 
 /** Padding and gap constants. */
 export const layout = {
-  /** Screen horizontal padding: 22–26. */
-  screenPadding: 24,
+  /**
+   * Screen horizontal gutter — the ONLY place screen-edge spacing is set.
+   *
+   * This is the dashboard's gap, and the dashboard is the reference for the
+   * whole app. `Screen` applies it once (to its `padded` body and to its
+   * header slot); a screen that opts out with `padded={false}` applies it
+   * once on its own content container instead. Never both, and never again
+   * on a wrapper inside the content — that is what made every non-dashboard
+   * screen sit further from the edge than this one.
+   */
+  screenPadding: 16,
   /** Cards: 20–22 top/sides, 18 bottom. */
   cardPadding: 22,
   cardPaddingBottom: 18,

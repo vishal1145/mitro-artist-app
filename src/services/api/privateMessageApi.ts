@@ -15,6 +15,28 @@ import { ENDPOINTS } from './endpoints';
  * half is in @services/realtime/privateMessageHub.
  */
 export const privateMessageApi = {
+  /**
+   * Turn paid private messages on/off, and set what a fan pays per message.
+   *
+   * Mirrors the artist web's `privateMessageService.setSettings` exactly: the
+   * price key is omitted entirely when the artist left the field blank, so the
+   * backend keeps whatever price it already had.
+   */
+  async setSettings(
+    acceptsPrivateMessages: boolean,
+    pricePerMessage?: number,
+  ): Promise<Result<null>> {
+    try {
+      await api.put(ENDPOINTS.privateMessages.settings, {
+        acceptsPrivateMessages,
+        ...(pricePerMessage !== undefined ? { pricePerMessage } : {}),
+      });
+      return { success: true, data: null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
   /** Inbox — one row per fan, most recent first. Bare array. */
   async listConversations(take = 50): Promise<Result<ArtistConversationSummary[]>> {
     try {

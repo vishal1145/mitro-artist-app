@@ -8,11 +8,9 @@ import {
   StyleSheet,
   TextInput,
   View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from 'react-native';
 
-import { Screen, Skeleton } from '@components/shared';
+import { PageHeader, Screen, Skeleton } from '@components/shared';
 import { LucideIcon, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
 import { activePrivateCallStore } from '@services/privateCall/activePrivateCall';
@@ -22,14 +20,7 @@ import type {
   PrivateCallHistoryItem,
   PrivateCallRequestItem,
 } from '@app-types/privateCall';
-import {
-  fontFamily,
-  gradientDirection,
-  palette,
-  webColors,
-  webGradients,
-} from '@theme';
-import { rf } from '@utils/responsive';
+import { fontFamily, gradientDirection, layout, palette, typography, webColors, webGradients } from '@theme';
 
 /* Timings copied from the web screen (PrivateCallScreen.tsx). The backend
  * auto-expires a pending request 60s after it's created — the tick only drives
@@ -37,8 +28,6 @@ import { rf } from '@utils/responsive';
 const COUNTDOWN_TICK_MS = 1000;
 const REQUEST_POLL_MS = 8000;
 const HISTORY_PAGE_SIZE = 20;
-/** How close to the bottom (px) the history list must be before the next page loads. */
-const HISTORY_SCROLL_THRESHOLD_PX = 48;
 
 const secondsUntil = (iso: string): number =>
   Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
@@ -249,18 +238,13 @@ const PrivateCallsScreen = () => {
     loadingMoreRef.current = false;
   }, [hasMoreHistory, isLoadingHistory]);
 
-  const handleHistoryScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-      if (
-        contentSize.height - contentOffset.y - layoutMeasurement.height <=
-        HISTORY_SCROLL_THRESHOLD_PX
-      ) {
-        loadMoreHistory();
-      }
-    },
-    [loadMoreHistory],
-  );
+  /**
+   * Fired by `Screen` once the page itself is scrolled near its bottom. The
+   * list is no longer its own scroller, so this is the only paging trigger.
+   */
+  const handleHistoryEndReached = useCallback(() => {
+    void loadMoreHistory();
+  }, [loadMoreHistory]);
 
   // Turn 1:1 calls on/off (and save the price). Fans can only send requests
   // while this is ON — same contract as the web.
@@ -325,31 +309,9 @@ const PrivateCallsScreen = () => {
       scrollable
       padded={false}
       contentContainerStyle={styles.content}
+      onEndReached={handleHistoryEndReached}
+      header={<PageHeader title="Private Calls" onBack={() => router.back()} />}
     >
-      {/* Header — back button, eyebrow, title */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.back}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <LucideIcon
-            name="arrow-left"
-            size={18}
-            color={webColors.textStrong}
-          />
-        </Pressable>
-        <View style={styles.headerCopy}>
-          <View style={styles.eyebrow}>
-            <LucideIcon name="phone" size={13} color={webColors.pinkLight} />
-            <Text style={styles.eyebrowText}>Private Call</Text>
-          </View>
-          <Text style={styles.h1}>Private Calls</Text>
-        </View>
-      </View>
-
       <Text style={styles.pageSub}>
         1:1 paid calls — a fan requests, you accept or reject, then connect for
         a live call.
@@ -402,7 +364,9 @@ const PrivateCallsScreen = () => {
               <View style={styles.settingsCopyText}>
                 <View style={styles.settingsTitleRow}>
                   <Text style={styles.settingsTitle}>Accept private calls</Text>
-                  {!isLoadingSettings ? (
+                  {isLoadingSettings ? (
+                    <Skeleton width={38} height={20} round={999} />
+                  ) : (
                     <View
                       style={[
                         styles.statusPill,
@@ -418,7 +382,7 @@ const PrivateCallsScreen = () => {
                         {on ? 'ON' : 'OFF'}
                       </Text>
                     </View>
-                  ) : null}
+                  )}
                 </View>
                 <Text style={styles.settingsSub}>
                   Fans can send 1:1 call requests. First 5 minutes are charged
@@ -565,12 +529,12 @@ const PrivateCallsScreen = () => {
                     </LinearGradient>
 
                     <View style={styles.viewerBody}>
-                      <Text style={styles.viewerName} numberOfLines={1}>
+                      <Text style={styles.viewerName}>
                         {r.userDisplayName || 'Guest'}
                       </Text>
                       <View style={styles.viewerStatus}>
-                        <Text style={styles.viewerStatusText} numberOfLines={1}>
-                          {`${r.message ? `"${r.message}" — ` : ''}${r.initialChargeSnapshot} tokens for 5 min • `}
+                        <Text style={styles.viewerStatusText}>
+                          {`${r.message ? `"${r.message}" — ` : ''}${r.initialChargeSnapshot} coins for 5 min • `}
                         </Text>
                         <LucideIcon
                           name="clock-3"
@@ -661,13 +625,7 @@ const PrivateCallsScreen = () => {
               <Text style={styles.emptyText}>No past private calls yet.</Text>
             </View>
           ) : (
-            <ScrollView
-              style={styles.historyList}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator={false}
-              scrollEventThrottle={16}
-              onScroll={handleHistoryScroll}
-            >
+            <View style={styles.historyList}>
               {history.map((item, i) => {
                 const meta = historyStatusMeta(item.status, item.endReason);
                 const duration = formatCallDuration(
@@ -700,7 +658,7 @@ const PrivateCallsScreen = () => {
                         {meta.label}
                       </Text>
                       <Text style={styles.historyMeta} numberOfLines={1}>
-                        {`${item.acceptedAtUtc ? new Date(item.acceptedAtUtc).toLocaleString() : 'never accepted'}${duration ? ` • ${duration}` : ''}`}
+                        {`${item.acceptedAtUtc ? new Date(item.acceptedAtUtc).toLocaleString('en-US') : 'never accepted'}${duration ? ` • ${duration}` : ''}`}
                       </Text>
                     </View>
                     <View style={styles.historyAmount}>
@@ -710,7 +668,7 @@ const PrivateCallsScreen = () => {
                         color={webColors.textStrong}
                       />
                       <Text style={styles.historyAmountText}>
-                        {item.totalCoinsCharged.toLocaleString()}
+                        {(item.totalCoinsCharged - item.totalRefundedCoins).toLocaleString()}
                       </Text>
                     </View>
                   </View>
@@ -723,7 +681,7 @@ const PrivateCallsScreen = () => {
                   <HistorySkeletonRow />
                 </>
               ) : null}
-            </ScrollView>
+            </View>
           )}
 
           <Text style={styles.historyNote}>
@@ -742,7 +700,7 @@ const PrivateCallsScreen = () => {
  * two-column `.gsched-grid` collapses to one column. */
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 12,
+    paddingHorizontal: layout.screenPadding,
     paddingTop: 12,
     paddingBottom: 24,
   },
@@ -772,26 +730,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   eyebrowText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(11.52),
-    lineHeight: rf(14),
-    letterSpacing: 0.69,
-    textTransform: 'uppercase',
+    ...typography.eyebrow,
     color: webColors.pinkLight,
   },
   h1: {
+    ...typography.h1,
     marginTop: 4,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(22.4),
-    lineHeight: rf(25.76),
     color: webColors.textStrong,
   },
   /* .pcall-page-sub — page gap 20 plus its own -10 margin-top. */
   pageSub: {
+    ...typography.subtitle,
     marginTop: 10,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13.6),
-    lineHeight: rf(21.08),
     color: webColors.white50,
   },
 
@@ -800,7 +750,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginHorizontal: 12,
+    /* No horizontal margin — the content container already owns the gutter,
+       and this was inset a further 12 from every other card on the page. */
     padding: 14,
     borderWidth: 1,
     borderColor: webColors.greenBorder,
@@ -815,14 +766,11 @@ const styles = StyleSheet.create({
   },
   resumeCopy: { flex: 1, minWidth: 0, gap: 2 },
   resumeTitle: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(14),
+    ...typography.h3,
     color: webColors.textStrong,
   },
   resumeSub: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    ...typography.bodySm,
     color: webColors.textSoft,
   },
   resumeCta: {
@@ -835,8 +783,7 @@ const styles = StyleSheet.create({
     backgroundColor: webColors.green,
   },
   resumeCtaText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(12.5),
+    ...typography.buttonSm,
     color: webColors.onGreen,
   },
   grid: {
@@ -887,9 +834,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   settingsTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(15.04),
-    lineHeight: rf(18),
+    ...typography.h3,
     color: webColors.textStrong,
   },
   /* .pcall-status-pill — the web's 1px ring is drawn as a border here. */
@@ -911,16 +856,11 @@ const styles = StyleSheet.create({
     borderColor: webColors.offPillRing,
   },
   statusPillText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10.56),
-    lineHeight: rf(13),
-    letterSpacing: 0.53,
+    ...typography.badge,
   },
   settingsSub: {
+    ...typography.bodySm,
     marginTop: 3,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12.48),
-    lineHeight: rf(16.85),
     color: webColors.textSoft,
   },
 
@@ -936,6 +876,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
+    ...typography.input,
     height: 40,
     paddingLeft: 30,
     paddingRight: 38,
@@ -944,8 +885,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: webColors.inputBorder,
     backgroundColor: webColors.inputFill,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(16),
     color: webColors.textStrong,
     textAlignVertical: 'center',
   },
@@ -960,11 +899,13 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   inputSuffixText: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(11.52),
-    lineHeight: rf(14),
+    ...typography.label,
     color: webColors.white40,
   },
+  /* `.bcast-price-card-form button` shares --radius-sm with the input beside
+     it, so this is 10 like the price field — not a pill. The radius is
+     repeated on the gradient itself because Android does not reliably clip a
+     child to the parent's rounded corners, which left it looking square. */
   ctaWrap: {
     borderRadius: 10,
     overflow: 'hidden',
@@ -972,6 +913,7 @@ const styles = StyleSheet.create({
   cta: {
     height: 40,
     paddingHorizontal: 16,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -979,9 +921,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   ctaLabel: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(16),
-    lineHeight: rf(19),
+    ...typography.button,
     color: webColors.onGreen,
   },
   pressed: {
@@ -990,10 +930,8 @@ const styles = StyleSheet.create({
 
   /* .gcall-note.pcall-price-note — the web also drops it to 65% opacity. */
   priceNote: {
+    ...typography.bodySm,
     marginBottom: 12.5,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12.48),
-    lineHeight: rf(18.72),
     color: webColors.textSoft,
     opacity: 0.65,
   },
@@ -1022,9 +960,7 @@ const styles = StyleSheet.create({
     backgroundColor: webColors.panelHeader,
   },
   panelTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(16),
-    lineHeight: rf(19),
+    ...typography.h2,
     color: webColors.textStrong,
   },
   panelList: {
@@ -1044,9 +980,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   emptyText: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(16),
-    lineHeight: rf(24.8),
+    ...typography.body,
     textAlign: 'center',
     color: webColors.textSoft,
   },
@@ -1061,7 +995,8 @@ const styles = StyleSheet.create({
   /* --- .bcast-activity-row.bcast-viewer-row --- */
   viewerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    /* .bcast-activity-row { align-items: flex-start } */
+    alignItems: 'flex-start',
     gap: 10,
     paddingVertical: 8,
     paddingHorizontal: 6,
@@ -1074,29 +1009,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* The web row is a <p> with the name and the status inline; at phone width
+     that paragraph wraps, dropping the status (margin-left:auto) onto its own
+     right-aligned line. Same two lines here — never a truncated name. */
   viewerBody: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   viewerName: {
-    flexShrink: 1,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(13.76),
-    lineHeight: rf(19.3),
+    ...typography.bodyLg,
     color: webColors.textStrong,
   },
   viewerStatus: {
-    marginLeft: 'auto',
+    alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
     flexShrink: 1,
   },
   viewerStatusText: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12.16),
-    lineHeight: rf(17),
+    ...typography.bodySm,
     color: webColors.textSoft,
   },
   circleBtn: {
@@ -1134,23 +1064,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sideCardTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(15.68),
-    lineHeight: rf(19),
+    ...typography.h3,
     color: webColors.textStrong,
   },
   sideCardSub: {
+    ...typography.bodySm,
     marginTop: 4,
     marginBottom: 14,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12.16),
-    lineHeight: rf(17.02),
     color: webColors.white40,
   },
 
   /* --- .pcall-history-list / .pcall-history-row --- */
+  /**
+   * No `maxHeight` on purpose: the rows used to live in a nested 420px
+   * scroller, so the page-level scroll never reached the end of the list and
+   * the next page was never requested. The list now grows with the page and
+   * `Screen`'s `onEndReached` does the paging, exactly like Transactions.
+   */
   historyList: {
-    maxHeight: 420,
     marginTop: 4,
     paddingRight: 4,
   },
@@ -1188,16 +1119,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   historyTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(13.12),
-    lineHeight: rf(16),
-    textTransform: 'capitalize',
+    ...typography.bodyLg,
     color: webColors.textStrong,
   },
   historyMeta: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(11.52),
-    lineHeight: rf(17.86),
+    ...typography.bodySm,
     color: webColors.white45,
   },
   historyAmount: {
@@ -1206,16 +1132,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyAmountText: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(12.8),
-    lineHeight: rf(16),
+    ...typography.buttonSm,
     color: webColors.textStrong,
   },
   historyNote: {
+    ...typography.bodySm,
     marginTop: 14,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13.6),
-    lineHeight: rf(20.4),
     color: webColors.textSoft,
   },
 });

@@ -14,13 +14,14 @@ import {
   Skeleton,
 } from '@components/shared';
 import { Text } from '@components/ui';
-import { useEarningsSummary } from '@hooks/useInsights';
+import { useFollowers } from '@hooks/useFollowers';
+import { useBroadcastHistorySummary, useEarningsSummary } from '@hooks/useInsights';
 import { useProfile } from '@hooks/useProfile';
 import { useAuthStore } from '@store/authStore';
 import { useNotificationStore } from '@store/notificationStore';
-import { colors, fontFamily, layout, radius } from '@theme';
+import { colors, fontFamily, layout, radius, typography } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
-import { formatTokens, initialsFrom, titleCase } from '@utils/format';
+import { compactCount, formatTokens, grouped, initialsFrom, titleCase } from '@utils/format';
 import { rf } from '@utils/responsive';
 
 import type { ColorToken } from '@theme';
@@ -28,6 +29,7 @@ import type { ColorToken } from '@theme';
 type FeatherIconName = keyof typeof Feather.glyphMap;
 
 type Href =
+  | '/(app)/(tabs)/me/edit-profile'
   | '/(app)/(tabs)/me/messages'
   | '/(app)/(tabs)/me/followers'
   | '/(app)/(tabs)/me/photos'
@@ -50,11 +52,20 @@ interface Row {
 
 const ACCOUNT: Row[] = [
   {
+    icon: 'user',
+    tint: colors.violet,
+    fill: colors.violetSoft,
+    title: 'Profile',
+    sub: 'Public details, rates & password',
+    route: '/(app)/(tabs)/me/edit-profile',
+  },
+  {
     icon: 'users',
     tint: colors.violet,
     fill: colors.violetSoft,
     title: 'Followers',
-    sub: '128 top supporters',
+    // Overridden at render with the real top-supporter count from useFollowers.
+    sub: 'Top supporters',
     route: '/(app)/(tabs)/me/followers',
   },
   // Photos is hidden until the backend gives `/photos/upload-url` a unique
@@ -71,7 +82,7 @@ const ACCOUNT: Row[] = [
     tint: colors.cyan,
     fill: colors.cyanSoft,
     title: 'Settings',
-    sub: 'Profile, reward menu, fun wheel',
+    sub: 'Reward menu & fun wheel',
     route: '/(app)/(tabs)/me/settings',
   },
   {
@@ -81,7 +92,7 @@ const ACCOUNT: Row[] = [
     title: 'KYC & Payouts',
     sub: 'Required before withdrawal',
     route: '/(app)/(tabs)/me/kyc-payouts',
-    pill: 'REQUIRED',
+    // `pill` is set at render from the real kycStatus (REQUIRED/PENDING/…).
   },
 ];
 
@@ -91,7 +102,7 @@ const ACTIVITY: Row[] = [
     tint: colors.green,
     fill: colors.successChip,
     title: 'Transaction History',
-    sub: 'Every token in and out',
+    sub: 'Every coin in and out',
     route: '/(app)/(tabs)/business/transactions',
   },
 ];
@@ -111,15 +122,37 @@ const MeScreen = () => {
 
   const { data: profile, isLoading, error: profileError } = useProfile();
   const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
-  const accountRows: Row[] = ACCOUNT;
+  const { data: followers } = useFollowers();
+  const { data: bcSummary } = useBroadcastHistorySummary();
 
+  const followerSummary = followers?.summary;
   const isApproved = profile?.approvalStatus === 'approved';
 
-  // Followers and Shows have no endpoint yet — they stay as placeholders.
+  // KYC pill tracks the real /profile/me kycStatus: approved hides the nudge,
+  // pending/rejected show their state, anything else (empty/unknown) = REQUIRED.
+  const kycPill = ((): string | undefined => {
+    switch (profile?.kycStatus) {
+      case 'approved':
+        return undefined;
+      case 'pending':
+        return 'PENDING';
+      case 'rejected':
+        return 'REJECTED';
+      default:
+        return 'REQUIRED';
+    }
+  })();
+
+  // Followers/Shows come from the same endpoints the web reads: /followers
+  // (summary.totalFollowers) and /broadcast/history/summary (totalShows).
   // Earned is the wallet balance from /profile/me; Total is everything ever
-  // earned, from /earnings/summary. They differ once payouts start.
+  // earned, from /earnings/summary.
   const stats: Stat[] = [
-    { value: '48.2K', label: 'Followers', color: 'pink' },
+    {
+      value: followerSummary ? compactCount(followerSummary.totalFollowers) : '—',
+      label: 'Followers',
+      color: 'pink',
+    },
     {
       value: profile ? formatTokens(profile.walletTokens) : '—',
       label: 'Earned',
@@ -130,8 +163,20 @@ const MeScreen = () => {
       label: 'Total',
       color: 'green',
     },
-    { value: '12', label: 'Shows', color: 'cyan' },
+    { value: bcSummary ? String(bcSummary.totalShows) : '—', label: 'Shows', color: 'cyan' },
   ];
+
+  // The static ACCOUNT rows, with the Followers subtitle and KYC pill made
+  // dynamic from the real summaries — same values the web shows.
+  const accountRows: Row[] = ACCOUNT.map((row) => {
+    if (row.title === 'Followers') {
+      return { ...row, sub: `${followerSummary?.topSupporterCount ?? 0} top supporters` };
+    }
+    if (row.title === 'KYC & Payouts') {
+      return { ...row, pill: kycPill };
+    }
+    return row;
+  });
 
   const handleLogout = () => {
     setConfirmingLogout(false);
@@ -223,17 +268,6 @@ const MeScreen = () => {
               {profile.rejectedReason}
             </Text>
           ) : null}
-
-          <View style={styles.rating}>
-            <Feather name="star" size={rf(12)} color={colors.gold} />
-            <Feather name="star" size={rf(12)} color={colors.gold} />
-            <Feather name="star" size={rf(12)} color={colors.gold} />
-            <Feather name="star" size={rf(12)} color={colors.gold} />
-            <Feather name="star" size={rf(12)} color={colors.gold} />
-            <Text variant="bodySm" color="textPrimary" style={styles.ratingText}>
-              4.9 creator rating
-            </Text>
-          </View>
         </View>
       )}
 
@@ -254,7 +288,10 @@ const MeScreen = () => {
         ))}
       </View>
 
-      <InsightLine style={styles.insight} lead="940 new followers this week" />
+      <InsightLine
+        style={styles.insight}
+        lead={`${grouped(followerSummary?.newFollowersThisWeek ?? 0)} new followers this week`}
+      />
 
       <SectionLabel style={styles.sectionLabel}>ACCOUNT</SectionLabel>
       {accountRows.map((row, i) => renderRow(row, i === accountRows.length - 1))}
@@ -384,8 +421,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
   },
   badgeText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
+    ...typography.badge,
     color: colors.white,
   },
 

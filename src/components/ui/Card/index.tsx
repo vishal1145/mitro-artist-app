@@ -28,9 +28,7 @@ const CardComponent = ({
   accessibilityHint,
 }: CardProps) => {
   const content = (
-    <View
-      style={[styles.card, elevated ? styles.elevated : null, style]}
-    >
+    <View style={[styles.card, elevated ? styles.elevated : null, style]}>
       {children}
     </View>
   );

@@ -341,10 +341,138 @@ export const webColors = {
   goldTone: 'rgba(255, 200, 107, 0.16)',
   dangerTone: 'rgba(255, 89, 89, 0.15)',
 
+  /* --- History pages (.gcall-history-page / .bcast-history-page) --------- */
+  /** --premium-dim — meta lines, uppercase micro-labels. */
+  dim: '#81768F',
+  /** --premium-muted — body copy inside callouts and rows. */
+  muted: '#B8ACC7',
+  /** --premium-cyan / --premium-purple — accent inks. */
+  cyan: '#34E7FF',
+  violet: '#6B2DF4',
+  /** --premium-surface — the card fill these pages use. */
+  surface: 'rgba(17, 16, 34, 0.68)',
+  /** --premium-surface-soft — idle pill / ghost-button fill. */
+  surfaceSoft: 'rgba(255, 255, 255, 0.055)',
+  /** Inner tiles (metric chips, pending rows) sit on solid #0D0C1F. */
+  innerCard: '#0D0C1F',
+  /** The 1px rule between a card's row and its expanded detail. */
+  hairline06: 'rgba(255, 255, 255, 0.06)',
+  /** Status-chip + info-callout tints. */
+  neutralChip: 'rgba(255, 255, 255, 0.07)',
+  cyanCallout: 'rgba(52, 231, 255, 0.06)',
+  cyanCalloutBorder: 'rgba(52, 231, 255, 0.25)',
+  cyanChip: 'rgba(52, 231, 255, 0.14)',
+  goldCallout: 'rgba(255, 200, 107, 0.06)',
+  goldCalloutBorder: 'rgba(255, 200, 107, 0.3)',
+  purpleChip: 'rgba(140, 77, 255, 0.15)',
+  purpleChipBorder: 'rgba(140, 77, 255, 0.3)',
+  greenChipBorder: 'rgba(66, 245, 167, 0.3)',
+  greenGhostBorder: 'rgba(66, 245, 167, 0.4)',
+  redChip: 'rgba(255, 59, 82, 0.14)',
+  redInk: '#FF8A97',
+
+  /* --- Settings / KYC (.creator-settings-page) --------------------------- */
+  /** --premium-surface-strong — inputs, reward rows, tab bar, pills.
+   *  (--premium-border-hot is declared once further down as `borderHot`.) */
+  surfaceStrong: 'rgba(28, 24, 48, 0.84)',
+  /** .info-callout.pink */
+  pinkCallout: 'rgba(255, 63, 173, 0.06)',
+  pinkCalloutBorder: 'rgba(255, 63, 173, 0.28)',
+  /** .info-callout.green */
+  greenCallout: 'rgba(66, 245, 167, 0.08)',
+  /** .btn-danger */
+  dangerInk: '#FF5C7A',
+  dangerChip: 'rgba(255, 92, 122, 0.14)',
+  dangerChipBorder: 'rgba(255, 92, 122, 0.35)',
+  /** .wheel-visual conic-gradient stops, in order from 0deg. */
+  wheelSlices: ['#FF3FAD', '#8C4DFF', '#33E6FF', '#FFC86B', '#35EEA3', '#6B2DF4'],
+
   /** Plain white alphas the web uses directly on text. */
   white40: 'rgba(255, 255, 255, 0.4)',
+  /** Idle `.pill-btn` / `.analytics-btn` label. */
+  white62: 'rgba(255, 255, 255, 0.62)',
+  /** `.info-help-icon` — the faint (?) glyph beside a label. */
+  white35: 'rgba(255, 255, 255, 0.35)',
+  /** `.info-help-icon::after` — the tooltip bubble's fill and hairline. */
+  tooltipFill: '#16142C',
+  tooltipBorder: 'rgba(255, 255, 255, 0.12)',
+  /** Dimmer behind the tapped tooltip. The web has no scrim (it uses hover). */
+  scrim: 'rgba(0, 0, 0, 0.55)',
   white45: 'rgba(255, 255, 255, 0.45)',
   white50: 'rgba(255, 255, 255, 0.5)',
+
+  /* --- Verification banner (.creator-main .verify-banner) ---------------- */
+  /**
+   * The KYC / approval strip above the dashboard. Web declares its own amber
+   * here rather than reusing --premium-gold, so these are its literals, not
+   * `palette.gold`. Three tones: warn (amber), danger (red), info (cyan — it
+   * borrows `cyanCallout*` above, which is the same rgba web uses).
+   */
+  verifyWarn: '#FFB020',
+  verifyWarnBg: 'rgba(255, 176, 32, 0.08)',
+  verifyWarnBorder: 'rgba(255, 176, 32, 0.3)',
+  /** `.verify-banner-btn` ink — near-black on the amber fill. */
+  verifyWarnInk: '#1A1206',
+  verifyDanger: '#FF5252',
+  verifyDangerBg: 'rgba(255, 82, 82, 0.08)',
+  verifyDangerBorder: 'rgba(255, 82, 82, 0.32)',
+
+  /* --- Followers list (.followers-list-page) ----------------------------- */
+  /** --premium-border-hot — the msg-btn's hover ring. */
+  borderHot: 'rgba(255, 67, 178, 0.42)',
+  /** `.eyebrow` on this page — pink pill, not the gold one history pages use. */
+  pinkChip: 'rgba(255, 63, 173, 0.14)',
+  pinkChipBorder: 'rgba(255, 63, 173, 0.3)',
+  /** `.pulse-card` — two radial washes over a 160deg base. */
+  pulseBase: ['#171331', '#0A0918'] as const,
+  pulsePinkWash: 'rgba(255, 63, 173, 0.22)',
+  pulsePurpleWash: 'rgba(140, 77, 255, 0.24)',
+  /** `.f-avatar` — 135deg pink → violet. */
+  avatarHot: ['#FF3FAD', '#6B2DF4'] as const,
+  /** `.f-badge` tints, one per `followerBadgeClass` bucket. */
+  badgeGreen: 'rgba(66, 245, 167, 0.15)',
+  badgeCyan: 'rgba(52, 231, 255, 0.15)',
+  badgeGold: 'rgba(255, 200, 107, 0.15)',
+  badgePurple: 'rgba(140, 77, 255, 0.16)',
+  badgePink: 'rgba(255, 63, 173, 0.14)',
+  /** `.dim-hint` — the empty-state line inside the grid. */
+  dimHint: '#9B9BAB',
+
+  /* --- KYC & Payouts (.creator-settings-page, KycSettingsTab.tsx) -------- */
+  /** `input::placeholder` (styles.css:368). */
+  placeholderInk: 'rgba(255, 248, 255, 0.46)',
+  /** `.kyc-dot.done` / `.kyc-dot.current` ink — dark text on the filled dot. */
+  onGreenDeep: '#062017',
+  onGoldDeep: '#2B1C00',
+  /** `.btn-upload` — violet ghost button. */
+  uploadInk: '#CDB8FF',
+  uploadFill: 'rgba(140, 77, 255, 0.16)',
+  uploadBorder: 'rgba(140, 77, 255, 0.32)',
+  /** `.upload-thumb-remove`. */
+  thumbRemoveFill: 'rgba(0, 0, 0, 0.6)',
+  thumbRemoveBorder: 'rgba(255, 255, 255, 0.25)',
+  /** `.info-callout.red` + `.kyc-missing-reasons` — plain #ef4444 family,
+   *  distinct from the `danger*` (#FF5C7A) set used by the settings buttons. */
+  red500: '#EF4444',
+  redCallout: 'rgba(239, 68, 68, 0.08)',
+  redCalloutBorder: 'rgba(239, 68, 68, 0.3)',
+  redReasonBorder: 'rgba(239, 68, 68, 0.28)',
+  redReasonInk: '#FCA5A5',
+
+  /* --- Transaction history (.tx-history-page) ---------------------------- */
+  /** --premium-danger — `.tx-status.refunded` ink. */
+  premiumDanger: '#FF5468',
+  /** `.tx-status.refunded` fill. */
+  txRefundedChip: 'rgba(255, 84, 104, 0.14)',
+
+  /* --- .popup-modal (delete-conflict dialog) ----------------------------- */
+  /** `.popup-modal-overlay { background: rgba(0,0,0,.7) }`. */
+  popupScrim: 'rgba(0, 0, 0, 0.7)',
+  /** `.popup-modal { background: #1a1a2e; border: 1px solid #ffffff20 }`. */
+  popupFill: '#1A1A2E',
+  popupBorder: 'rgba(255, 255, 255, 0.125)',
+  /** `.popup-modal p { color: #aaa }`. */
+  popupBodyInk: '#AAAAAA',
 } as const;
 
 /** Multi-stop fills copied from the same stylesheet. All are CSS 135deg/145deg
@@ -362,6 +490,21 @@ export const webGradients = {
   greenCta: ['#42F5A7', '#6AA238'],
   /** .bcast-activity-avatar */
   avatar: ['#FF3FAD', '#8C4DFF'],
+  /** .pill-btn.on / .analytics-btn.on — the history pages' active pill. */
+  activePill: ['#FF3FAD', '#6B2DF4'],
+  /** .bd-fill — revenue-breakdown bar. */
+  cyanBar: ['#8BE9FF', '#34E7FF'],
+  /** .mini-fill — metric-tile bar. */
+  goldBar: ['#FFDCA0', '#FFC86B'],
+  /** .rewards-card */
+  rewardsCard: ['rgba(255, 200, 107, 0.08)', 'rgba(255, 63, 173, 0.05)'],
+  /** --premium-gradient — 135deg #ff3fad 0%, #8c4dff 52%, #34e7ff 100%.
+   *  `.eyebrow` paints its text with this via `background-clip: text`. */
+  premium: ['#FF3FAD', '#8C4DFF', '#34E7FF'],
+  /** Stop offsets for `premium`, matching the CSS percentages. */
+  premiumStops: [0, 0.52, 1],
+  /** `.popup-btn-confirm { background: linear-gradient(135deg,#ff4757,#ff6b81) }` */
+  popupConfirm: ['#FF4757', '#FF6B81'],
 } as const;
 
 /* -------------------------------------------------------------------------- */

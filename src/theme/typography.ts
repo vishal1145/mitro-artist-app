@@ -59,6 +59,17 @@ export const fontSize = {
   bodySm: rf(12),
   label: rf(10),
 
+  /** Uppercase kicker above a screen title. */
+  eyebrow: rf(11),
+  /** Stat-strip figure — smaller than a hero number, bigger than a heading. */
+  metric: rf(17),
+  /** Text the artist types. Never smaller than this: 11-13px inputs read as disabled. */
+  input: rf(14),
+  /** Compact button (dialogs, inline actions). */
+  buttonSm: rf(13),
+  /** Count bubbles and status pills. */
+  badge: rf(9),
+
   // Legacy scale aliases.
   xs: rf(11),
   sm: rf(12),
@@ -79,6 +90,11 @@ export type TypographyVariant =
   | 'body'
   | 'bodySm'
   | 'label'
+  | 'eyebrow'
+  | 'metric'
+  | 'input'
+  | 'buttonSm'
+  | 'badge'
   | 'numHero'
   | 'numLg'
   // Legacy variant names still used by screens.
@@ -146,6 +162,42 @@ export const typography: Record<TypographyVariant, TextStyle> = {
     textTransform: 'uppercase',
   },
 
+  /* --- Semantic roles ---------------------------------------------------- */
+
+  /** Uppercase kicker sitting directly above an `h1` screen title. */
+  eyebrow: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: fontSize.eyebrow,
+    lineHeight: rf(14),
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+  /** The figure in a summary/stat cell. */
+  metric: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: fontSize.metric,
+    lineHeight: rf(22),
+  },
+  /** Every `TextInput` in the app. */
+  input: {
+    fontFamily: fontFamily.medium,
+    fontSize: fontSize.input,
+    lineHeight: rf(20),
+  },
+  /** Dialog and inline buttons — one step below the full-width CTA. */
+  buttonSm: {
+    fontFamily: fontFamily.bold,
+    fontSize: fontSize.buttonSm,
+    lineHeight: rf(18),
+  },
+  /** Count bubbles, status pills. */
+  badge: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: fontSize.badge,
+    lineHeight: rf(12),
+    letterSpacing: 0.3,
+  },
+
   // --- Legacy aliases ---
   display: {
     fontFamily: fontFamily.extrabold,
@@ -158,11 +210,17 @@ export const typography: Record<TypographyVariant, TextStyle> = {
     fontSize: fontSize.body,
     lineHeight: rf(20),
   },
+  /** Screen subtitle — the sentence under an `h1`/`eyebrow` block. */
   subtitle: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.subtitle,
-    lineHeight: rf(21),
+    fontFamily: fontFamily.regular,
+    fontSize: rf(13),
+    lineHeight: rf(19),
   },
+  /**
+   * Deprecated alias of `bodySm` — identical values, kept so the ~60 existing
+   * call sites keep compiling. New code should use `bodySm`; there is one
+   * secondary-text role, not two.
+   */
   caption: {
     fontFamily: fontFamily.medium,
     fontSize: fontSize.bodySm,

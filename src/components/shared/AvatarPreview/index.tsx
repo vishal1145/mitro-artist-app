@@ -3,9 +3,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useEffect, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet } from 'react-native';
 
+import { LucideIcon } from '@components/ui/LucideIcon';
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, gradientDirection, gradients, radius } from '@theme';
-import { rf } from '@utils/responsive';
+import {
+  colors,
+  fontFamily,
+  gradientDirection,
+  gradients,
+  radius,
+  typography,
+} from '@theme';
 
 export interface AvatarPreviewProps {
   visible: boolean;
@@ -71,11 +78,28 @@ const AvatarPreviewComponent = ({
             styles.card,
             {
               transform: [
-                { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                {
+                  scale: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.92, 1],
+                  }),
+                },
               ],
             },
           ]}
         >
+          {/* Same rule as the backdrop: can't cancel once the request is away. */}
+          <Pressable
+            onPress={onCancel}
+            disabled={isUploading}
+            hitSlop={10}
+            style={[styles.close, isUploading ? styles.busy : null]}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <LucideIcon name="x" size={18} color={colors.textSecondary} />
+          </Pressable>
+
           <Text variant="h3" align="center" style={styles.title}>
             Use this photo?
           </Text>
@@ -98,7 +122,12 @@ const AvatarPreviewComponent = ({
           </LinearGradient>
 
           {error ? (
-            <Text variant="bodySm" color="error" align="center" style={styles.error}>
+            <Text
+              variant="bodySm"
+              color="error"
+              align="center"
+              style={styles.error}
+            >
               {error}
             </Text>
           ) : null}
@@ -129,7 +158,11 @@ const AvatarPreviewComponent = ({
             accessibilityRole="button"
             accessibilityLabel="Choose another photo"
           >
-            <Text variant="bodyLg" color="textSecondary" style={styles.ghostLabel}>
+            <Text
+              variant="bodyLg"
+              color="textSecondary"
+              style={styles.ghostLabel}
+            >
               Choose another
             </Text>
           </Pressable>
@@ -160,6 +193,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 26,
     paddingBottom: 18,
+  },
+  /**
+   * Absolute so it sits in the card's corner without stealing height from the
+   * title, which stays optically centred in the dialog.
+   */
+  close: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 15,
+    zIndex: 1,
   },
   title: {
     marginBottom: 20,
@@ -198,8 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   confirmLabel: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(13),
+    ...typography.buttonSm,
     color: colors.white,
   },
 

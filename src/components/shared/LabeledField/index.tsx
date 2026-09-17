@@ -8,11 +8,12 @@ import {
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, radius } from '@theme';
-import { rf } from '@utils/responsive';
+import { colors, radius, typography } from '@theme';
 
-interface LabeledFieldProps<T extends FieldValues>
-  extends Omit<TextInputProps, 'value' | 'onChangeText' | 'onBlur' | 'style'> {
+interface LabeledFieldProps<T extends FieldValues> extends Omit<
+  TextInputProps,
+  'value' | 'onChangeText' | 'onBlur' | 'style'
+> {
   control: Control<T>;
   name: FieldPath<T>;
   /** Uppercase label above the field. */
@@ -48,7 +49,10 @@ export const LabeledField = <T extends FieldValues>({
     <Controller
       control={control}
       name={name}
-      render={({ field: { value, onChange, onBlur }, fieldState: { error, isTouched } }) => {
+      render={({
+        field: { value, onChange, onBlur },
+        fieldState: { error, isTouched },
+      }) => {
         const stringValue = typeof value === 'string' ? value : '';
         // Errors surface on blur or after a submit attempt, never on first
         // render — matching FormInput's behaviour elsewhere.
@@ -73,7 +77,9 @@ export const LabeledField = <T extends FieldValues>({
             <TextInput
               {...inputProps}
               value={stringValue}
-              onChangeText={(next) => onChange(transform ? transform(next) : next)}
+              onChangeText={(next) =>
+                onChange(transform ? transform(next) : next)
+              }
               onBlur={onBlur}
               multiline={multiline}
               placeholderTextColor={colors.textMuted}
@@ -108,6 +114,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   input: {
+    ...typography.input,
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
@@ -115,8 +122,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     color: colors.textPrimary,
-    fontFamily: fontFamily.body,
-    fontSize: rf(11),
     marginBottom: 18,
   },
   inputError: {

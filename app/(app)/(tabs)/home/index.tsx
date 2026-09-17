@@ -1,19 +1,18 @@
-import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EarningsBar, Screen, Skeleton } from '@components/shared';
-import { Card, Text } from '@components/ui';
+import { EarningsBar, Screen, Skeleton, VerificationBanner } from '@components/shared';
+import { Card, LucideIcon, Text } from '@components/ui';
+import type { LucideIconName } from '@components/ui';
 import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
 import { useFollowers } from '@hooks/useFollowers';
+import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, radius, spacing } from '@theme';
-import { compactCount, duration, formatTokens, relativeShort, shortDate } from '@utils/format';
+import { colors, fontFamily, layout, radius, spacing, typography, webColors } from '@theme';
+import { compactCount, duration, formatTokens, grouped, relativeShort, shortDate } from '@utils/format';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
-
-type FeatherIconName = keyof typeof Feather.glyphMap;
 
 /** How many past broadcasts / notifications the dashboard panels show. */
 const RECENT_COUNT = 5;
@@ -34,15 +33,20 @@ const HomeScreen = () => {
   const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
   const { data: broadcasts, isLoading: loadingBroadcasts } = useBroadcastHistory(RECENT_COUNT);
   const { data: followersData } = useFollowers();
+  // Web gates go-live / schedule / private-calls behind KYC + approval, and
+  // shows the strip above the topbar only on this screen.
+  const { banner, guard, goToKyc } = useVerificationGate();
 
   const recentShows = broadcasts?.length ?? 0;
-  const pending = earnings ? formatTokens(earnings.pendingTokens) : '—';
+  const pending = earnings ? grouped(earnings.pendingTokens) : '—';
 
-  // Summary strip — same four cells as the web dashboard, same order.
-  const summary: { icon: FeatherIconName; tint: string; fill: string; label: string; value: string }[] = [
-    { icon: 'dollar-sign', tint: colors.gold, fill: colors.warningSoft, label: 'Total Tokens', value: earnings ? formatTokens(earnings.totalTokens) : '—' },
-    { icon: 'clock', tint: colors.pink, fill: colors.pinkSoft, label: 'Pending', value: pending },
-    { icon: 'credit-card', tint: colors.green, fill: colors.successChip, label: 'Available', value: earnings ? formatTokens(earnings.availableTokens) : '—' },
+  // Summary strip — same four cells as the web dashboard, same order. The web
+  // prints these as a bare grouped number (`toLocaleString()`), no unit: the
+  // cell label already says what the figure is.
+  const summary: { icon: LucideIconName; tint: string; fill: string; label: string; value: string }[] = [
+    { icon: 'coins', tint: colors.gold, fill: colors.warningSoft, label: 'Total Coins', value: earnings ? grouped(earnings.totalTokens) : '—' },
+    { icon: 'clock-3', tint: colors.purple, fill: colors.purpleSoft, label: 'Pending', value: earnings ? grouped(earnings.pendingTokens) : '—' },
+    { icon: 'wallet', tint: colors.green, fill: colors.successChip, label: 'Available', value: earnings ? grouped(earnings.availableTokens) : '—' },
     { icon: 'radio', tint: colors.cyan, fill: colors.cyanSoft, label: 'Recent Shows', value: String(recentShows) },
   ];
 
@@ -102,11 +106,18 @@ const HomeScreen = () => {
   return (
     <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
       header={
-        <EarningsBar
-          brand
-          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
-          unread={unreadCount > 0}
-        />
+        <View style={styles.headerStack}>
+          {/* Brand bar first: on a phone the banner is tall enough that putting
+              it above pushes the Mitro header off the top of the screen. */}
+          <EarningsBar
+            brand
+            onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+            unread={unreadCount > 0}
+          />
+          {banner ? (
+            <VerificationBanner banner={banner} onPressAction={goToKyc} />
+          ) : null}
+        </View>
       }
     >
       {showSkeleton ? renderSkeleton() : (
@@ -119,47 +130,48 @@ const HomeScreen = () => {
         style={styles.hero}
       >
         <View style={styles.heroEyebrow}>
-          <Feather name="grid" size={rf(13)} color={colors.pink} />
           <Text style={styles.heroEyebrowText}>CREATOR DASHBOARD</Text>
         </View>
         <Text style={styles.heroTitle}>Manage streams, sessions, earnings, and your audience.</Text>
 
         <View style={styles.heroPills}>
           <View style={styles.heroPill}>
-            <Feather name="clock" size={rf(12)} color={colors.gold} />
-            <Text style={styles.heroPillText}>{pending} pending</Text>
+            <LucideIcon name="clock-3" size={rf(12)} color={colors.pink} />
+            <Text style={styles.heroPillText}>{pending} tk pending</Text>
           </View>
           <View style={styles.heroPill}>
-            <Feather name="radio" size={rf(12)} color={colors.pink} />
+            <LucideIcon name="radio" size={rf(12)} color={colors.pink} />
             <Text style={styles.heroPillText}>{recentShows} recent shows</Text>
           </View>
           <View style={styles.heroPill}>
-            <Feather name="heart" size={rf(12)} color={colors.cyan} />
+            <LucideIcon name="heart" size={rf(12)} color={colors.pink} />
             <Text style={styles.heroPillText}>{compactCount(followersData?.summary?.totalFollowers ?? 0)} followers</Text>
           </View>
         </View>
 
-        <Pressable style={styles.heroPrimary} onPress={() => router.push('/(app)/(tabs)/live')} accessibilityRole="button" accessibilityLabel="Start Live">
+        <Pressable style={styles.heroPrimary} onPress={() => guard(() => router.push('/(app)/(tabs)/live'))} accessibilityRole="button" accessibilityLabel="Start Live">
           <LinearGradient colors={['#FF3FAD', '#7B35FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.heroPrimaryFill}>
-            <Feather name="radio" size={rf(16)} color={colors.white} />
+            <LucideIcon name="radio" size={rf(16)} color={colors.white} />
             <Text style={styles.heroPrimaryText}>Start Live</Text>
           </LinearGradient>
         </Pressable>
-        <Pressable style={styles.heroSecondary} onPress={() => router.push('/(app)/(tabs)/calls/schedule-session')} accessibilityRole="button" accessibilityLabel="Schedule Session">
-          <Feather name="calendar" size={rf(15)} color={colors.white} />
+        <Pressable style={styles.heroSecondary} onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))} accessibilityRole="button" accessibilityLabel="Schedule Session">
+          <LucideIcon name="calendar-days" size={rf(15)} color={colors.white} />
           <Text style={styles.heroSecondaryText}>Schedule Session</Text>
         </Pressable>
-        <Pressable style={styles.heroSecondary} onPress={() => router.push('/(app)/(tabs)/calls/private-calls')} accessibilityRole="button" accessibilityLabel="Private Calls">
-          <Feather name="phone" size={rf(15)} color={colors.white} />
+        <Pressable style={styles.heroSecondary} onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))} accessibilityRole="button" accessibilityLabel="Private Calls">
+          <LucideIcon name="phone" size={rf(15)} color={colors.white} />
           <Text style={styles.heroSecondaryText}>Private Calls</Text>
         </Pressable>
       </LinearGradient>
 
       {/* ── Info callout ── */}
       <View style={styles.callout}>
-        <Feather name="info" size={rf(15)} color={colors.cyan} style={styles.calloutIcon} />
+        <View style={styles.calloutIcon}>
+          <LucideIcon name="info" size={rf(15)} color={colors.cyan} />
+        </View>
         <Text variant="bodySm" color="textSecondary" style={styles.calloutText}>
-          This is your <Text style={styles.calloutStrong}>command center</Text> — a snapshot of tokens earned, recent
+          This is your <Text style={styles.calloutStrong}>command center</Text> — a snapshot of coins earned, recent
           broadcasts, and alerts that need attention. Head to Earnings or Broadcast History for the full breakdown.
         </Text>
       </View>
@@ -169,7 +181,7 @@ const HomeScreen = () => {
         {summary.map((cell) => (
           <View key={cell.label} style={styles.summaryCell}>
             <View style={[styles.summaryIc, { backgroundColor: cell.fill }]}>
-              <Feather name={cell.icon} size={rf(15)} color={cell.tint} />
+              <LucideIcon name={cell.icon} size={rf(15)} color={cell.tint} />
             </View>
             <View style={styles.summaryBody}>
               <Text variant="caption" color="textMuted" numberOfLines={1}>{cell.label}</Text>
@@ -187,11 +199,11 @@ const HomeScreen = () => {
       <Card style={styles.panel}>
         <View style={styles.panelHead}>
           <View style={styles.panelTitle}>
-            <Feather name="radio" size={rf(15)} color={colors.textPrimary} />
+            <LucideIcon name="radio" size={rf(15)} color={colors.pink} />
             <Text variant="h3">Recent Broadcasts</Text>
           </View>
           <Pressable style={styles.iconBtn} onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View full broadcast history">
-            <Feather name="bar-chart-2" size={rf(17)} color={colors.textMuted} />
+            <LucideIcon name="bar-chart-3" size={rf(17)} color={colors.textMuted} />
           </Pressable>
         </View>
 
@@ -210,12 +222,12 @@ const HomeScreen = () => {
             <Pressable
               key={b.broadcastId}
               style={styles.bcastRow}
-              onPress={() => router.push({ pathname: '/(app)/(tabs)/home/broadcast-detail', params: { broadcastId: b.broadcastId } })}
+              onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')}
               accessibilityRole="button"
               accessibilityLabel={b.title}
             >
               <View style={[styles.bcastIcon, { backgroundColor: b.endReason === CLEAN_END ? colors.successChip : colors.warningSoft }]}>
-                <Feather name="radio" size={rf(15)} color={b.endReason === CLEAN_END ? colors.green : colors.gold} />
+                <LucideIcon name="radio" size={rf(15)} color={b.endReason === CLEAN_END ? colors.green : colors.gold} />
               </View>
               <View style={styles.bcastMain}>
                 <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>{b.title}</Text>
@@ -235,11 +247,11 @@ const HomeScreen = () => {
       <Card style={styles.panel}>
         <View style={styles.panelHead}>
           <View style={styles.panelTitle}>
-            <Feather name="bell" size={rf(15)} color={colors.textPrimary} />
+            <LucideIcon name="bell" size={rf(15)} color={colors.pink} />
             <Text variant="h3">Notifications</Text>
           </View>
           <Pressable style={styles.iconBtn} onPress={() => router.push('/(app)/(tabs)/home/notifications')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View all notifications">
-            <Feather name="chevron-right" size={rf(17)} color={colors.textMuted} />
+            <LucideIcon name="chevron-right" size={rf(17)} color={colors.textMuted} />
           </Pressable>
         </View>
 
@@ -258,9 +270,14 @@ const HomeScreen = () => {
                 accessibilityRole="button"
                 accessibilityLabel={`${n.title}. ${n.body}`}
               >
-                <View style={[styles.noteIcon, { backgroundColor: visual.fill }]}>
-                  <Feather name={visual.icon} size={rf(15)} color={visual.tint} />
-                </View>
+                <LinearGradient
+                  colors={['rgba(255,63,173,0.42)', 'rgba(52,231,255,0.2)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.noteIcon}
+                >
+                  <LucideIcon name={visual.icon} size={rf(15)} color={colors.white} />
+                </LinearGradient>
                 <View style={styles.noteMain}>
                   <View style={styles.noteTop}>
                     <Text variant="bodyLg" color="textPrimary" numberOfLines={1} style={styles.noteTitle}>{n.title}</Text>
@@ -287,7 +304,7 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: 20,
     gap: spacing.md,
   },
@@ -302,9 +319,23 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   heroSkeleton: { backgroundColor: 'rgba(255,255,255,0.02)' },
+  /** Stacks the verify strip over the topbar, matching `.creator-main`'s 20px. */
+  headerStack: { gap: 20 },
+
   heroEyebrow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  heroEyebrowText: { fontFamily: fontFamily.extrabold, fontSize: rf(11), letterSpacing: 0.4, color: colors.pink },
-  heroTitle: { fontFamily: fontFamily.extrabold, fontSize: rf(21), lineHeight: rf(28), color: colors.white },
+  heroEyebrowText: {
+    ...typography.eyebrow,
+    /**
+     * `.creator-hero span` is gradient-filled text on web (`--premium-gradient`
+     * through `background-clip: text`), with `#ff9bcc` declared as the fallback.
+     * Left uncoloured this inherited the body white — the one eyebrow in the app
+     * that did. Every other screen's eyebrow already uses this pink.
+     */
+    color: webColors.pinkLight,
+  },
+  heroTitle: {
+    ...typography.h1,
+  },
   heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2, marginBottom: 4 },
   heroPill: {
     flexDirection: 'row',
@@ -317,10 +348,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 7,
   },
-  heroPillText: { fontFamily: fontFamily.semibold, fontSize: rf(11.5), color: 'rgba(255,255,255,0.82)' },
+  heroPillText: {
+    ...typography.bodySm,
+  },
   heroPrimary: { height: 48, borderRadius: 12, overflow: 'hidden' },
   heroPrimaryFill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  heroPrimaryText: { fontFamily: fontFamily.extrabold, fontSize: rf(14), color: colors.white },
+  heroPrimaryText: {
+    ...typography.button,
+  },
   heroSecondary: {
     height: 46,
     borderRadius: 12,
@@ -332,19 +367,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  heroSecondaryText: { fontFamily: fontFamily.bold, fontSize: rf(13), color: colors.white },
+  heroSecondaryText: {
+    ...typography.buttonSm,
+  },
 
   // Info callout
   callout: {
     flexDirection: 'row',
-    gap: 10,
-    backgroundColor: colors.cyanSoft,
-    borderRadius: radius.card,
+    alignItems: 'flex-start',
+    gap: 11,
+    backgroundColor: 'rgba(52,231,255,0.06)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: 'rgba(52,231,255,0.25)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.cyan,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
   },
-  calloutIcon: { marginTop: 2 },
+  calloutIcon: { marginTop: 1 },
   calloutText: { flex: 1, lineHeight: rf(18) },
   calloutStrong: { fontFamily: fontFamily.bold, color: colors.textPrimary },
 
@@ -364,7 +405,9 @@ const styles = StyleSheet.create({
   },
   summaryIc: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   summaryBody: { flex: 1, gap: 3, minWidth: 0 },
-  summaryValue: { fontFamily: fontFamily.extrabold, fontSize: rf(17), color: colors.textPrimary },
+  summaryValue: {
+    ...typography.metric,
+  },
 
   // Panels
   panel: { gap: spacing.md },
@@ -390,7 +433,7 @@ const styles = StyleSheet.create({
 
   // Notification row
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  noteIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  noteIcon: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden' },
   noteMain: { flex: 1, gap: 3 },
   noteTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   noteTitle: { flex: 1 },

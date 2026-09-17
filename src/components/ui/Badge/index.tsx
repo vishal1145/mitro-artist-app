@@ -28,10 +28,7 @@ const TONE_TEXT: Record<BadgeTone, keyof typeof colors> = {
 };
 
 /** Compact status label. */
-const BadgeComponent = ({
-  label,
-  tone = 'neutral',
-}: BadgeProps) => {
+const BadgeComponent = ({ label, tone = 'neutral' }: BadgeProps) => {
   const toneStyle = useMemo<ViewStyle>(
     () => ({ backgroundColor: TONE_BG[tone] }),
     [tone],

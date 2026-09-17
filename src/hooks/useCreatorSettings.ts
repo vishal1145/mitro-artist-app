@@ -36,7 +36,8 @@ export const useRewardMenu = (): UseQueryResult<RewardMenuItem[], Error> =>
     retry: false,
   });
 
-export const useFunWheel = (): UseQueryResult<FunWheel, Error> =>
+/** `null` when the artist has no wheel yet — see `settingsApi.getFunWheel`. */
+export const useFunWheel = (): UseQueryResult<FunWheel | null, Error> =>
   useQuery({
     queryKey: queryKeys.settings.funWheel(),
     queryFn: async () => {

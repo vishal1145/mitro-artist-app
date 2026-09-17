@@ -8,6 +8,7 @@ import { StackActions } from '@react-navigation/native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { Text } from '@components/ui';
+import { useVerificationGate } from '@hooks/useVerificationGate';
 import { colors, fontFamily, gradientDirection, gradients, layout } from '@theme';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
@@ -24,7 +25,7 @@ const TABS: TabDef[] = [
   { name: 'home', label: 'Home', icon: 'grid' },
   { name: 'calls', label: 'Calls', icon: 'phone' },
   { name: 'live', label: 'Live', icon: 'video', raised: true },
-  { name: 'business', label: 'Business', icon: 'credit-card' },
+  { name: 'business', label: 'Earnings', icon: 'credit-card' },
   { name: 'me', label: 'Me', icon: 'user' },
 ];
 
@@ -42,6 +43,9 @@ const LIVE_TAB = 'live';
  */
 const FloatingTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
+  // Going live is one of web's three verification-gated destinations, and this
+  // circle is the app's most direct route to it.
+  const { guard } = useVerificationGate();
 
   return (
     <View
@@ -79,17 +83,20 @@ const FloatingTabBar = ({ state, navigation }: BottomTabBarProps) => {
 
               // Tapping a tab always returns it to its root screen — switching
               // to it or re-pressing it both reset the nested stack, so a screen
-              // pushed inside a tab (e.g. Business → Transactions) never sticks
-              // around as the tab's landing page. `nestedKey` is undefined until
-              // the tab has mounted once, in which case there's nothing to pop
-              // and a fresh navigate already lands on the root.
-              const nestedKey = route.state?.key;
-              if (nestedKey) {
-                navigation.dispatch({ ...StackActions.popToTop(), target: nestedKey });
-              }
-
-              if (!focused) {
-                navigation.navigate(route.name);
+              // pushed inside a tab (e.g. Me → Messages) never sticks around as
+              // the tab's landing page.
+              //
+              // Switching tabs has to name the root screen explicitly: a bare
+              // `navigate(tab)` restores whatever that stack was last showing,
+              // which is what left Me landing on Messages. Re-pressing the tab
+              // you're already on can't navigate, so that case pops instead.
+              if (focused) {
+                const nestedKey = route.state?.key;
+                if (nestedKey) {
+                  navigation.dispatch({ ...StackActions.popToTop(), target: nestedKey });
+                }
+              } else {
+                navigation.navigate(route.name, { screen: 'index' });
               }
             };
 
@@ -130,7 +137,7 @@ const FloatingTabBar = ({ state, navigation }: BottomTabBarProps) => {
             be pointer-transparent; otherwise it swallows every tab tap. */}
         <View style={styles.liveWrap} pointerEvents="box-none">
           <Pressable
-            onPress={() => navigation.navigate(LIVE_TAB)}
+            onPress={() => guard(() => navigation.navigate(LIVE_TAB))}
             style={styles.liveRing}
             accessibilityRole="button"
             accessibilityLabel="Live"

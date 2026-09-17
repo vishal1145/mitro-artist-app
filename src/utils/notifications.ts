@@ -1,7 +1,7 @@
-import type { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
+import type { LucideIconName } from '@components/ui';
 import { colors } from '@theme';
 import type { NotificationItem } from '@app-types/api';
 
@@ -37,24 +37,25 @@ export const resolveNotificationRoute = (
 };
 
 export interface NotificationVisual {
-  icon: keyof typeof Feather.glyphMap;
+  icon: LucideIconName;
   tint: string;
   fill: string;
 }
 
-/** Icon + tint per known `type`. Anything else — including types this build
- * has never heard of — gets a plain bell in the brand pink. */
+/** Icon + tint per known `type`. Icons are the SAME lucide glyphs the Artist
+ * Web maps each type to (NOTIFICATION_TYPE_ICON). Anything else — including
+ * types this build has never heard of — gets a plain bell in the brand pink. */
 const VISUAL_BY_TYPE: Record<string, NotificationVisual> = {
   private_call_request: { icon: 'phone', tint: colors.violet, fill: colors.violetSoft },
   private_message: { icon: 'message-circle', tint: colors.pink, fill: colors.pinkSoft },
-  new_follower: { icon: 'users', tint: colors.cyan, fill: colors.cyanSoft },
-  kyc_approved: { icon: 'check-circle', tint: colors.cyan, fill: colors.cyanSoft },
-  kyc_rejected: { icon: 'alert-triangle', tint: colors.pink, fill: colors.pinkSoft },
-  account_status_changed: { icon: 'shield', tint: colors.gold, fill: colors.goldSoft },
+  new_follower: { icon: 'heart', tint: colors.cyan, fill: colors.cyanSoft },
+  kyc_approved: { icon: 'badge-check', tint: colors.cyan, fill: colors.cyanSoft },
+  kyc_rejected: { icon: 'triangle-alert', tint: colors.pink, fill: colors.pinkSoft },
+  account_status_changed: { icon: 'shield-check', tint: colors.gold, fill: colors.goldSoft },
   system: { icon: 'bell', tint: colors.gold, fill: colors.goldSoft },
   // Inline app feedback (see @utils/toast → showToast).
-  success: { icon: 'check-circle', tint: colors.green, fill: colors.successChip },
-  error: { icon: 'alert-triangle', tint: colors.danger, fill: colors.redSoft },
+  success: { icon: 'circle-check-big', tint: colors.green, fill: colors.successChip },
+  error: { icon: 'triangle-alert', tint: colors.danger, fill: colors.redSoft },
   info: { icon: 'info', tint: colors.cyan, fill: colors.cyanSoft },
 };
 
