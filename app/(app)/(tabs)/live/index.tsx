@@ -8,6 +8,7 @@ import { AgoraVideoView } from '@components/call/AgoraVideoView';
 import { EarningsBar, Screen } from '@components/shared';
 import { Text } from '@components/ui';
 import { settingsApi } from '@services/api/settingsApi';
+import { showToast } from '@utils/toast';
 import {
   destroyAgoraEngine,
   isAgoraAvailable,
@@ -73,8 +74,15 @@ const GoLiveScreen = () => {
           router.replace('/(app)/(modals)/live-broadcast-room');
           return;
         }
-        await requestCallPermissions();
+        const permitted = await requestCallPermissions();
         if (cancelled || !videoAvailable) return;
+        if (!permitted) {
+          showToast(
+            'Camera and microphone access is needed to go live. Enable it in Settings.',
+            'error',
+          );
+          return;
+        }
         startLocalPreview();
         setLocalVideoEnabled(cameraOn);
         setLocalAudioEnabled(micOn);

@@ -230,7 +230,9 @@ const PrivateCallsScreen = () => {
       historyRef.current.length,
     );
     if (res.success) {
-      historyRef.current = [...historyRef.current, ...res.data];
+      const seen = new Set(historyRef.current.map((h) => h.privateCallId));
+      const deduped = res.data.filter((h) => !seen.has(h.privateCallId));
+      historyRef.current = [...historyRef.current, ...deduped];
       setHistory(historyRef.current);
       setHasMoreHistory(res.data.length === HISTORY_PAGE_SIZE);
     }

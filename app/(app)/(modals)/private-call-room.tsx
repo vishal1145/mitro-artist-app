@@ -48,6 +48,7 @@ import {
 import type { BroadcastActivityItem } from '@app-types/broadcast';
 import type { PrivateCallConnectionResponse } from '@app-types/privateCall';
 import { colors, fontFamily, radius, spacing } from '@theme';
+import { logger } from '@utils/logger';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
 
@@ -213,7 +214,12 @@ const PrivateCallRoomScreen = () => {
     let rebindTimer: ReturnType<typeof setTimeout> | null = null;
 
     (async () => {
-      await requestCallPermissions();
+      const permitted = await requestCallPermissions();
+      if (!permitted) {
+        showToast('Camera and microphone access is needed for this call. Enable it in Settings.', 'error');
+        exitBack();
+        return;
+      }
       // Kick the camera pipeline off up front so the stage has something to
       // bind to the moment it mounts.
       if (videoAvailable) startLocalPreview();
@@ -411,6 +417,11 @@ const PrivateCallRoomScreen = () => {
       // never wait on the video channel for this.
       startRealtime();
 
+      logger.info('[CallDebug] joining Agora channel', {
+        videoAvailable,
+        channel: conn.agoraChannelName,
+        uid: conn.agoraUid,
+      });
       if (videoAvailable) {
         joinPrivateCallChannel(
           conn.agoraChannelName,
@@ -419,12 +430,22 @@ const PrivateCallRoomScreen = () => {
           {
             onJoinSuccess: onConnected,
             onRemoteUserJoined: (uid) => {
+              logger.info('[CallDebug] onRemoteUserJoined', { uid });
               setRemoteUid(uid);
               setPeerReconnecting(false);
             },
-            onRemoteUserLeft: () => setRemoteUid(null),
-            onRemoteVideoOn: (_uid, on) => setRemoteVideoOn(on),
-            onRemoteAudioOn: (_uid, on) => setRemoteAudioOn(on),
+            onRemoteUserLeft: () => {
+              logger.info('[CallDebug] onRemoteUserLeft');
+              setRemoteUid(null);
+            },
+            onRemoteVideoOn: (uid, on) => {
+              logger.info('[CallDebug] onRemoteVideoOn', { uid, on });
+              setRemoteVideoOn(on);
+            },
+            onRemoteAudioOn: (uid, on) => {
+              logger.info('[CallDebug] onRemoteAudioOn', { uid, on });
+              setRemoteAudioOn(on);
+            },
             /*
              * Our own link dropped. The backend needs telling — that is what
              * starts its grace period and stops the fan being billed for time
