@@ -1,5 +1,6 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { Camera } from 'expo-camera';
 
 import { getAgoraAppId } from './agoraAppId';
 
@@ -7,21 +8,38 @@ import { getAgoraAppId } from './agoraAppId';
  * Artist-side Agora engine. Unlike the fan app (which mostly joins as an
  * audience member), the artist is the PUBLISHER: they broadcast their own
  * camera + mic to viewers (live broadcast, group call host) or into a 1:1
- * private call. Camera/mic are dangerous Android runtime permissions, so
- * `app.json` declaring them only lets the OS *ask*; we still have to request
- * them at runtime before publishing or the local capture silently no-ops.
+ * private call. Camera/mic are dangerous runtime permissions on both
+ * platforms, so `app.json`/Info.plist declaring them only lets the OS *ask*;
+ * we still have to request them at runtime before publishing or the local
+ * capture silently no-ops (no error, just a black tile / silent mic).
+ *
+ * Callers MUST check the returned boolean and bail out (with feedback to the
+ * artist) on `false` — starting the local preview / joining the channel
+ * anyway is what produced silent "camera and mic don't work" reports before
+ * this was fixed, since Agora doesn't throw when a track has no source.
  */
 export async function requestCallPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
   try {
-    const results = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.CAMERA,
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    if (Platform.OS === 'android') {
+      const results = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      ]);
+      return (
+        results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
+        results[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    }
+
+    // iOS (and any other platform expo-camera supports): the OS shows its
+    // own native prompt the first time each of these is requested, and
+    // remembers the answer — a later call just resolves with the stored
+    // status without prompting again.
+    const [{ status: cameraStatus }, { status: micStatus }] = await Promise.all([
+      Camera.requestCameraPermissionsAsync(),
+      Camera.requestMicrophonePermissionsAsync(),
     ]);
-    return (
-      results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
-      results[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED
-    );
+    return cameraStatus === 'granted' && micStatus === 'granted';
   } catch {
     return false;
   }

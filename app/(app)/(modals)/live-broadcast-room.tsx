@@ -160,7 +160,12 @@ const LiveBroadcastRoomScreen = () => {
     let rebindTimer: ReturnType<typeof setTimeout> | null = null;
 
     (async () => {
-      await requestCallPermissions();
+      const permitted = await requestCallPermissions();
+      if (!permitted) {
+        showToast('Camera and microphone access is needed to go live. Enable it in Settings.', 'error');
+        router.back();
+        return;
+      }
 
       // Resume an already-live broadcast if we left one running (back button),
       // otherwise start a fresh one — this is what lets the artist re-enter

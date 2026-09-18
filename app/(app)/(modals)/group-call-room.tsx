@@ -172,7 +172,11 @@ const GroupCallRoomScreen = () => {
     };
 
     (async () => {
-      await requestCallPermissions();
+      const permitted = await requestCallPermissions();
+      if (!permitted) {
+        bail('Camera and microphone access is needed for a group call. Enable it in Settings.');
+        return;
+      }
 
       // Resume a call the artist backed out of without ending it — the same
       // rejoin-first flow the broadcast studio uses. The room keeps running
