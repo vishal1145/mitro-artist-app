@@ -20,7 +20,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mitro.artist",
+      "bundleIdentifier": "mitro.artist.demo",
       "config": {
         "usesNonExemptEncryption": false
       },
