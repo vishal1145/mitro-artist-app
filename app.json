@@ -2,7 +2,7 @@
   "expo": {
     "name": "Mitro Artist",
     "slug": "mitro-artist",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "scheme": "mitroartist",
