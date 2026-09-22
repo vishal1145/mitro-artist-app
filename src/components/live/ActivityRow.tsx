@@ -56,7 +56,7 @@ export const ActivityRow = memo(({ item }: { item: BroadcastActivityItem }) => {
         <View style={styles.actNameRow}>
           <Text variant="caption" numberOfLines={1} style={[styles.actName, { color: nameColor }]}>{item.displayName}</Text>
           {item.isArtist ? <View style={styles.hostBadge}><Text style={styles.hostBadgeText}>HOST</Text></View> : null}
-          {item.priceCharged ? <View style={styles.tokenPill}><Text style={styles.tokenPillText}>+{item.priceCharged} tk</Text></View> : null}
+          {item.priceCharged ? <View style={styles.tokenPill}><Text style={styles.tokenPillText}>+{item.priceCharged} coins</Text></View> : null}
           {st ? <View style={[styles.itemStatus, { backgroundColor: st.bg }]}><Text style={[styles.itemStatusText, { color: st.color }]}>{st.label}</Text></View> : null}
         </View>
         {detail}

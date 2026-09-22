@@ -185,7 +185,7 @@ const GroupCallHistoryScreen = () => {
               icon="coins"
               tint="gold"
               label="Total earned"
-              value={`${grouped(summary?.totalRevenueTokens ?? 0)} tk`}
+              value={`${grouped(summary?.totalRevenueTokens ?? 0)} coins`}
               hint="Sum of the total revenue coins across all your past group calls."
 
             />
@@ -237,7 +237,7 @@ const GroupCallHistoryScreen = () => {
 
                       <View style={styles.callRight}>
                         <Text style={hasEarnings ? styles.callEarn : styles.callEarnZero}>
-                          {hasEarnings ? `+${grouped(item.totalRevenueTokens)} tk` : '0 tk'}
+                          {hasEarnings ? `+${grouped(item.totalRevenueTokens)} coins` : '0 coins'}
                         </Text>
                         <HelpIcon
                           hint={`You earned ${grouped(item.totalRevenueTokens)} coins for this call based on duration (${webDuration(item.durationSeconds)}) and peak participants (${grouped(item.peakParticipantCount)}).`}
@@ -286,13 +286,13 @@ const GroupCallHistoryScreen = () => {
                               <MetricChip
                                 label="Refunds"
                                 hint="Refunds issued for this call (rejected requests or early cancellations), and the coins refunded."
-                                value={`${grouped(analytics.refundCount)} (${grouped(analytics.refundedTokens)} tk)`}
+                                value={`${grouped(analytics.refundCount)} (${grouped(analytics.refundedTokens)} coins)`}
                                 tone={analytics.refundCount > 0 ? 'warn' : undefined}
                               />
                               <MetricChip
                                 label="Net earnings"
                                 hint="What you actually earned from this call after refunds — only approved, completed activity counts."
-                                value={`${grouped(analytics.netArtistEarningTokens)} tk`}
+                                value={`${grouped(analytics.netArtistEarningTokens)} coins`}
                                 tone="good"
                               />
                             </MetricGrid>
@@ -333,7 +333,7 @@ const GroupCallHistoryScreen = () => {
                                   key={row.label}
                                   label={row.label}
                                   hint={row.hint}
-                                  amount={`${grouped(row.value)} tk`}
+                                  amount={`${grouped(row.value)} coins`}
                                   pct={
                                     analytics.totalRevenueTokens > 0
                                       ? (row.value / analytics.totalRevenueTokens) * 100

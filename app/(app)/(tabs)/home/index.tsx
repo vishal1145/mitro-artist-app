@@ -137,7 +137,7 @@ const HomeScreen = () => {
         <View style={styles.heroPills}>
           <View style={styles.heroPill}>
             <LucideIcon name="clock-3" size={rf(12)} color={colors.pink} />
-            <Text style={styles.heroPillText}>{pending} tk pending</Text>
+            <Text style={styles.heroPillText}>{pending} coins pending</Text>
           </View>
           <View style={styles.heroPill}>
             <LucideIcon name="radio" size={rf(12)} color={colors.pink} />
@@ -236,7 +236,7 @@ const HomeScreen = () => {
                 </Text>
               </View>
               <Text style={[styles.bcastEarn, b.totalRevenueTokens === 0 ? styles.bcastEarnZero : null]}>
-                {b.totalRevenueTokens > 0 ? `+${formatTokens(b.totalRevenueTokens)}` : '0 tk'}
+                {b.totalRevenueTokens > 0 ? `+${formatTokens(b.totalRevenueTokens)}` : '0 coins'}
               </Text>
             </Pressable>
           ))

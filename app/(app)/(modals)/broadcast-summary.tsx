@@ -84,7 +84,7 @@ const BroadcastSummaryScreen = () => {
           </Text>
         )}
         <Text variant="label" color="green" style={styles.earnedUnit}>
-          TK EARNED
+          COINS EARNED
         </Text>
       </View>
 
@@ -140,7 +140,7 @@ const BroadcastSummaryScreen = () => {
             <View style={styles.tag}>
               <Feather name="gift" size={rf(11)} color={colors.gold} />
               <Text variant="label" color="textMuted">
-                {grouped(order.priceCharged)} TK
+                {grouped(order.priceCharged)} COINS
               </Text>
             </View>
           </View>

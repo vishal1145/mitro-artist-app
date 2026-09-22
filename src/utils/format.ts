@@ -4,7 +4,7 @@
  * Compact count: 940 → "940", 1240 → "1.2k", 48_200 → "48.2K".
  *
  * Uppercase K past a thousand and lowercase k below ten thousand matches the
- * design's own mix — "1.2k tk" next to "48.2K followers".
+ * design's own mix — "1.2k coins" next to "48.2K followers".
  */
 export const compactCount = (value: number): string => {
   if (value < 1000) {
@@ -19,9 +19,9 @@ export const compactCount = (value: number): string => {
   return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
 };
 
-/** Token balance with its unit, e.g. 1240 → "1.2k tk". */
+/** Token balance with its unit, e.g. 1240 → "1.2k coins". */
 export const formatTokens = (value: number): string =>
-  `${compactCount(value)} tk`;
+  `${compactCount(value)} coins`;
 
 /**
  * Full number with thousands separators: 18552 → "18,552".

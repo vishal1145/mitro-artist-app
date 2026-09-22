@@ -591,7 +591,7 @@ const PrivateCallRoomScreen = () => {
             </View>
             <Text style={styles.headerSub} numberOfLines={1}>
               {ratePerMin > 0
-                ? `Private call · ${ratePerMin} tk/min`
+                ? `Private call · ${ratePerMin} coins/min`
                 : 'Private call'}
             </Text>
           </View>
@@ -842,7 +842,7 @@ const PrivateCallRoomScreen = () => {
                   >
                     {o.rewardName}
                   </Text>{' '}
-                  for {o.buyerDisplayName} · {o.priceCharged} tk
+                  for {o.buyerDisplayName} · {o.priceCharged} coins
                 </Text>
                 <Pressable
                   style={styles.markBtn}
@@ -889,7 +889,7 @@ const PrivateCallRoomScreen = () => {
                   >
                     {s.activityName}
                   </Text>{' '}
-                  for {s.buyerDisplayName} · {s.priceCharged} tk
+                  for {s.buyerDisplayName} · {s.priceCharged} coins
                 </Text>
                 <Pressable
                   style={styles.markBtn}

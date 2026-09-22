@@ -498,7 +498,7 @@ const LiveBroadcastRoomScreen = () => {
             pendingRewards.map((o) => (
               <View key={o.id} style={styles.deliveryRow}>
                 <Text variant="caption" color="textPrimary" style={styles.deliveryRowText}>
-                  <Text variant="caption" color="textPrimary" style={styles.bold}>{o.rewardName}</Text> for {o.buyerDisplayName} · {o.priceCharged} tk
+                  <Text variant="caption" color="textPrimary" style={styles.bold}>{o.rewardName}</Text> for {o.buyerDisplayName} · {o.priceCharged} coins
                 </Text>
                 <Pressable style={styles.markBtn} onPress={() => fulfillReward(o)} disabled={fulfillingId === o.id}>
                   {fulfillingId === o.id ? <ActivityIndicator size="small" color={colors.white} /> : (<><Feather name="check" size={rf(13)} color={colors.white} /><Text variant="label" color="onPrimary" style={styles.bold}>Mark fulfilled</Text></>)}
@@ -513,7 +513,7 @@ const LiveBroadcastRoomScreen = () => {
             pendingSpins.map((s) => (
               <View key={s.id} style={styles.deliveryRow}>
                 <Text variant="caption" color="textPrimary" style={styles.deliveryRowText}>
-                  <Text variant="caption" color="textPrimary" style={styles.bold}>{s.activityName}</Text> for {s.buyerDisplayName} · {s.priceCharged} tk
+                  <Text variant="caption" color="textPrimary" style={styles.bold}>{s.activityName}</Text> for {s.buyerDisplayName} · {s.priceCharged} coins
                 </Text>
                 <Pressable style={styles.markBtn} onPress={() => fulfillSpin(s)} disabled={fulfillingId === s.id}>
                   {fulfillingId === s.id ? <ActivityIndicator size="small" color={colors.white} /> : (<><Feather name="check" size={rf(13)} color={colors.white} /><Text variant="label" color="onPrimary" style={styles.bold}>Mark fulfilled</Text></>)}

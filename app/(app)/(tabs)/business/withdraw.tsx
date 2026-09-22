@@ -58,13 +58,13 @@ const WithdrawScreen = () => {
             {grouped(available)}
           </Text>
           <Text variant="h3" color="textSecondary">
-            tk
+            coins
           </Text>
         </View>
         <View style={styles.heroPending}>
           <Feather name="clock" size={rf(14)} color={colors.warning} />
           <Text variant="caption" color="textMuted">
-            {grouped(pending)} tk still pending
+            {grouped(pending)} coins still pending
           </Text>
         </View>
       </Card>
@@ -84,7 +84,7 @@ const WithdrawScreen = () => {
           accessibilityLabel="Withdrawal amount"
         />
         <Text variant="h3" color="textDisabled" style={styles.amountUnit}>
-          tk
+          coins
         </Text>
       </View>
 
@@ -138,7 +138,7 @@ const WithdrawScreen = () => {
             Withdrawal amount
           </Text>
           <Text variant="caption" color="textPrimary">
-            {parsed} tk
+            {parsed} coins
           </Text>
         </View>
         <View style={styles.breakdownRow}>
@@ -146,7 +146,7 @@ const WithdrawScreen = () => {
             Platform fee
           </Text>
           <Text variant="caption" color="error">
-            -{PLATFORM_FEE} tk
+            -{PLATFORM_FEE} coins
           </Text>
         </View>
         <View style={styles.breakdownRow}>
@@ -154,7 +154,7 @@ const WithdrawScreen = () => {
             Processing fee
           </Text>
           <Text variant="caption" color="error">
-            -{PROCESSING_FEE} tk
+            -{PROCESSING_FEE} coins
           </Text>
         </View>
         <View style={styles.breakdownDivider} />
@@ -163,7 +163,7 @@ const WithdrawScreen = () => {
             You receive
           </Text>
           <Text variant="h3" color="success">
-            {receives} tk
+            {receives} coins
           </Text>
         </View>
       </Card>
@@ -185,7 +185,7 @@ const WithdrawScreen = () => {
         onPress={() => router.back()}
       />
       <Text variant="label" color={belowMinimum ? 'error' : 'textMuted'} align="center">
-        Minimum withdrawal {MIN_WITHDRAWAL} tk
+        Minimum withdrawal {MIN_WITHDRAWAL} coins
       </Text>
     </Screen>
   );
