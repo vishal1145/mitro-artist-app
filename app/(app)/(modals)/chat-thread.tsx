@@ -782,7 +782,7 @@ const MessageRow = ({
           {bubbleTime(msg.createdAtUtc)}
           {/* Fans pay to message; the artist's replies are free — so only a
               fan's own bubble shows what it cost them, matching artist web. */}
-          {!out && msg.priceCharged > 0 ? ` · ${msg.priceCharged} tk` : ''}
+          {!out && msg.priceCharged > 0 ? ` · ${msg.priceCharged} coins` : ''}
         </Text>
         {out ? (
           <Feather

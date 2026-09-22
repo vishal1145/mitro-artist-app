@@ -615,11 +615,11 @@ const ScheduleSessionScreen = () => {
         <Text style={styles.h3}>If every seat fills</Text>
         <View style={styles.mathRow}>
           <Text style={styles.mathLabel}>Seats × price</Text>
-          <Text style={styles.mathValue}>{potential} tk</Text>
+          <Text style={styles.mathValue}>{potential} coins</Text>
         </View>
         <View style={[styles.mathRow, styles.mathRowDivided]}>
           <Text style={styles.mathLabel}>Price per seat (one-time)</Text>
-          <Text style={styles.mathValue}>{priceNum.toLocaleString('en-US')} tk</Text>
+          <Text style={styles.mathValue}>{priceNum.toLocaleString('en-US')} coins</Text>
         </View>
       </View>
     </Screen>

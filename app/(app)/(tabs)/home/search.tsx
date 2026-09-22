@@ -320,7 +320,7 @@ const SearchScreen = () => {
                     </View>
                   }
                   title={s.title}
-                  subtitle={`${shortDate(s.startedAtUtc)} · +${grouped(s.totalRevenueTokens)} tk`}
+                  subtitle={`${shortDate(s.startedAtUtc)} · +${grouped(s.totalRevenueTokens)} coins`}
                   onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')}
                 />
               ))}
@@ -390,7 +390,7 @@ const SearchScreen = () => {
                     right={
                       <View style={styles.txnMeta}>
                         <Text variant="body" color="textPrimary">
-                          {`+${grouped(t.amountTokens)} tk`}
+                          {`+${grouped(t.amountTokens)} coins`}
                         </Text>
                         <Badge
                           label={t.status.toUpperCase()}

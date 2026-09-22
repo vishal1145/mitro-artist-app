@@ -169,7 +169,7 @@ const TxRow = ({ txn, first }: { txn: EarningsTransaction; first: boolean }) => 
 
       <View style={styles.txRight}>
         <Text style={[styles.txAmt, badge === 'refunded' ? styles.txAmtReversed : null]}>
-          {`${badge === 'refunded' ? '' : '+'}${grouped(txn.amountTokens)} tk`}
+          {`${badge === 'refunded' ? '' : '+'}${grouped(txn.amountTokens)} coins`}
         </Text>
         <View
           style={[
@@ -333,21 +333,21 @@ const TransactionsScreen = () => {
           icon="clock-3"
           tint="gold"
           label="Pending"
-          value={loadingSummary ? '—' : `${grouped(pendingTokens)} tk`}
+          value={loadingSummary ? '—' : `${grouped(pendingTokens)} coins`}
           hint="Coins from transactions still in the platform's hold window — usually clears within 24–48 hours before it counts toward your balance."
         />
         <SummaryCell
           icon="check"
           tint="green"
           label="Settled"
-          value={loadingSummary ? '—' : `${grouped(settledTokens)} tk`}
+          value={loadingSummary ? '—' : `${grouped(settledTokens)} coins`}
           hint="Coins that have actually cleared and count toward your available balance. Refunded transactions are never included here."
         />
         <SummaryCell
           icon="bar-chart-3"
           tint="purple"
           label="This week"
-          value={loadingSummary ? '—' : `${grouped(weekTokens)} tk`}
+          value={loadingSummary ? '—' : `${grouped(weekTokens)} coins`}
           hint="Real coins earned from transactions in the last 7 days, excluding anything that was refunded."
         />
       </SummaryStrip>

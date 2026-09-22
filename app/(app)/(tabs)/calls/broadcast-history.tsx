@@ -79,7 +79,7 @@ const analyticsTiles = (a: BroadcastAnalytics): Tile[] => {
       label: 'Highlighted',
       value: grouped(a.highlightedMessageCount),
       barPct: tokenBar(a.highlightedMessageTokens),
-      caption: `${grouped(a.highlightedMessageTokens)} tk`,
+      caption: `${grouped(a.highlightedMessageTokens)} coins`,
     },
     {
       key: 'rewards',
@@ -89,7 +89,7 @@ const analyticsTiles = (a: BroadcastAnalytics): Tile[] => {
       label: 'Reward orders',
       value: grouped(a.rewardOrderCount),
       barPct: tokenBar(a.rewardOrderTokens),
-      caption: `${grouped(a.rewardOrderTokens)} tk`,
+      caption: `${grouped(a.rewardOrderTokens)} coins`,
     },
     {
       key: 'funwheel',
@@ -99,7 +99,7 @@ const analyticsTiles = (a: BroadcastAnalytics): Tile[] => {
       label: 'Fun-wheel spins',
       value: grouped(a.funWheelSpinCount),
       barPct: tokenBar(a.funWheelSpinTokens),
-      caption: `${grouped(a.funWheelSpinTokens)} tk`,
+      caption: `${grouped(a.funWheelSpinTokens)} coins`,
     },
     {
       key: 'viewers',
@@ -246,7 +246,7 @@ const BroadcastHistoryScreen = () => {
             tint="gold"
             label="Total earned"
             hint="Combined coins earned across every broadcast below — chat highlights, reactions, reward orders, and fun-wheel spins."
-            value={`${grouped(summary?.totalRevenueTokens ?? 0)} tk`}
+            value={`${grouped(summary?.totalRevenueTokens ?? 0)} coins`}
           />
           <SummaryCell
             icon="user-round"
@@ -293,7 +293,7 @@ const BroadcastHistoryScreen = () => {
                   <Text style={styles.pendingWho}>
                     <Text style={styles.pendingName}>{order.rewardName}</Text> for{' '}
                     {order.buyerDisplayName} ·{' '}
-                    <Text style={styles.pendingAmt}>{grouped(order.priceCharged)} tk</Text>
+                    <Text style={styles.pendingAmt}>{grouped(order.priceCharged)} coins</Text>
                   </Text>
                   <Pressable
                     style={styles.btnGhost}

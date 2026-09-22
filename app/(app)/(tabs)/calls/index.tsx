@@ -88,7 +88,7 @@ const CallsHubScreen = () => {
     if (title === 'Group Sessions') {
       return {
         lead: gcSummary
-          ? `${grouped(gcSummary.totalCalls)} hosted · ${grouped(gcSummary.totalRevenueTokens)} tk`
+          ? `${grouped(gcSummary.totalCalls)} hosted · ${grouped(gcSummary.totalRevenueTokens)} coins`
           : '—',
       };
     }

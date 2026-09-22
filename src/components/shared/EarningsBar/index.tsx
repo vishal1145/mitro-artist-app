@@ -10,7 +10,7 @@ import { colors, fontFamily, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface EarningsBarProps {
-  /** Formatted total, e.g. "1.2k tk". Ignored when `brand` is set. */
+  /** Formatted total, e.g. "1.2k coins". Ignored when `brand` is set. */
   amount?: string;
   /** Caption under the amount. */
   caption?: string;
