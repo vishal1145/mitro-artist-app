@@ -8,6 +8,7 @@ import {
   CalloutText,
   CardDetail,
   FilterPills,
+  HelpIcon,
   HistoryCard,
   LearnLink,
   ListHead,
@@ -238,6 +239,9 @@ const GroupCallHistoryScreen = () => {
                         <Text style={hasEarnings ? styles.callEarn : styles.callEarnZero}>
                           {hasEarnings ? `+${grouped(item.totalRevenueTokens)} tk` : '0 tk'}
                         </Text>
+                        <HelpIcon
+                          hint={`You earned ${grouped(item.totalRevenueTokens)} coins for this call based on duration (${webDuration(item.durationSeconds)}) and peak participants (${grouped(item.peakParticipantCount)}).`}
+                        />
                         <View style={isOpen ? styles.chevOpen : undefined}>
                           <LucideIcon
                             name="chevron-down"
