@@ -171,8 +171,12 @@ export const ENDPOINTS = {
     /** Free artist reply. */
     reply: (userId: string) => `/api/artist/private-messages/${userId}/reply`,
     read: (userId: string) => `/api/artist/private-messages/${userId}/read`,
-    /** Edit (PUT) / delete (DELETE) the artist's own reply, by message id. */
+    /** Edit (PUT) / delete-for-everyone (DELETE) the artist's own reply, by message id. */
     message: (messageId: string) => `/api/artist/private-messages/message/${messageId}`,
+    /** DELETE — hide one message (either side's) from the artist's view only. */
+    messageForMe: (messageId: string) => `/api/artist/private-messages/message/${messageId}/for-me`,
+    /** DELETE — hide the whole conversation from the artist's end only. */
+    conversationDelete: (userId: string) => `/api/artist/private-messages/${userId}/conversation`,
   },
   /** FCM device registration for push notifications. */
   devices: {

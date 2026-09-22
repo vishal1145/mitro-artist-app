@@ -26,6 +26,7 @@ import { privateMessageApi } from '@services/api';
 import {
   privateMessageHub,
   type PrivateMessageReceivedPayload,
+  type PrivateMessageDeletedPayload,
 } from '@services/realtime/privateMessageHub';
 import type { ArtistConversationSummary, PrivateMessageItem } from '@app-types/api';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius, typography } from '@theme';
@@ -194,6 +195,7 @@ const ChatThreadScreen = () => {
   const [forwardOpen, setForwardOpen] = useState(false);
   const [forwardMsg, setForwardMsg] = useState<PrivateMessageItem | null>(null);
   const [forwardingId, setForwardingId] = useState<string | null>(null);
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
@@ -282,7 +284,13 @@ const ChatThreadScreen = () => {
         privateMessageApi.markRead(userId);
       }
     };
-    privateMessageHub.connect(artistId, userId, onMessage);
+    const onDeleted = (p: PrivateMessageDeletedPayload) => {
+      if (cancelled) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === p.messageId ? { ...m, isDeleted: true, messageText: '' } : m)),
+      );
+    };
+    privateMessageHub.connect(artistId, userId, onMessage, onDeleted);
     return () => {
       cancelled = true;
       privateMessageHub.disconnect();
@@ -314,16 +322,62 @@ const ChatThreadScreen = () => {
     toast('Copied to clipboard');
   };
 
-  const confirmDelete = (m: PrivateMessageItem) => {
+  const confirmDeleteForEveryone = (m: PrivateMessageItem) => {
     setActionTarget(null);
-    Alert.alert('Delete message?', 'This removes the message for both of you.', [
+    Alert.alert('Delete for everyone?', 'This removes the message for both of you.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
+          // Optimistic change
+          const backup = messages;
+          setMessages((prev) =>
+            prev.map((x) => (x.id === m.id ? { ...x, isDeleted: true, messageText: '' } : x)),
+          );
           const res = await privateMessageApi.deleteMessage(m.id);
           if (res.success) await load(false);
+          else {
+            setMessages(backup);
+            flashError(res.error);
+          }
+        },
+      },
+    ]);
+  };
+
+  const confirmDeleteForMe = (m: PrivateMessageItem) => {
+    setActionTarget(null);
+    Alert.alert('Delete for me?', 'This hides the message from your view only.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          // Optimistic change
+          const backup = messages;
+          setMessages((prev) => prev.filter((x) => x.id !== m.id));
+          const res = await privateMessageApi.deleteMessageForMe(m.id);
+          if (res.success) await load(false);
+          else {
+            setMessages(backup);
+            flashError(res.error);
+          }
+        },
+      },
+    ]);
+  };
+
+  const confirmDeleteChat = () => {
+    Alert.alert('Delete chat?', 'This hides the entire conversation from your view only.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (!userId) return;
+          const res = await privateMessageApi.deleteConversation(userId);
+          if (res.success) router.back();
           else flashError(res.error);
         },
       },
@@ -465,6 +519,9 @@ const ChatThreadScreen = () => {
             Replies are free
           </Text>
         </View>
+        <Pressable onPress={() => setOptionsOpen(true)} style={styles.iconBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Options">
+          <Feather name="more-vertical" size={rf(20)} color={colors.textPrimary} />
+        </Pressable>
       </View>
 
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
@@ -581,11 +638,15 @@ const ChatThreadScreen = () => {
                 <ActionRow icon="corner-up-left" label="Reply" onPress={() => startReply(actionTarget)} />
                 <ActionRow icon="copy" label="Copy" onPress={() => handleCopy(actionTarget)} />
                 <ActionRow icon="share" label="Forward" onPress={() => openForward(actionTarget)} />
-                {actionTarget.senderType === 'artist' && !actionTarget.readAtUtc && !actionTarget.isDeleted ? (
+                {actionTarget.senderType === 'artist' && !actionTarget.isDeleted ? (
                   <>
-                    <ActionRow icon="edit-2" label="Edit" onPress={() => startEdit(actionTarget)} />
-                    <ActionRow icon="trash-2" label="Delete" destructive onPress={() => confirmDelete(actionTarget)} />
+                    {!actionTarget.readAtUtc ? <ActionRow icon="edit-2" label="Edit" onPress={() => startEdit(actionTarget)} /> : null}
+                    <ActionRow icon="trash-2" label="Delete for everyone" destructive onPress={() => confirmDeleteForEveryone(actionTarget)} />
+                    <ActionRow icon="trash" label="Delete for me" destructive onPress={() => confirmDeleteForMe(actionTarget)} />
                   </>
+                ) : null}
+                {actionTarget.senderType === 'user' && !actionTarget.isDeleted ? (
+                  <ActionRow icon="trash" label="Delete for me" destructive onPress={() => confirmDeleteForMe(actionTarget)} />
                 ) : null}
                 <ActionRow icon="x" label="Cancel" onPress={() => setActionTarget(null)} />
               </>
@@ -634,6 +695,16 @@ const ChatThreadScreen = () => {
                 })}
               </ScrollView>
             )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Header options sheet */}
+      <Modal visible={optionsOpen} transparent animationType="fade" onRequestClose={() => setOptionsOpen(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setOptionsOpen(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <ActionRow icon="trash-2" label="Delete chat" destructive onPress={() => { setOptionsOpen(false); confirmDeleteChat(); }} />
+            <ActionRow icon="x" label="Cancel" onPress={() => setOptionsOpen(false)} />
           </Pressable>
         </Pressable>
       </Modal>

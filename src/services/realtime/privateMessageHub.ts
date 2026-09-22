@@ -19,6 +19,10 @@ import { logger } from '@utils/logger';
 
 const HUB_URL = `${API_CONFIG.baseUrl}/hubs/private-message`;
 const EVENT = 'PrivateMessageReceived';
+/** "Delete for everyone" from either side — payload `{ messageId }`. */
+const DELETED_EVENT = 'PrivateMessageDeleted';
+
+export type PrivateMessageDeletedPayload = { messageId: string };
 
 /** Server payload for a received message (a superset of PrivateMessageItem). */
 export type PrivateMessageReceivedPayload = Pick<
@@ -41,6 +45,7 @@ export const privateMessageHub = {
     artistId: string,
     userId: string,
     onMessage: (payload: PrivateMessageReceivedPayload) => void,
+    onDeleted?: (payload: PrivateMessageDeletedPayload) => void,
   ): Promise<void> {
     // Tear down any previous conversation first.
     await this.disconnect();
@@ -52,6 +57,11 @@ export const privateMessageHub = {
       .build();
 
     connection.on(EVENT, (payload: PrivateMessageReceivedPayload) => onMessage(payload));
+    if (onDeleted) {
+      connection.on(DELETED_EVENT, (payload: PrivateMessageDeletedPayload) => {
+        if (payload?.messageId) onDeleted(payload);
+      });
+    }
 
     connection.onreconnected(() => {
       connection?.invoke('JoinConversation', artistId, userId).catch(() => {});

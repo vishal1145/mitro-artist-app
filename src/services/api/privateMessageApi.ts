@@ -94,10 +94,33 @@ export const privateMessageApi = {
     }
   },
 
-  /** Soft-delete the artist's own reply — only while the fan hasn't read it. */
+  /**
+   * Delete for everyone — the artist's own reply, any time. Blanks it for both
+   * sides (isDeleted, empty text) and pushes "PrivateMessageDeleted" live.
+   */
   async deleteMessage(messageId: string): Promise<Result<null>> {
     try {
       await api.delete(ENDPOINTS.privateMessages.message(messageId));
+      return { success: true, data: null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Delete for me — hides one message (either side's) from the artist's view only. */
+  async deleteMessageForMe(messageId: string): Promise<Result<null>> {
+    try {
+      await api.delete(ENDPOINTS.privateMessages.messageForMe(messageId));
+      return { success: true, data: null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
+  /** Delete chat — hides the whole conversation from the artist's end only. */
+  async deleteConversation(userId: string): Promise<Result<null>> {
+    try {
+      await api.delete(ENDPOINTS.privateMessages.conversationDelete(userId));
       return { success: true, data: null };
     } catch (error) {
       return { success: false, error: getErrorMessage(error) };
