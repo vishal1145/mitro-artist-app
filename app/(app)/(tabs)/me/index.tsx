@@ -1,7 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, Pressable, View } from 'react-native';
 
 import {
   ConfirmDialog,
@@ -14,221 +12,40 @@ import {
   Skeleton,
 } from '@components/shared';
 import { Text } from '@components/ui';
-import { useFollowers } from '@hooks/useFollowers';
-import { useBroadcastHistorySummary, useEarningsSummary } from '@hooks/useInsights';
-import { useProfile } from '@hooks/useProfile';
-import { useAuthStore } from '@store/authStore';
-import { useNotificationStore } from '@store/notificationStore';
-import { colors, fontFamily, layout, radius, typography } from '@theme';
+import { MeRow } from '@screens/profile/me/components/MeRow';
+import { ACTIVITY } from '@screens/profile/me/meRows';
+import { useMeScreen } from '@screens/profile/me/useMeScreen';
+import { colors, fontFamily, layout, radius } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
-import { compactCount, formatTokens, grouped, initialsFrom, titleCase } from '@utils/format';
+import { grouped, initialsFrom, titleCase } from '@utils/format';
 import { rf } from '@utils/responsive';
-
-import type { ColorToken } from '@theme';
-
-type FeatherIconName = keyof typeof Feather.glyphMap;
-
-type Href =
-  | '/(app)/(tabs)/me/edit-profile'
-  | '/(app)/(tabs)/me/messages'
-  | '/(app)/(tabs)/me/followers'
-  | '/(app)/(tabs)/me/photos'
-  | '/(app)/(tabs)/me/settings'
-  | '/(app)/(tabs)/me/kyc-payouts'
-  | '/(app)/(tabs)/business/transactions';
-
-interface Row {
-  icon: FeatherIconName;
-  tint: string;
-  fill: string;
-  title: string;
-  sub: string;
-  route: Href;
-  /** Pink count bubble. */
-  badge?: number;
-  /** Gold status pill, e.g. REQUIRED. */
-  pill?: string;
-}
-
-const ACCOUNT: Row[] = [
-  {
-    icon: 'user',
-    tint: colors.violet,
-    fill: colors.violetSoft,
-    title: 'Profile',
-    sub: 'Public details, rates & password',
-    route: '/(app)/(tabs)/me/edit-profile',
-  },
-  {
-    icon: 'users',
-    tint: colors.violet,
-    fill: colors.violetSoft,
-    title: 'Followers',
-    // Overridden at render with the real top-supporter count from useFollowers.
-    sub: 'Top supporters',
-    route: '/(app)/(tabs)/me/followers',
-  },
-  // Photos is hidden until the backend gives `/photos/upload-url` a unique
-  // storage key per photo. Today it reuses one key per artist, so every
-  // upload overwrites the last and the gallery shows the same picture on
-  // every tile. The screen, its route and the whole data layer are intact —
-  // restoring it is just putting this row back:
-  //
-  //   { icon: 'image', tint: colors.gold, fill: colors.goldSoft,
-  //     title: 'Photos', sub: 'Your public gallery',
-  //     route: '/(app)/(tabs)/me/photos' },
-  {
-    icon: 'settings',
-    tint: colors.cyan,
-    fill: colors.cyanSoft,
-    title: 'Settings',
-    sub: 'Reward menu & fun wheel',
-    route: '/(app)/(tabs)/me/settings',
-  },
-  {
-    icon: 'shield',
-    tint: colors.gold,
-    fill: colors.goldSoft,
-    title: 'KYC & Payouts',
-    sub: 'Required before withdrawal',
-    route: '/(app)/(tabs)/me/kyc-payouts',
-    // `pill` is set at render from the real kycStatus (REQUIRED/PENDING/…).
-  },
-];
-
-const ACTIVITY: Row[] = [
-  {
-    icon: 'inbox',
-    tint: colors.green,
-    fill: colors.successChip,
-    title: 'Transaction History',
-    sub: 'Every coin in and out',
-    route: '/(app)/(tabs)/business/transactions',
-  },
-];
-
-interface Stat {
-  value: string;
-  label: string;
-  color: ColorToken;
-}
 
 /** Me tab root — creator identity, headline numbers, and account navigation. */
 const MeScreen = () => {
-  const router = useRouter();
-  const logout = useAuthStore((s) => s.logout);
-  const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
-  const [confirmingLogout, setConfirmingLogout] = useState(false);
-
-  const { data: profile, isLoading, error: profileError } = useProfile();
-  const { data: earnings, isLoading: loadingEarnings } = useEarningsSummary();
-  const { data: followers } = useFollowers();
-  const { data: bcSummary } = useBroadcastHistorySummary();
-
-  const followerSummary = followers?.summary;
-  const isApproved = profile?.approvalStatus === 'approved';
-
-  // KYC pill tracks the real /profile/me kycStatus: approved hides the nudge,
-  // pending/rejected show their state, anything else (empty/unknown) = REQUIRED.
-  const kycPill = ((): string | undefined => {
-    switch (profile?.kycStatus) {
-      case 'approved':
-        return undefined;
-      case 'pending':
-        return 'PENDING';
-      case 'rejected':
-        return 'REJECTED';
-      default:
-        return 'REQUIRED';
-    }
-  })();
-
-  // Followers/Shows come from the same endpoints the web reads: /followers
-  // (summary.totalFollowers) and /broadcast/history/summary (totalShows).
-  // Earned is the wallet balance from /profile/me; Total is everything ever
-  // earned, from /earnings/summary.
-  const stats: Stat[] = [
-    {
-      value: followerSummary ? compactCount(followerSummary.totalFollowers) : '—',
-      label: 'Followers',
-      color: 'pink',
-    },
-    {
-      value: profile ? formatTokens(profile.walletTokens) : '—',
-      label: 'Earned',
-      color: 'gold',
-    },
-    {
-      value: earnings ? formatTokens(earnings.totalTokens) : '—',
-      label: 'Total',
-      color: 'green',
-    },
-    { value: bcSummary ? String(bcSummary.totalShows) : '—', label: 'Shows', color: 'cyan' },
-  ];
-
-  // The static ACCOUNT rows, with the Followers subtitle and KYC pill made
-  // dynamic from the real summaries — same values the web shows.
-  const accountRows: Row[] = ACCOUNT.map((row) => {
-    if (row.title === 'Followers') {
-      return { ...row, sub: `${followerSummary?.topSupporterCount ?? 0} top supporters` };
-    }
-    if (row.title === 'KYC & Payouts') {
-      return { ...row, pill: kycPill };
-    }
-    return row;
-  });
-
-  const handleLogout = () => {
-    setConfirmingLogout(false);
-    void logout().then(() => router.replace('/(auth)/login'));
-  };
-
-  const renderRow = (row: Row, last: boolean) => (
-    <Pressable
-      key={row.title}
-      style={[styles.row, last ? null : styles.rowDivider]}
-      onPress={() => router.push(row.route)}
-      accessibilityRole="button"
-      accessibilityLabel={row.title}
-      accessibilityHint={row.sub}
-    >
-      <View style={[styles.rowIcon, { backgroundColor: row.fill }]}>
-        <Feather name={row.icon} size={rf(17)} color={row.tint} />
-      </View>
-
-      <View style={styles.rowText}>
-        <Text variant="bodyLg" color="textPrimary" style={styles.rowTitle}>
-          {row.title}
-        </Text>
-        <Text variant="bodySm" color="textMuted" numberOfLines={1}>
-          {row.sub}
-        </Text>
-      </View>
-
-      {row.pill ? (
-        <View style={styles.pill}>
-          <Text variant="label" color="gold">
-            {row.pill}
-          </Text>
-        </View>
-      ) : null}
-
-      {row.badge ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{row.badge}</Text>
-        </View>
-      ) : null}
-
-      <Feather name="chevron-right" size={rf(16)} color={colors.textMuted} />
-    </Pressable>
-  );
+  const {
+    hasUnread,
+    profile,
+    isLoading,
+    profileError,
+    loadingEarnings,
+    isApproved,
+    followerSummary,
+    stats,
+    accountRows,
+    confirmingLogout,
+    openLogoutConfirm,
+    cancelLogoutConfirm,
+    confirmLogout,
+    navigateTo,
+    goToNotifications,
+  } = useMeScreen();
 
   return (
     <Screen tabBarSpacing scrollable padded={false} contentContainerStyle={styles.content}
       header={
         <EarningsBar
           brand
-          onPressBell={() => router.push('/(app)/(tabs)/home/notifications')}
+          onPressBell={goToNotifications}
           unread={hasUnread}
         />
       }
@@ -294,14 +111,28 @@ const MeScreen = () => {
       />
 
       <SectionLabel style={styles.sectionLabel}>ACCOUNT</SectionLabel>
-      {accountRows.map((row, i) => renderRow(row, i === accountRows.length - 1))}
+      {accountRows.map((row, i) => (
+        <MeRow
+          key={row.title}
+          row={row}
+          last={i === accountRows.length - 1}
+          onPress={() => navigateTo(row.route)}
+        />
+      ))}
 
       <SectionLabel style={styles.sectionLabel}>ACTIVITY</SectionLabel>
-      {ACTIVITY.map((row, i) => renderRow(row, i === ACTIVITY.length - 1))}
+      {ACTIVITY.map((row, i) => (
+        <MeRow
+          key={row.title}
+          row={row}
+          last={i === ACTIVITY.length - 1}
+          onPress={() => navigateTo(row.route)}
+        />
+      ))}
 
       <Pressable
         style={styles.logout}
-        onPress={() => setConfirmingLogout(true)}
+        onPress={openLogoutConfirm}
         accessibilityRole="button"
         accessibilityLabel="Log out"
       >
@@ -317,8 +148,8 @@ const MeScreen = () => {
         title="Log out?"
         message="You'll need to sign in again to go live."
         confirmLabel="Log out"
-        onConfirm={handleLogout}
-        onCancel={() => setConfirmingLogout(false)}
+        onConfirm={confirmLogout}
+        onCancel={cancelLogoutConfirm}
       />
     </Screen>
   );
@@ -377,52 +208,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     marginTop: 12,
     marginBottom: 4,
-  },
-
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 16,
-  },
-  rowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rowIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowText: {
-    flex: 1,
-    gap: 2,
-  },
-  rowTitle: {
-    fontFamily: fontFamily.bold,
-  },
-  pill: {
-    borderWidth: 1,
-    borderColor: colors.borderGold,
-    backgroundColor: colors.goldSoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  badge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.pink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 7,
-  },
-  badgeText: {
-    ...typography.badge,
-    color: colors.white,
   },
 
   logout: {

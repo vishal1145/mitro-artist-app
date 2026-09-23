@@ -1,21 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Children, useState, type ReactNode } from 'react';
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native';
-import Svg, {
-  Circle,
-  Defs,
-  RadialGradient,
-  Rect,
-  Stop,
-  Text as SvgText,
-} from 'react-native-svg';
+import { StyleSheet, View } from 'react-native';
 
 import {
   CalloutStrong,
@@ -23,14 +8,21 @@ import {
   LearnLink,
   WebCallout,
 } from '@components/history';
-import { EarningsBar, LoadFailed, Screen, Skeleton } from '@components/shared';
-import { LucideIcon, Text, type LucideIconName } from '@components/ui';
-import { useEarningsSummary } from '@hooks/useInsights';
+import { EarningsBar, LoadFailed, Screen } from '@components/shared';
+import { LucideIcon, Text } from '@components/ui';
+import { GlowOverlay } from '@screens/business/earnings/components/GlowOverlay';
+import { HelpTip } from '@screens/business/earnings/components/HelpTip';
+import { LoadingBody } from '@screens/business/earnings/components/LoadingBody';
+import { SourcePieChart } from '@screens/business/earnings/components/SourcePieChart';
+import { StatTile } from '@screens/business/earnings/components/StatTile';
+import { TrendChart } from '@screens/business/earnings/components/TrendChart';
+import { TwoColGrid } from '@screens/business/earnings/components/TwoColGrid';
+import { legendPct, pieColor } from '@screens/business/earnings/format';
+import { useEarningsDashboard } from '@screens/business/earnings/useEarningsDashboard';
 import { useNotificationStore } from '@store';
 import { fontFamily, webColors } from '@theme';
 import { webSourceHint, webSourceLabel } from '@utils/earnings';
 import { getErrorMessage } from '@utils/errorHandler';
-import { grouped, shortWeekday } from '@utils/format';
 import { rf } from '@utils/responsive';
 import { showPopupToast } from '@utils/toast';
 
@@ -45,308 +37,11 @@ import { showPopupToast } from '@utils/toast';
  * tiles, the 7-bar trend chart, and the SVG donut "Revenue by Source".
  */
 
-/* Web `SOURCE_PIE_COLORS`, verbatim. */
-const SOURCE_PIE_COLORS = [
-  '#ff3fad',
-  '#33e6ff',
-  '#8c4dff',
-  '#42f5a7',
-  '#ffb84d',
-  '#ff6b6b',
-  '#4d9fff',
-  '#f5d442',
-] as const;
-
-const pieColor = (index: number): string =>
-  SOURCE_PIE_COLORS[index % SOURCE_PIE_COLORS.length];
-
-/* -------------------------------------------------------------------------- */
-/* Two-column grid — CSS Grid `repeat(2, minmax(0, 1fr))` for the stat tiles.  */
-/* Flexbox would stretch a lone trailing tile; measuring the row and pinning   */
-/* each cell to `(width - gap) / 2` keeps the two-up shape and a fixed gap.     */
-/* -------------------------------------------------------------------------- */
-
-const TwoColGrid = ({
-  gap,
-  children,
-}: {
-  gap: number;
-  children: ReactNode;
-}) => {
-  const [rowWidth, setRowWidth] = useState(0);
-  const onLayout = (event: LayoutChangeEvent) => setRowWidth(event.nativeEvent.layout.width);
-  const cellWidth = rowWidth > 0 ? (rowWidth - gap) / 2 : undefined;
-
-  return (
-    <View style={[styles.grid, { gap }]} onLayout={onLayout}>
-      {Children.map(children, (child) =>
-        child == null ? null : <View style={{ width: cellWidth }}>{child}</View>,
-      )}
-    </View>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/* .stat-tile                                                                  */
-/* -------------------------------------------------------------------------- */
-
-type StatAccent = 'total' | 'pending' | 'available' | 'paidout';
-
-const STAT_ACCENT: Record<
-  StatAccent,
-  { icBg: string; icInk: string; chipBg: string; chipInk: string }
-> = {
-  total: {
-    icBg: 'rgba(255, 63, 173, 0.15)',
-    icInk: webColors.pinkHot,
-    chipBg: 'rgba(66, 245, 167, 0.14)',
-    chipInk: webColors.green,
-  },
-  pending: {
-    icBg: 'rgba(255, 200, 107, 0.14)',
-    icInk: webColors.gold,
-    chipBg: 'rgba(255, 200, 107, 0.14)',
-    chipInk: webColors.gold,
-  },
-  available: {
-    icBg: 'rgba(52, 231, 255, 0.14)',
-    icInk: webColors.cyan,
-    chipBg: 'rgba(66, 245, 167, 0.14)',
-    chipInk: webColors.green,
-  },
-  paidout: {
-    icBg: 'rgba(140, 77, 255, 0.15)',
-    icInk: webColors.purple,
-    chipBg: webColors.surfaceSoft,
-    chipInk: webColors.dim,
-  },
-};
-
-const StatTile = ({
-  accent,
-  icon,
-  label,
-  value,
-  chip,
-  help,
-}: {
-  accent: StatAccent;
-  icon: LucideIconName;
-  label: string;
-  value: string;
-  chip: string;
-  help: string;
-}) => {
-  const tint = STAT_ACCENT[accent];
-  return (
-    <View style={styles.statTile}>
-      <View style={[styles.statIc, { backgroundColor: tint.icBg }]}>
-        <LucideIcon name={icon} size={rf(17)} color={tint.icInk} />
-      </View>
-      <View style={styles.statLabelRow}>
-        <Text style={styles.statLabel}>{label}</Text>
-        <HelpTip text={help} />
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <View style={[styles.statChip, { backgroundColor: tint.chipBg }]}>
-        <Text style={[styles.statChipText, { color: tint.chipInk }]}>{chip}</Text>
-      </View>
-    </View>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/* EarningsTrendChart — the web canvas, redrawn as gradient bars.              */
-/* -------------------------------------------------------------------------- */
-
-const TrendChart = ({ points }: { points: { date: string; tokens: number }[] }) => {
-  const data =
-    points.length > 0 ? points : [{ date: new Date().toISOString(), tokens: 0 }];
-  const peak = Math.max(0, ...data.map((d) => d.tokens));
-
-  return (
-    <View style={styles.chart}>
-      {data.map((point, i) => (
-        <View key={`${point.date}-${i}`} style={styles.barCol}>
-          <Text style={styles.barValue}>{grouped(point.tokens)}</Text>
-          <View style={styles.barTrack}>
-            <LinearGradient
-              colors={['#ff3fad', '#33e6ff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={[
-                styles.bar,
-                { height: peak > 0 ? `${Math.max(4, (point.tokens / peak) * 100)}%` : 4 },
-              ]}
-            />
-          </View>
-          <Text style={styles.barDay}>{shortWeekday(point.date)}</Text>
-        </View>
-      ))}
-    </View>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/* SourcePieChart — react-native-svg donut, matching the web SVG 1:1.          */
-/* -------------------------------------------------------------------------- */
-
-const SourcePieChart = ({
-  sources,
-  totalTokens,
-}: {
-  sources: { sourceType: string; tokens: number; count: number }[];
-  totalTokens: number;
-}) => {
-  const size = 216;
-  const r = 82;
-  const strokeWidth = 28;
-  const cx = size / 2;
-  const cy = size / 2;
-  const circumference = 2 * Math.PI * r;
-  const gap = sources.length > 1 ? 7 : 0;
-  let offsetAcc = 0;
-
-  return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <Circle cx={cx} cy={cy} r={r} fill="none" stroke="#0d0c1f" strokeWidth={strokeWidth} />
-      {sources.map((source, i) => {
-        const pct = totalTokens > 0 ? source.tokens / totalTokens : 0;
-        const rawLen = pct * circumference;
-        const len = Math.max(rawLen - gap, pct > 0 ? 1 : 0);
-        const dashoffset = -offsetAcc;
-        offsetAcc += rawLen;
-        return (
-          <Circle
-            key={source.sourceType}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke={pieColor(i)}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={`${len} ${circumference - len}`}
-            strokeDashoffset={dashoffset}
-            transform={`rotate(-90 ${cx} ${cy})`}
-          />
-        );
-      })}
-      <SvgText
-        x={cx}
-        y={cy - 6}
-        textAnchor="middle"
-        fill={webColors.textStrong}
-        fontFamily={fontFamily.extrabold}
-        fontSize={rf(22)}
-      >
-        {totalTokens.toLocaleString()}
-      </SvgText>
-      <SvgText
-        x={cx}
-        y={cy + 18}
-        textAnchor="middle"
-        fill={webColors.dim}
-        fontFamily={fontFamily.bold}
-        fontSize={rf(10)}
-      >
-        COINS
-      </SvgText>
-    </Svg>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/* GlowOverlay — the two radial glows the web layers over the dark base of the  */
-/* .hero-card and .source-pie-card (purple top-left, pink bottom-right).        */
-/* -------------------------------------------------------------------------- */
-
-const GlowOverlay = () => {
-  // Radial gradients in react-native-svg only render smoothly with explicit
-  // pixel coordinates (userSpaceOnUse); bounding-box fractions produce a hard
-  // rectangular edge. So measure the card, then place the two glows in px:
-  // purple top-left, pink bottom-right, each fading fully to transparent.
-  const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-  const onLayout = (e: LayoutChangeEvent) =>
-    setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={onLayout}>
-      {size.w > 0 ? (
-        <Svg width={size.w} height={size.h}>
-          <Defs>
-            <RadialGradient
-              id="glowPurple"
-              cx={size.w * 0.18}
-              cy={0}
-              rx={size.w * 0.85}
-              ry={size.h * 0.95}
-              fx={size.w * 0.18}
-              fy={0}
-              gradientUnits="userSpaceOnUse"
-            >
-              <Stop offset="0" stopColor="#8c4dff" stopOpacity={0.34} />
-              <Stop offset="1" stopColor="#8c4dff" stopOpacity={0} />
-            </RadialGradient>
-            <RadialGradient
-              id="glowPink"
-              cx={size.w * 0.88}
-              cy={size.h}
-              rx={size.w * 0.82}
-              ry={size.h * 0.9}
-              fx={size.w * 0.88}
-              fy={size.h}
-              gradientUnits="userSpaceOnUse"
-            >
-              <Stop offset="0" stopColor="#ff3fad" stopOpacity={0.24} />
-              <Stop offset="1" stopColor="#ff3fad" stopOpacity={0} />
-            </RadialGradient>
-          </Defs>
-          <Rect width={size.w} height={size.h} fill="url(#glowPurple)" />
-          <Rect width={size.w} height={size.h} fill="url(#glowPink)" />
-        </Svg>
-      ) : null}
-    </View>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/* HelpTip — the web's "?" tooltip. Hover doesn't exist on a phone, so tapping  */
-/* the icon opens the same explanatory text in a small dismissible popup.        */
-/* -------------------------------------------------------------------------- */
-
-const HelpTip = ({ text, color }: { text: string; color?: string }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Pressable
-        onPress={() => setOpen(true)}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="More information"
-      >
-        <LucideIcon name="circle-help" size={rf(12)} color={color ?? webColors.dim} />
-      </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.tipScrim} onPress={() => setOpen(false)}>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipText}>{text}</Text>
-          </View>
-        </Pressable>
-      </Modal>
-    </>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/* Screen                                                                      */
-/* -------------------------------------------------------------------------- */
-
 /** Business tab root — the web's Earnings Dashboard, at mobile width. */
 const EarningsScreen = () => {
   const router = useRouter();
   const hasUnread = useNotificationStore((s) => s.unreadCount > 0);
-  const { data, isLoading, error, refetch } = useEarningsSummary();
+  const { data, isLoading, error, refetch } = useEarningsDashboard();
 
   const topSource = data?.bySource[0];
   const totalTokens = data?.totalTokens ?? 0;
@@ -552,10 +247,7 @@ const EarningsScreen = () => {
                 <SourcePieChart sources={data!.bySource} totalTokens={data!.totalTokens} />
                 <View style={styles.legend}>
                   {data!.bySource.map((source, i) => {
-                    const pct =
-                      data!.totalTokens > 0
-                        ? Math.round((source.tokens / data!.totalTokens) * 100)
-                        : 0;
+                    const pct = legendPct(source.tokens, data!.totalTokens);
                     const color = pieColor(i);
                     return (
                       <View
@@ -587,32 +279,6 @@ const EarningsScreen = () => {
     </Screen>
   );
 };
-
-/** Skeleton stand-ins for the cards while the summary loads. */
-const LoadingBody = () => (
-  <>
-    <Skeleton height={56} round={12} />
-    <Skeleton height={48} round={16} />
-    <Skeleton height={200} round={20} />
-    <View style={styles.grid}>
-      <View style={styles.skelHalf}>
-        <Skeleton height={116} round={20} />
-      </View>
-      <View style={styles.skelHalf}>
-        <Skeleton height={116} round={20} />
-      </View>
-      <View style={styles.skelHalf}>
-        <Skeleton height={116} round={20} />
-      </View>
-      <View style={styles.skelHalf}>
-        <Skeleton height={116} round={20} />
-      </View>
-    </View>
-    <Skeleton height={48} round={16} />
-    <Skeleton height={220} round={20} />
-    <Skeleton height={260} round={20} />
-  </>
-);
 
 const styles = StyleSheet.create({
   /** `.creator-view { gap: 20px }`; `.creator-main { padding: 12px }` at ≤768px. */
@@ -752,59 +418,6 @@ const styles = StyleSheet.create({
     lineHeight: rf(16),
   },
 
-  /* .stat-tile grid ------------------------------------------------------- */
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  skelHalf: {
-    width: '48%',
-  },
-  statTile: {
-    backgroundColor: webColors.surfaceStrong,
-    borderColor: webColors.panelBorder,
-    borderRadius: 24,
-    borderWidth: 1,
-    gap: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  statIc: {
-    alignItems: 'center',
-    borderRadius: 10,
-    height: 34,
-    justifyContent: 'center',
-    width: 34,
-  },
-  statLabelRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  statLabel: {
-    color: webColors.dim,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
-  },
-  statValue: {
-    color: webColors.textStrong,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(24),
-    lineHeight: rf(29),
-  },
-  statChip: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-  },
-  statChipText: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(10.5),
-    lineHeight: rf(14),
-  },
-
   /* .trend-card ----------------------------------------------------------- */
   trendCard: {
     backgroundColor: webColors.surface,
@@ -853,41 +466,6 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     width: 36,
-  },
-
-  /* trend bars ------------------------------------------------------------ */
-  chart: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    gap: 8,
-    height: 200,
-  },
-  barCol: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 6,
-  },
-  barValue: {
-    color: webColors.dim,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(9),
-    lineHeight: rf(12),
-  },
-  barTrack: {
-    alignSelf: 'stretch',
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  bar: {
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    width: '100%',
-  },
-  barDay: {
-    color: webColors.dim,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(11),
-    lineHeight: rf(14),
   },
 
   /* .source-pie-card ------------------------------------------------------ */
@@ -969,29 +547,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: rf(13),
     lineHeight: rf(20),
-  },
-
-  /* HelpTip popup -------------------------------------------------------- */
-  tipScrim: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  tipCard: {
-    backgroundColor: webColors.surfaceStrong,
-    borderColor: webColors.panelBorder,
-    borderRadius: 14,
-    borderWidth: 1,
-    maxWidth: 340,
-    padding: 16,
-  },
-  tipText: {
-    color: webColors.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(19),
   },
 });
 

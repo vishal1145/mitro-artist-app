@@ -2,6 +2,8 @@ export { live } from './liveTokens';
 export { GiftGlyph, PinGlyph, SparklesGlyph } from './LiveGlyphs';
 export type { GlyphProps } from './LiveGlyphs';
 export { ActivityRow } from './ActivityRow';
+export { DeliveryCard } from './DeliveryCard';
+export type { DeliveryCardProps } from './DeliveryCard';
 export { RoomPanel } from './RoomPanel';
 export type { RoomPanelProps } from './RoomPanel';
 export { RoomStartGate } from './RoomStartGate';

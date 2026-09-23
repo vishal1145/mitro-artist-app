@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
   CalloutStrong,
@@ -12,81 +12,20 @@ import { LoadFailed, PageHeader, Screen, Skeleton } from '@components/shared';
 import { LucideIcon } from '@components/ui';
 import { Text } from '@components/ui';
 import { useFollowers } from '@hooks/useFollowers';
-import { colors, fontFamily, gradientDirection, layout, webColors } from '@theme';
+import { FollowerCard } from '@screens/profile/followers/components/FollowerCard';
+import {
+  HINT_PULSE,
+  HINT_SESSION_REGULARS,
+  HINT_TOP_SUPPORTERS,
+  RADIUS,
+  RADIUS_LG,
+} from '@screens/profile/followers/formatters';
+import { colors, fontFamily, layout, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped } from '@utils/format';
 import { rf } from '@utils/responsive';
 
-import type { Follower, FollowerBadge } from '@app-types/api';
-
-/* -------------------------------------------------------------------------- */
-/*  Artist web — `.followers-list-page` in styles.css, 1:1.                    */
-/*                                                                            */
-/*  Every number below is the web's own value. rem → px at the browser's 16px  */
-/*  root: 0.625rem = 10, 0.66rem = 10.56, 0.72rem = 11.52, 0.75rem = 12,       */
-/*  0.78rem = 12.48, 0.81rem = 12.96, 0.85rem = 13.6, 0.88rem = 14.08,         */
-/*  0.9rem = 14.4, 1.1rem = 17.6. The `clamp()` sizes resolve to their lower   */
-/*  bound at phone width, and `--premium-radius`/`-lg` drop to 14/18 in the    */
-/*  mobile block (`@media (max-width: 768px)` re-declares them).               */
-/* -------------------------------------------------------------------------- */
-
-const RADIUS = 14; // --premium-radius (mobile)
-const RADIUS_LG = 18; // --premium-radius-lg (mobile)
-
-/* `data-tooltip` strings, verbatim from main.tsx. */
-const HINT_PULSE =
-  'Total number of fans who currently follow you, and how your following grew this week.';
-const HINT_TOP_SUPPORTERS =
-  "Followers who've spent 5,000+ coins supporting you — your highest-value fans.";
-const HINT_SESSION_REGULARS =
-  'Followers with 5+ paid interactions with you — they show up consistently, not just a one-time visit.';
-const HINT_COINS =
-  'Total coins this fan has spent supporting you, net of any refunds — matches what actually counts toward your earnings.';
-
-/** `FOLLOWER_BADGE_LABEL` — sentence case, exactly as the web renders it. */
-const BADGE_LABEL: Record<FollowerBadge, string> = {
-  new_follower: 'New follower',
-  top_supporter: 'Top supporter',
-  session_regular: 'Session regular',
-  returning_fan: 'Returning fan',
-  follower: 'Follower',
-};
-
-/** `followerBadgeClass()` → `.f-badge.{top|new|returning|regular|sessions}`. */
-const BADGE_TINT: Record<FollowerBadge, { ink: string; fill: string }> = {
-  top_supporter: { ink: webColors.green, fill: webColors.badgeGreen },
-  new_follower: { ink: webColors.cyan, fill: webColors.badgeCyan },
-  returning_fan: { ink: webColors.gold, fill: webColors.badgeGold },
-  session_regular: { ink: webColors.purple, fill: webColors.badgePurple },
-  follower: { ink: webColors.pinkHot, fill: webColors.badgePink },
-};
-
-/** `followerInitials()`. */
-const followerInitials = (name: string): string =>
-  name
-    .trim()
-    .split(/\s+/)
-    .map((p) => p.charAt(0).toUpperCase())
-    .slice(0, 2)
-    .join('');
-
-/** `formatFollowedAgo()`. */
-const formatFollowedAgo = (iso: string): string => {
-  const diffDays = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (diffDays <= 0) return 'Followed today';
-  if (diffDays === 1) return 'Followed yesterday';
-  if (diffDays < 30) return `Followed ${diffDays} days ago`;
-  const diffMonths = Math.floor(diffDays / 30);
-  if (diffMonths < 12)
-    return `Followed ${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
-  const diffYears = Math.floor(diffMonths / 12);
-  return `Followed ${diffYears} year${diffYears === 1 ? '' : 's'} ago`;
-};
-
-const activityText = (f: Follower): string =>
-  f.interactionCount > 0
-    ? `${grouped(f.totalCoinsSpent)} coins · ${f.interactionCount} interaction${f.interactionCount === 1 ? '' : 's'}`
-    : formatFollowedAgo(f.followedAtUtc);
+import type { Follower } from '@app-types/api';
 
 /** One `.follower-card` skeleton — same block sizes the web renders. */
 const CardSkeleton = () => (
@@ -235,64 +174,9 @@ const FollowersScreen = () => {
             here.
           </Text>
         ) : (
-          followers.map((f) => {
-            const tint = BADGE_TINT[f.badge];
-            return (
-              <View key={f.userId} style={styles.card}>
-                {f.avatarUrl ? (
-                  <Image source={{ uri: f.avatarUrl }} style={styles.avatarImg} />
-                ) : (
-                  <LinearGradient
-                    colors={webColors.avatarHot}
-                    start={gradientDirection.diagonal.start}
-                    end={gradientDirection.diagonal.end}
-                    style={styles.avatar}
-                  >
-                    <Text style={styles.avatarText}>
-                      {followerInitials(f.displayName)}
-                    </Text>
-                  </LinearGradient>
-                )}
-
-                <View style={styles.main}>
-                  <View style={[styles.badge, { backgroundColor: tint.fill }]}>
-                    <Text style={[styles.badgeText, { color: tint.ink }]}>
-                      {BADGE_LABEL[f.badge]}
-                    </Text>
-                  </View>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {f.displayName}
-                  </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {activityText(f)}
-                  </Text>
-                </View>
-
-                <View style={styles.right}>
-                  {/* .f-coins — gold figure + the faint (?) beside it */}
-                  <View style={styles.coinsRow}>
-                    <Text style={styles.coins}>
-                      {`${grouped(f.totalCoinsSpent)} coins`}
-                    </Text>
-                    <HelpIcon hint={HINT_COINS} />
-                  </View>
-                  <Pressable
-                    style={styles.msgBtn}
-                    onPress={() => messageFollower(f)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Message ${f.displayName}`}
-                  >
-                    <LucideIcon
-                      name="message-circle"
-                      size={rf(13)}
-                      color={webColors.muted}
-                    />
-                    <Text style={styles.msgBtnText}>Message</Text>
-                  </Pressable>
-                </View>
-              </View>
-            );
-          })
+          followers.map((f) => (
+            <FollowerCard key={f.userId} follower={f} onMessage={() => messageFollower(f)} />
+          ))
         )}
       </View>
     </Screen>
@@ -411,6 +295,7 @@ const styles = StyleSheet.create({
   grid: {
     gap: 12,
   },
+  /* Also the outer box of `CardSkeleton`, matching `.follower-card`'s box. */
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -421,95 +306,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: webColors.panelBorder,
     borderRadius: RADIUS,
-  },
-  /* .f-avatar — 52px circle, linear-gradient(135deg, #ff3fad, #6b2df4) */
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* .f-avatar-img — object-fit: cover */
-  avatarImg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    resizeMode: 'cover',
-  },
-  avatarText: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(17.6),
-    color: colors.white,
-  },
-  /* .f-main { flex: 1; min-width: 0 } */
-  main: {
-    flex: 1,
-    minWidth: 0,
-  },
-  /* .f-badge — 0.625rem / 800 / 0.03em */
-  badge: {
-    alignSelf: 'flex-start',
-    marginBottom: 5,
-    paddingVertical: 2,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-  },
-  badgeText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    lineHeight: rf(15),
-    letterSpacing: 0.3,
-  },
-  /* .f-main strong — 0.9rem / 700 */
-  name: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(14.4),
-    lineHeight: rf(20),
-    color: webColors.textStrong,
-  },
-
-  /* .f-main small — 0.72rem / --premium-dim */
-  meta: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(11.52),
-    lineHeight: rf(17),
-    color: webColors.dim,
-  },
-  /* .f-right — column, right-aligned, gap 8 */
-  right: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  /* .f-coins — inline-flex, gap 4 */
-  coinsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  coins: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(14.08),
-    color: webColors.gold,
-  },
-  /* .msg-btn — 0.72rem / 700 / surface-soft pill */
-  msgBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 13,
-    backgroundColor: webColors.surfaceSoft,
-    borderWidth: 1,
-    borderColor: webColors.panelBorder,
-    borderRadius: 999,
-  },
-
-  msgBtnText: {
-    fontFamily: fontFamily.bold,
-    fontSize: rf(11.52),
-    color: webColors.muted,
   },
 
   /* .dim-hint — 0.85rem, --text-soft fallback #9b9bab, 24px pad, centered */

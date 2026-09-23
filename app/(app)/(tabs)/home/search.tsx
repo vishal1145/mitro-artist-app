@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -24,18 +24,18 @@ import {
   useBroadcastHistory,
   useEarningsTransactions,
 } from '@hooks/useInsights';
-import { mmkvStorage } from '@services/storage';
+import {
+  BADGE_LABEL,
+  BADGE_TONE,
+  filterFollowers,
+  filterSessions,
+  filterTransactions,
+} from '@screens/home/search/matching';
+import { useRecentSearches } from '@screens/home/search/useRecentSearches';
 import { colors, radius, spacing, typography } from '@theme';
 import { sourceIcon, sourceLabel } from '@utils/earnings';
 import { grouped, initialsFrom, shortDate, shortDateTime } from '@utils/format';
-import { logger } from '@utils/logger';
 import { rf, wp } from '@utils/responsive';
-import type {
-  BroadcastHistoryItem,
-  EarningsTransaction,
-  Follower,
-  FollowerBadge,
-} from '@app-types/api';
 
 const FILTERS = ['All', 'Sessions', 'Followers', 'Transactions'] as const;
 
@@ -47,32 +47,6 @@ const FILTERS = ['All', 'Sessions', 'Followers', 'Transactions'] as const;
  * instead of calling a query the server doesn't answer.
  */
 const TAKE = 100;
-
-/** Rows a section shows before "See all" takes over. */
-const SECTION_LIMIT = 5;
-
-const RECENT_KEY = 'mitro.search.recent';
-const RECENT_LIMIT = 5;
-
-/** Same badge wording the Followers screen uses. */
-const BADGE_LABEL: Record<FollowerBadge, string> = {
-  top_supporter: 'TOP SUPPORTER',
-  new_follower: 'NEW FOLLOWER',
-  session_regular: 'SESSION REGULAR',
-  returning_fan: 'RETURNING FAN',
-  follower: 'FOLLOWER',
-};
-
-const BADGE_TONE: Record<FollowerBadge, 'success' | 'primary' | 'neutral'> = {
-  top_supporter: 'success',
-  new_follower: 'primary',
-  session_regular: 'primary',
-  returning_fan: 'neutral',
-  follower: 'neutral',
-};
-
-const matches = (haystack: string, needle: string): boolean =>
-  haystack.toLowerCase().includes(needle);
 
 /** Uppercase section heading with an optional "See all" action. */
 const SectionHead = ({
@@ -106,7 +80,7 @@ const SearchScreen = () => {
   const { initialQuery } = useLocalSearchParams<{ initialQuery?: string }>();
   const [query, setQuery] = useState(initialQuery ?? '');
   const [filter, setFilter] = useState<string>('All');
-  const [recent, setRecent] = useState<string[]>([]);
+  const { recent, rememberSearch, forgetSearch } = useRecentSearches();
 
   const debounced = useDebounce(query);
   const needle = debounced.trim().toLowerCase();
@@ -115,88 +89,21 @@ const SearchScreen = () => {
   const followers = useFollowers();
   const transactions = useEarningsTransactions(TAKE, 0);
 
-  /* ------------------------- Recent searches ---------------------------- */
-  /* The artist's own history, kept on this device. Never seeded with
-     examples — an empty list simply renders nothing. */
-  useEffect(() => {
-    let alive = true;
-    mmkvStorage
-      .getJSON<string[]>(RECENT_KEY)
-      .then((stored) => {
-        if (alive && Array.isArray(stored)) setRecent(stored);
-      })
-      .catch((error: unknown) =>
-        logger.warn('Recent searches unreadable', { error }),
-      );
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const persistRecent = useCallback((next: string[]) => {
-    setRecent(next);
-    mmkvStorage
-      .setJSON(RECENT_KEY, next)
-      .catch((error: unknown) =>
-        logger.warn('Recent searches unwritable', { error }),
-      );
-  }, []);
-
-  const rememberSearch = useCallback(() => {
-    const term = query.trim();
-    if (!term) return;
-    persistRecent(
-      [
-        term,
-        ...recent.filter((r) => r.toLowerCase() !== term.toLowerCase()),
-      ].slice(0, RECENT_LIMIT),
-    );
-  }, [persistRecent, query, recent]);
-
-  const forgetSearch = useCallback(
-    (term: string) => persistRecent(recent.filter((r) => r !== term)),
-    [persistRecent, recent],
+  /* ---------------------------- Matching -------------------------------- */
+  const sessionHits = useMemo(
+    () => filterSessions(sessions.data ?? [], needle),
+    [needle, sessions.data],
   );
 
-  /* ---------------------------- Matching -------------------------------- */
-  const sessionHits: BroadcastHistoryItem[] = useMemo(() => {
-    const all = sessions.data ?? [];
-    if (!needle) return all.slice(0, SECTION_LIMIT);
-    return all
-      .filter(
-        (s) =>
-          matches(s.title, needle) ||
-          matches(s.category, needle) ||
-          matches(s.status, needle),
-      )
-      .slice(0, SECTION_LIMIT);
-  }, [needle, sessions.data]);
+  const followerHits = useMemo(
+    () => filterFollowers(followers.data?.followers ?? [], needle),
+    [followers.data, needle],
+  );
 
-  const followerHits: Follower[] = useMemo(() => {
-    const all = followers.data?.followers ?? [];
-    if (!needle) return all.slice(0, SECTION_LIMIT);
-    return all
-      .filter(
-        (f) =>
-          matches(f.displayName, needle) || matches(BADGE_LABEL[f.badge], needle),
-      )
-      .slice(0, SECTION_LIMIT);
-  }, [followers.data, needle]);
-
-  const transactionHits: EarningsTransaction[] = useMemo(() => {
-    const all = transactions.data ?? [];
-    if (!needle) return all.slice(0, SECTION_LIMIT);
-    return all
-      .filter(
-        (t) =>
-          matches(t.description, needle) ||
-          matches(t.fromDisplayName, needle) ||
-          matches(sourceLabel(t.sourceType), needle) ||
-          matches(t.status, needle) ||
-          matches(t.groupCallTitle ?? '', needle),
-      )
-      .slice(0, SECTION_LIMIT);
-  }, [needle, transactions.data]);
+  const transactionHits = useMemo(
+    () => filterTransactions(transactions.data ?? [], needle),
+    [needle, transactions.data],
+  );
 
   const show = (section: string) => filter === 'All' || filter === section;
 
@@ -230,7 +137,7 @@ const SearchScreen = () => {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            onSubmitEditing={rememberSearch}
+            onSubmitEditing={() => rememberSearch(query)}
             placeholder="Search sessions, followers, transactions"
             placeholderTextColor={colors.inputPlaceholder}
             style={styles.searchInput}
