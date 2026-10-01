@@ -245,7 +245,7 @@ const TagInput = ({
   return (
     <View style={styles.field}>
       <View style={styles.tagLabelRow}>
-        <FieldLabel>{label}</FieldLabel>
+        <Text style={[styles.label, styles.labelInRow]}>{label}</Text>
         <Text style={[styles.tagCounter, atMax ? { color: C.pink } : null]}>
           {values.length}/{max}
         </Text>
@@ -349,7 +349,7 @@ const CategoryPicker = ({
   return (
     <View style={styles.field}>
       <View style={styles.tagLabelRow}>
-        <FieldLabel>Categories</FieldLabel>
+        <Text style={[styles.label, styles.labelInRow]}>Categories</Text>
         <Text style={[styles.tagCounter, atMax ? { color: C.pink } : null]}>
           {categoryIds.length}/{max}
         </Text>
@@ -493,7 +493,7 @@ const CategorySubGroup = ({
   return (
     <View style={styles.subGroupWrap}>
       <View style={styles.tagLabelRow}>
-        <FieldLabel>Sub-categories · {categoryName}</FieldLabel>
+        <Text style={[styles.label, styles.labelInRow]}>Sub-categories · {categoryName}</Text>
         <Text style={[styles.tagCounter, atMax ? { color: C.pink } : null]}>
           {groupSubs.length}/{max}
         </Text>
@@ -2041,7 +2041,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  labelInRow: {
+    marginBottom: 0,
+    flexShrink: 1,
+    paddingRight: 8,
   },
   tagCounter: {
     fontSize: 11,
@@ -2051,8 +2056,8 @@ const styles = StyleSheet.create({
   tagChipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 10,
   },
   tagChip: {
     flexDirection: 'row',
@@ -2133,11 +2138,14 @@ const styles = StyleSheet.create({
   catHint: {
     color: C.dim,
     fontSize: 11,
-    marginBottom: 8,
+    lineHeight: 15,
+    marginTop: -2,
+    marginBottom: 10,
   },
   subGroupWrap: {
-    marginTop: 10,
-    paddingLeft: 8,
+    marginBottom: 16,
+    paddingLeft: 12,
+    paddingVertical: 2,
     borderLeftWidth: 2,
     borderLeftColor: 'rgba(255,63,173,0.3)',
   },
