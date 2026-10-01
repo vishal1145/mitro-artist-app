@@ -13,6 +13,21 @@ import { ENDPOINTS } from './endpoints';
 const newIdempotencyKey = (): string =>
   `pc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+export const INSUFFICIENT_BALANCE_MESSAGE = "User doesn't have enough coins for this call.";
+
+export function isInsufficientBalanceError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const anyErr = error as any;
+  const data = anyErr.response?.data;
+  return (
+    anyErr.response?.status === 402 ||
+    data?.code === 'INSUFFICIENT_BALANCE' ||
+    data?.errorCode === 'INSUFFICIENT_BALANCE' ||
+    (typeof data?.message === 'string' &&
+      data.message.toLowerCase().includes('insufficient'))
+  );
+}
+
 /** Private (1:1) calls — artist side. Same `Result<T>` contract as the other
  * services. Realtime half is in @services/realtime/privateCallHub. */
 export const privateCallApi = {
@@ -57,6 +72,13 @@ export const privateCallApi = {
       );
       return { success: true, data: res.data };
     } catch (error) {
+      if (isInsufficientBalanceError(error)) {
+        return {
+          success: false,
+          error: INSUFFICIENT_BALANCE_MESSAGE,
+          code: 'INSUFFICIENT_BALANCE',
+        };
+      }
       return { success: false, error: getErrorMessage(error) };
     }
   },

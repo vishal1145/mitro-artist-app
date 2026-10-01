@@ -287,6 +287,15 @@ const PrivateCallsScreen = () => {
         });
       } else {
         showToast(res.error, 'error');
+        if (
+          res.code === 'INSUFFICIENT_BALANCE' ||
+          res.error.toLowerCase().includes('coins') ||
+          res.error.toLowerCase().includes('balance')
+        ) {
+          setRequests((prev) =>
+            prev.filter((p) => p.requestId !== req.requestId),
+          );
+        }
       }
       setBusyRequestId(null);
     },

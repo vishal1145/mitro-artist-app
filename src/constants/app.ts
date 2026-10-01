@@ -50,6 +50,8 @@ export const AGORA_APP_ID: string = process.env.EXPO_PUBLIC_AGORA_APP_ID ?? '';
 export const SECURE_KEYS = {
   accessToken: 'mitro.auth.accessToken',
   refreshToken: 'mitro.auth.refreshToken',
+  /** Per-install id sent as X-Device-Id (per-platform login sessions). */
+  deviceId: 'mitro.auth.deviceId',
 } as const;
 
 /** Keys used with MMKV (non-sensitive persistent data). */

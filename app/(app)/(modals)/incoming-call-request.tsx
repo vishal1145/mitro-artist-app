@@ -1,12 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Vibration, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
+import { incomingCallNative } from '@services/push/incomingCallNative';
 import { colors, fontFamily, radius, spacing } from '@theme';
+import { parseServerUtcMs } from '@utils/format';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
 
@@ -21,6 +23,7 @@ const IncomingCallRequestScreen = () => {
     pricePerMinute?: string;
     initialCharge?: string;
     expiresAt?: string;
+    auto?: string;
   }>();
 
   const requestId = params.requestId;
@@ -31,22 +34,35 @@ const IncomingCallRequestScreen = () => {
 
   const secsUntilExpiry = () => {
     if (!params.expiresAt) return 24;
-    return Math.max(0, Math.floor((new Date(params.expiresAt).getTime() - Date.now()) / 1000));
+    const at = parseServerUtcMs(params.expiresAt) ?? Date.now() + 60_000;
+    return Math.max(0, Math.floor((at - Date.now()) / 1000));
   };
 
   const [remaining, setRemaining] = useState(secsUntilExpiry());
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null);
   const settled = useRef(false);
 
+  useEffect(() => {
+    // Vibrate phone while ringing (pattern: wait 0ms, vibrate 800ms, wait 600ms, repeat)
+    Vibration.vibrate([0, 800, 600, 800, 600], true);
+    return () => {
+      Vibration.cancel();
+    };
+  }, []);
+
   const dismiss = useCallback(() => {
+    Vibration.cancel();
+    if (requestId) incomingCallNative.cancel(requestId);
     if (settled.current) return;
     settled.current = true;
     if (router.canGoBack()) router.back();
     else router.replace('/(app)/(tabs)/calls/private-calls');
-  }, [router]);
+  }, [requestId, router]);
 
   const accept = useCallback(async () => {
     if (settled.current || !requestId) return;
+    Vibration.cancel();
+    incomingCallNative.cancel(requestId);
     setBusy('accept');
     const res = await privateCallApi.acceptRequest(requestId);
     if (res.success) {
@@ -61,12 +77,22 @@ const IncomingCallRequestScreen = () => {
       });
     } else {
       showToast(res.error, 'error');
+      if (
+        res.code === 'INSUFFICIENT_BALANCE' ||
+        res.error.toLowerCase().includes('coins') ||
+        res.error.toLowerCase().includes('balance')
+      ) {
+        dismiss();
+        return;
+      }
       setBusy(null);
     }
-  }, [requestId, router, fanName, pricePerMinute]);
+  }, [requestId, router, fanName, pricePerMinute, dismiss]);
 
   const reject = useCallback(async () => {
     if (settled.current || !requestId) return;
+    Vibration.cancel();
+    incomingCallNative.cancel(requestId);
     setBusy('reject');
     await privateCallApi.rejectRequest(requestId, 'Not available right now');
     dismiss();
@@ -85,6 +111,20 @@ const IncomingCallRequestScreen = () => {
     }, 1000);
     return () => clearInterval(id);
   }, [dismiss]);
+
+  // Opened from the incoming-call notification's Accept / Decline: run that
+  // action once on mount (same code path as tapping the buttons).
+  const autoHandled = useRef(false);
+  useEffect(() => {
+    if (autoHandled.current || !requestId) return;
+    if (params.auto === 'accept') {
+      autoHandled.current = true;
+      void accept();
+    } else if (params.auto === 'reject') {
+      autoHandled.current = true;
+      void reject();
+    }
+  }, [params.auto, requestId, accept, reject]);
 
   const urgent = remaining <= URGENT_SEC;
 

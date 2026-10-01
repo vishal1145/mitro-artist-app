@@ -15,6 +15,7 @@ import { Avatar, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
 import { useIncomingCallStore } from '@store';
 import { colors, fontFamily, radius, spacing, TAB_BAR_SPACE } from '@theme';
+import { parseServerUtcMs } from '@utils/format';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
 
@@ -31,8 +32,10 @@ const HIDDEN_ON = [
   'private-calls',
 ];
 
-const secondsUntil = (iso: string): number =>
-  Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
+const secondsUntil = (iso: string): number => {
+  const at = parseServerUtcMs(iso) ?? Date.now() + 60_000;
+  return Math.max(0, Math.round((at - Date.now()) / 1000));
+};
 
 /**
  * Global incoming private-call pop-up.
@@ -105,6 +108,13 @@ export const IncomingCallOverlay = () => {
       });
     } else {
       showToast(res.error, 'error');
+      if (
+        res.code === 'INSUFFICIENT_BALANCE' ||
+        res.error.toLowerCase().includes('coins') ||
+        res.error.toLowerCase().includes('balance')
+      ) {
+        dismiss(request.requestId);
+      }
       setBusy(null);
     }
   }, [busy, request, dismiss, router]);

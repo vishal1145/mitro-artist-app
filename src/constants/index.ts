@@ -9,3 +9,4 @@ export {
   NOTIFICATIONS,
 } from './app';
 export { queryKeys } from './queryKeys';
+export * from './profileSuggestions';

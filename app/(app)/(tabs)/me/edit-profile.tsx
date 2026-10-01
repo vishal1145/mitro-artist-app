@@ -45,8 +45,15 @@ import type {
   ArtistCategory,
   ArtistPhoto,
   ArtistProfile,
-  ArtistSubcategory,
 } from '@app-types/api';
+import {
+  MAX_CATEGORIES,
+  MAX_LANGUAGES,
+  MAX_SKILLS,
+  MAX_SUBCATEGORIES_PER_CATEGORY,
+  LANGUAGE_SUGGESTIONS,
+  SKILL_SUGGESTIONS,
+} from '@constants/profileSuggestions';
 import { getErrorMessage } from '@utils/errorHandler';
 import { showPopupToast } from '@utils/toast';
 
@@ -184,69 +191,254 @@ const FieldRow = ({
   </View>
 );
 
-/* --------------------------- Category picker ------------------------------ */
+/* ----------------------------- Tag Input --------------------------------- */
+
+const TagInput = ({
+  label,
+  icon,
+  values,
+  onChange,
+  suggestions = [],
+  max = 10,
+  placeholder = 'Type and press Add',
+  noun = 'item',
+}: {
+  label: string;
+  icon: LucideIconName;
+  values: string[];
+  onChange: (next: string[]) => void;
+  suggestions?: string[];
+  max?: number;
+  placeholder?: string;
+  noun?: string;
+}) => {
+  const [text, setText] = useState('');
+  const atMax = values.length >= max;
+
+  const handleAdd = (itemToAdd?: string) => {
+    const candidate = (itemToAdd ?? text).trim();
+    if (!candidate) return;
+    if (atMax) {
+      showPopupToast(`You can add up to ${max} ${noun}s.`, 'info');
+      return;
+    }
+    if (values.some((v) => v.toLowerCase() === candidate.toLowerCase())) {
+      showPopupToast(`"${candidate}" is already added.`, 'info');
+      return;
+    }
+    onChange([...values, candidate]);
+    if (!itemToAdd) setText('');
+  };
+
+  const handleRemove = (index: number) => {
+    onChange(values.filter((_, i) => i !== index));
+  };
+
+  const availableSuggestions = useMemo(() => {
+    const lowerValues = new Set(values.map((v) => v.toLowerCase()));
+    const q = text.trim().toLowerCase();
+    return suggestions
+      .filter((s) => !lowerValues.has(s.toLowerCase()) && (!q || s.toLowerCase().includes(q)))
+      .slice(0, 8);
+  }, [suggestions, values, text]);
+
+  return (
+    <View style={styles.field}>
+      <View style={styles.tagLabelRow}>
+        <FieldLabel>{label}</FieldLabel>
+        <Text style={[styles.tagCounter, atMax ? { color: C.pink } : null]}>
+          {values.length}/{max}
+        </Text>
+      </View>
+
+      {values.length > 0 ? (
+        <View style={styles.tagChipsWrap}>
+          {values.map((v, i) => (
+            <View style={styles.tagChip} key={`${v}-${i}`}>
+              <Text style={styles.tagChipText}>{v}</Text>
+              <Pressable
+                onPress={() => handleRemove(i)}
+                hitSlop={8}
+                style={styles.tagChipClose}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${v}`}
+              >
+                <LucideIcon name="x" size={12} color={C.muted} />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {!atMax ? (
+        <View style={styles.tagInputRow}>
+          <View style={{ flex: 1 }}>
+            <FieldRow icon={icon}>
+              <TextInput
+                style={styles.input}
+                value={text}
+                placeholder={placeholder}
+                placeholderTextColor={C.dim}
+                onChangeText={setText}
+                onSubmitEditing={() => handleAdd()}
+                returnKeyType="done"
+              />
+            </FieldRow>
+          </View>
+          {text.trim().length > 0 ? (
+            <Pressable style={styles.addBtn} onPress={() => handleAdd()}>
+              <Text style={styles.addBtnText}>Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : (
+        <Text style={styles.maxReachedText}>Maximum of {max} {noun}s reached</Text>
+      )}
+
+      {!atMax && availableSuggestions.length > 0 ? (
+        <View style={styles.tagSuggestionsRow}>
+          {availableSuggestions.map((s) => (
+            <Pressable
+              key={s}
+              style={styles.suggestionPill}
+              onPress={() => handleAdd(s)}
+              hitSlop={4}
+            >
+              <LucideIcon name="plus" size={10} color={C.muted} />
+              <Text style={styles.suggestionPillText}>{s}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
+/* --------------------------- Category pickers ----------------------------- */
 
 const CategoryPicker = ({
   categories,
-  categoryId,
-  onSelect,
+  categoryIds,
+  onChange,
+  max = MAX_CATEGORIES,
 }: {
   categories: ArtistCategory[];
-  categoryId: string;
-  onSelect: (id: string) => void;
+  categoryIds: string[];
+  onChange: (next: string[]) => void;
+  max?: number;
 }) => {
   const [open, setOpen] = useState(false);
-  const selected = categories.find((c) => c.id === categoryId);
+  const atMax = categoryIds.length >= max;
+
+  const toggleCategory = (id: string) => {
+    if (categoryIds.includes(id)) {
+      onChange(categoryIds.filter((c) => c !== id));
+    } else {
+      if (atMax) {
+        showPopupToast(`You can select up to ${max} categories.`, 'info');
+        return;
+      }
+      onChange([...categoryIds, id]);
+    }
+  };
+
+  const removeCategory = (id: string) => {
+    onChange(categoryIds.filter((c) => c !== id));
+  };
+
   return (
     <View style={styles.field}>
-      <FieldLabel>Primary Category</FieldLabel>
-      <Pressable onPress={() => setOpen(true)}>
-        <FieldRow icon="layout-dashboard">
-          <Text
-            style={[styles.input, !selected ? { color: C.dim } : null]}
-            numberOfLines={1}
-          >
-            {selected ? selected.name : 'Select Primary Category'}
-          </Text>
-          <LucideIcon name="chevron-down" size={16} color={C.dim} />
-        </FieldRow>
-      </Pressable>
+      <View style={styles.tagLabelRow}>
+        <FieldLabel>Categories</FieldLabel>
+        <Text style={[styles.tagCounter, atMax ? { color: C.pink } : null]}>
+          {categoryIds.length}/{max}
+        </Text>
+      </View>
+      <Text style={styles.catHint}>
+        Select up to {max} categories. The first one is your primary category shown on your creator card.
+      </Text>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      {categoryIds.length > 0 ? (
+        <View style={styles.tagChipsWrap}>
+          {categoryIds.map((id, idx) => {
+            const cat = categories.find((c) => c.id === id);
+            const isPrimary = idx === 0;
+            return (
+              <View
+                style={[styles.tagChip, isPrimary ? styles.tagChipPrimary : null]}
+                key={id}
+              >
+                {isPrimary ? (
+                  <Text style={styles.primaryBadge}>PRIMARY</Text>
+                ) : null}
+                <Text style={styles.tagChipText}>{cat ? cat.name : id}</Text>
+                <Pressable
+                  onPress={() => removeCategory(id)}
+                  hitSlop={8}
+                  style={styles.tagChipClose}
+                  accessibilityLabel={`Remove ${cat?.name ?? id}`}
+                >
+                  <LucideIcon name="x" size={12} color={C.muted} />
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {!atMax ? (
+        <Pressable
+          style={styles.pickerTrigger}
+          onPress={() => setOpen(true)}
+          accessibilityRole="button"
+        >
+          <FieldRow icon="layout-dashboard">
+            <Text style={[styles.input, { color: C.dim }]}>
+              {categoryIds.length === 0
+                ? 'Select Categories (first is primary)'
+                : '+ Add More Categories'}
+            </Text>
+            <LucideIcon name="chevron-down" size={16} color={C.dim} />
+          </FieldRow>
+        </Pressable>
+      ) : null}
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
         <Pressable style={styles.pickerScrim} onPress={() => setOpen(false)}>
           <Pressable style={styles.pickerSheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.pickerTitle}>Select Primary Category</Text>
-            <Pressable
-              style={styles.pickerRow}
-              onPress={() => {
-                onSelect('');
-                setOpen(false);
-              }}
-            >
-              <Text style={[styles.pickerRowText, { color: C.dim }]}>Select Primary Category</Text>
-            </Pressable>
-            {categories.map((cat) => (
-              <Pressable
-                key={cat.id}
-                style={styles.pickerRow}
-                onPress={() => {
-                  onSelect(cat.id);
-                  setOpen(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.pickerRowText,
-                    cat.id === categoryId ? { color: C.pink } : null,
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-                {cat.id === categoryId ? (
-                  <LucideIcon name="check" size={16} color={C.pink} />
-                ) : null}
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.pickerTitle}>Select Categories ({categoryIds.length}/{max})</Text>
+              <Pressable onPress={() => setOpen(false)} hitSlop={8} style={styles.modalDoneBtn}>
+                <Text style={styles.modalDoneText}>Done</Text>
               </Pressable>
-            ))}
+            </View>
+            {categories.map((cat) => {
+              const selected = categoryIds.includes(cat.id);
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={styles.pickerRow}
+                  onPress={() => toggleCategory(cat.id)}
+                >
+                  <Text
+                    style={[
+                      styles.pickerRowText,
+                      selected ? { color: C.pink, fontWeight: '700' } : null,
+                    ]}
+                  >
+                    {cat.name}
+                  </Text>
+                  {selected ? (
+                    <LucideIcon name="check" size={18} color={C.pink} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </Pressable>
         </Pressable>
       </Modal>
@@ -254,91 +446,137 @@ const CategoryPicker = ({
   );
 };
 
-/**
- * Second level under the primary category.
- *
- * The list comes from `GET /api/artist/subcategories?categoryId=…`, so it only
- * has anything to show once a primary category is chosen — until then the row
- * reads "Select Primary Category first" and doesn't open.
- */
-const SubCategoryPicker = ({
-  subcategories,
-  subcategoryId,
+const CategorySubGroup = ({
   categoryId,
-  isLoading,
-  onSelect,
+  categoryName,
+  subcategoryIds,
+  onChange,
+  max = MAX_SUBCATEGORIES_PER_CATEGORY,
 }: {
-  subcategories: ArtistSubcategory[];
-  subcategoryId: string;
   categoryId: string;
-  isLoading: boolean;
-  onSelect: (id: string) => void;
+  categoryName: string;
+  subcategoryIds: string[];
+  onChange: (next: string[]) => void;
+  max?: number;
 }) => {
   const [open, setOpen] = useState(false);
-  const selected = subcategories.find((s) => s.id === subcategoryId);
-  const disabled = !categoryId || (isLoading && subcategories.length === 0);
+  const { data: subcategories = [], isLoading } = useSubcategories(categoryId);
 
-  const placeholder = !categoryId
-    ? 'Select Primary Category first'
-    : isLoading
-      ? 'Loading…'
-      : 'Select Sub Category';
+  const validSubIds = useMemo(() => new Set(subcategories.map((s) => s.id)), [subcategories]);
+  const groupSubs = useMemo(
+    () => subcategoryIds.filter((id) => validSubIds.has(id)),
+    [subcategoryIds, validSubIds],
+  );
+
+  const atMax = groupSubs.length >= max;
+
+  const toggleSub = (id: string) => {
+    if (groupSubs.includes(id)) {
+      onChange(subcategoryIds.filter((s) => s !== id));
+    } else {
+      if (atMax) {
+        showPopupToast(`You can select up to ${max} subcategories for ${categoryName}.`, 'info');
+        return;
+      }
+      onChange([...subcategoryIds, id]);
+    }
+  };
+
+  const removeSub = (id: string) => {
+    onChange(subcategoryIds.filter((s) => s !== id));
+  };
+
+  if (!isLoading && subcategories.length === 0) {
+    return null;
+  }
 
   return (
-    <View style={styles.field}>
-      <FieldLabel>Sub Category</FieldLabel>
-      <Pressable onPress={() => !disabled && setOpen(true)} disabled={disabled}>
-        <FieldRow icon="layout-dashboard">
-          <Text
-            style={[styles.input, !selected ? { color: C.dim } : null]}
-            numberOfLines={1}
-          >
-            {selected ? selected.name : placeholder}
-          </Text>
-          <LucideIcon name="chevron-down" size={16} color={C.dim} />
-        </FieldRow>
-      </Pressable>
+    <View style={styles.subGroupWrap}>
+      <View style={styles.tagLabelRow}>
+        <FieldLabel>Sub-categories · {categoryName}</FieldLabel>
+        <Text style={[styles.tagCounter, atMax ? { color: C.pink } : null]}>
+          {groupSubs.length}/{max}
+        </Text>
+      </View>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      {groupSubs.length > 0 ? (
+        <View style={styles.tagChipsWrap}>
+          {groupSubs.map((id) => {
+            const sub = subcategories.find((s) => s.id === id);
+            return (
+              <View style={styles.tagChip} key={id}>
+                <Text style={styles.tagChipText}>{sub ? sub.name : id}</Text>
+                <Pressable
+                  onPress={() => removeSub(id)}
+                  hitSlop={8}
+                  style={styles.tagChipClose}
+                  accessibilityLabel={`Remove ${sub?.name ?? id}`}
+                >
+                  <LucideIcon name="x" size={12} color={C.muted} />
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {!atMax ? (
+        <Pressable
+          style={styles.pickerTrigger}
+          onPress={() => setOpen(true)}
+          disabled={isLoading}
+        >
+          <FieldRow icon="layout-dashboard">
+            <Text style={[styles.input, { color: C.dim }]}>
+              {isLoading
+                ? 'Loading subcategories…'
+                : groupSubs.length === 0
+                  ? `Select Sub-categories for ${categoryName}`
+                  : `+ Add More for ${categoryName}`}
+            </Text>
+            <LucideIcon name="chevron-down" size={16} color={C.dim} />
+          </FieldRow>
+        </Pressable>
+      ) : null}
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
         <Pressable style={styles.pickerScrim} onPress={() => setOpen(false)}>
           <Pressable style={styles.pickerSheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.pickerTitle}>Select Sub Category</Text>
-            <Pressable
-              style={styles.pickerRow}
-              onPress={() => {
-                onSelect('');
-                setOpen(false);
-              }}
-            >
-              <Text style={[styles.pickerRowText, { color: C.dim }]}>Select Sub Category</Text>
-            </Pressable>
-            {subcategories.map((sub) => (
-              <Pressable
-                key={sub.id}
-                style={styles.pickerRow}
-                onPress={() => {
-                  onSelect(sub.id);
-                  setOpen(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.pickerRowText,
-                    sub.id === subcategoryId ? { color: C.pink } : null,
-                  ]}
-                >
-                  {sub.name}
-                </Text>
-                {sub.id === subcategoryId ? (
-                  <LucideIcon name="check" size={16} color={C.pink} />
-                ) : null}
-              </Pressable>
-            ))}
-            {subcategories.length === 0 && !isLoading ? (
-              <Text style={[styles.pickerRowText, { color: C.dim }]}>
-                No sub categories for this category.
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.pickerTitle}>
+                Sub-categories · {categoryName} ({groupSubs.length}/{max})
               </Text>
-            ) : null}
+              <Pressable onPress={() => setOpen(false)} hitSlop={8} style={styles.modalDoneBtn}>
+                <Text style={styles.modalDoneText}>Done</Text>
+              </Pressable>
+            </View>
+            {subcategories.map((sub) => {
+              const selected = groupSubs.includes(sub.id);
+              return (
+                <Pressable
+                  key={sub.id}
+                  style={styles.pickerRow}
+                  onPress={() => toggleSub(sub.id)}
+                >
+                  <Text
+                    style={[
+                      styles.pickerRowText,
+                      selected ? { color: C.pink, fontWeight: '700' } : null,
+                    ]}
+                  >
+                    {sub.name}
+                  </Text>
+                  {selected ? (
+                    <LucideIcon name="check" size={18} color={C.pink} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </Pressable>
         </Pressable>
       </Modal>
@@ -695,13 +933,13 @@ const EditProfileScreen = () => {
   const photos = photosQuery.data ?? [];
 
   const [stageName, setStageName] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [subcategoryId, setSubcategoryId] = useState('');
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
   const [workTime, setWorkTime] = useState('');
   const [bio, setBio] = useState('');
   const [aboutMe, setAboutMe] = useState('');
-  const [languages, setLanguages] = useState('');
-  const [skills, setSkills] = useState('');
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
   const [privateShowTokenPerMinute, setPrivateShowTokenPerMinute] = useState('');
   const [groupShowTokenPerMinute, setGroupShowTokenPerMinute] = useState('');
 
@@ -737,27 +975,28 @@ const EditProfileScreen = () => {
     setWorkTime(profile.workTime ?? '');
     setBio(profile.bio ?? '');
     setAboutMe(profile.aboutMe ?? '');
-    setLanguages(profile.languages ? profile.languages.join(', ') : '');
-    setSkills(profile.skills ? profile.skills.join(', ') : '');
+    setLanguages(Array.isArray(profile.languages) ? profile.languages : []);
+    setSkills(Array.isArray(profile.skills) ? profile.skills : []);
     setPrivateShowTokenPerMinute(profile.privateShowTokenPerMinute?.toString() ?? '');
     setGroupShowTokenPerMinute(profile.groupShowTokenPerMinute?.toString() ?? '');
-    setCategoryId(profile.categoryId ?? '');
-    setSubcategoryId(profile.subcategoryId ?? '');
+
+    const cats = profile.categoryIds?.length
+      ? profile.categoryIds
+      : profile.categoryId
+        ? [profile.categoryId]
+        : [];
+    setCategoryIds(cats);
+
+    const subs = profile.subcategoryIds?.length
+      ? profile.subcategoryIds
+      : profile.subcategoryId
+        ? [profile.subcategoryId]
+        : [];
+    setSubcategoryIds(subs);
   }, [profile]);
 
-  const { data: subcategories, isLoading: loadingSubcategories } =
-    useSubcategories(categoryId);
-
-  /**
-   * Changing the primary category invalidates whatever sub was picked under
-   * the old one, so drop it rather than saving an id that belongs to a
-   * different parent.
-   */
-  const handleSelectCategory = (id: string) => {
-    if (id !== categoryId) {
-      setSubcategoryId('');
-    }
-    setCategoryId(id);
+  const handleCategoriesChange = (nextCats: string[]) => {
+    setCategoryIds(nextCats);
   };
 
   const isSaving =
@@ -768,20 +1007,20 @@ const EditProfileScreen = () => {
       if (profile && stageName !== profile.stageName) {
         await changeStageName.mutateAsync({ stageName });
       }
-      if (categoryId) {
-        // `subcategoryId` — lowercase 'c' — is what UpdateArtistCategoryRequest
-        // declares; null clears it.
+      if (categoryIds.length > 0) {
         await updateCategory.mutateAsync({
-          categoryId,
-          subcategoryId: subcategoryId || null,
+          categoryId: categoryIds[0],
+          subcategoryId: subcategoryIds[0] || null,
+          categoryIds,
+          subcategoryIds,
         });
       }
       await updateProfile.mutateAsync({
         bio,
         workTime,
         aboutMe,
-        languages: languages.split(',').map((l) => l.trim()).filter((l) => l),
-        skills: skills.split(',').map((s) => s.trim()).filter((s) => s),
+        languages,
+        skills,
         privateShowTokenPerMinute: privateShowTokenPerMinute
           ? parseInt(privateShowTokenPerMinute, 10)
           : 0,
@@ -837,15 +1076,10 @@ const EditProfileScreen = () => {
     );
   };
 
-  const skillList = useMemo(
-    () => skills.split(',').map((s) => s.trim()).filter(Boolean),
-    [skills],
-  );
-
   const basicInfoDone = !!stageName.trim();
   const pricingDone =
     Number(privateShowTokenPerMinute) > 0 && Number(groupShowTokenPerMinute) > 0;
-  const skillsDone = skillList.length > 0;
+  const skillsDone = skills.length > 0;
   const galleryDone = photos.length > 0;
   const completenessPct =
     (basicInfoDone ? 25 : 0) +
@@ -992,32 +1226,27 @@ const EditProfileScreen = () => {
                 </FieldRow>
               </View>
 
-              <View style={styles.fieldRow2}>
-                <View style={[styles.field, styles.flex1]}>
-                  <FieldLabel>Languages (comma separated)</FieldLabel>
-                  <FieldRow icon="message-circle">
-                    <TextInput
-                      style={styles.input}
-                      value={languages}
-                      placeholder="Languages"
-                      placeholderTextColor={C.dim}
-                      onChangeText={setLanguages}
-                    />
-                  </FieldRow>
-                </View>
-                <View style={[styles.field, styles.flex1]}>
-                  <FieldLabel>Skills (comma separated)</FieldLabel>
-                  <FieldRow icon="star">
-                    <TextInput
-                      style={styles.input}
-                      value={skills}
-                      placeholder="Singing, Guitar, Comedy"
-                      placeholderTextColor={C.dim}
-                      onChangeText={setSkills}
-                    />
-                  </FieldRow>
-                </View>
-              </View>
+              <TagInput
+                label="Languages"
+                icon="message-circle"
+                values={languages}
+                onChange={setLanguages}
+                suggestions={LANGUAGE_SUGGESTIONS}
+                max={MAX_LANGUAGES}
+                placeholder="Add language, e.g. English, Hindi"
+                noun="language"
+              />
+
+              <TagInput
+                label="Skills"
+                icon="star"
+                values={skills}
+                onChange={setSkills}
+                suggestions={SKILL_SUGGESTIONS}
+                max={MAX_SKILLS}
+                placeholder="Singing, Guitar, Comedy…"
+                noun="skill"
+              />
 
               <Callout tone="cyan" icon="coins" style={{ marginTop: 14 }}>
                 <Text style={styles.calloutBold}>Set your own rate:</Text>
@@ -1058,17 +1287,24 @@ const EditProfileScreen = () => {
 
               <CategoryPicker
                 categories={categories}
-                categoryId={categoryId}
-                onSelect={handleSelectCategory}
+                categoryIds={categoryIds}
+                onChange={handleCategoriesChange}
+                max={MAX_CATEGORIES}
               />
 
-              <SubCategoryPicker
-                subcategories={subcategories ?? []}
-                subcategoryId={subcategoryId}
-                categoryId={categoryId}
-                isLoading={loadingSubcategories}
-                onSelect={setSubcategoryId}
-              />
+              {categoryIds.map((catId) => {
+                const cat = categories.find((c) => c.id === catId);
+                return (
+                  <CategorySubGroup
+                    key={catId}
+                    categoryId={catId}
+                    categoryName={cat?.name ?? 'Category'}
+                    subcategoryIds={subcategoryIds}
+                    onChange={setSubcategoryIds}
+                    max={MAX_SUBCATEGORIES_PER_CATEGORY}
+                  />
+                );
+              })}
 
               <View style={styles.field}>
                 <FieldLabel>Short Bio (snippet)</FieldLabel>
@@ -1171,6 +1407,127 @@ const EditProfileScreen = () => {
                   )}
                 </Pressable>
               </View>
+            </View>
+
+            {/* Public Preview Card */}
+            <View style={styles.card}>
+              <Text style={styles.h2}>Public Preview</Text>
+              <Text style={styles.previewHint}>Updates live as you edit the form.</Text>
+
+              <View style={styles.previewMedia}>
+                <View style={styles.previewBadge}>
+                  <View style={styles.previewBadgeDot} />
+                  <Text style={styles.previewBadgeText}>Fans see this</Text>
+                </View>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.previewCoverImg} contentFit="cover" />
+                ) : (
+                  <View style={styles.previewCoverPlaceholder}>
+                    <LucideIcon name="mic" size={26} color={C.pink} />
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.previewIdRow}>
+                <View style={styles.previewAvatar}>
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.previewAvatarImg} contentFit="cover" />
+                  ) : (
+                    <Text style={styles.previewAvatarInitials}>
+                      {(stageName || 'A').slice(0, 2).toUpperCase()}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.flex1}>
+                  <View style={styles.previewNameRow}>
+                    <Text style={styles.previewStageName}>{stageName || 'Creator'}</Text>
+                    <LucideIcon name="badge-check" size={14} color={C.cyan} />
+                  </View>
+                  <Text style={styles.previewMeta}>
+                    {categoryIds.length > 0
+                      ? categoryIds
+                          .map((id) => categories.find((c) => c.id === id)?.name ?? id)
+                          .join(' • ')
+                      : 'Creator'}{' '}
+                    • {workTime || 'No location set'}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.previewBio}>
+                {bio || 'No bio added yet — write a short line to introduce yourself to fans.'}
+              </Text>
+
+              {aboutMe ? (
+                <View style={styles.previewSection}>
+                  <View style={styles.previewSectionHeader}>
+                    <LucideIcon name="message-circle" size={13} color={C.muted} />
+                    <Text style={styles.previewSectionTitle}>About</Text>
+                  </View>
+                  <Text style={styles.previewAboutText}>{aboutMe}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.previewSection}>
+                <View style={styles.previewSectionHeader}>
+                  <LucideIcon name="star" size={13} color={C.gold} />
+                  <Text style={styles.previewSectionTitle}>Skills</Text>
+                </View>
+                <View style={styles.tagChipsWrap}>
+                  {skills.length > 0 ? (
+                    skills.map((s) => (
+                      <View style={styles.previewChip} key={s}>
+                        <Text style={styles.previewChipText}>{s}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.previewEmptyText}>No skills added yet</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.previewSection}>
+                <View style={styles.previewSectionHeader}>
+                  <LucideIcon name="globe" size={13} color={C.cyan} />
+                  <Text style={styles.previewSectionTitle}>Languages</Text>
+                </View>
+                <View style={styles.tagChipsWrap}>
+                  {languages.length > 0 ? (
+                    languages.map((l) => (
+                      <View style={styles.previewChip} key={l}>
+                        <Text style={styles.previewChipText}>{l}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.previewEmptyText}>No languages added yet</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.previewStatsRow}>
+                <View style={styles.previewStatBox}>
+                  <Text style={styles.previewStatVal}>{privateShowTokenPerMinute || '0'}</Text>
+                  <Text style={styles.previewStatSub}>coins/min private</Text>
+                </View>
+                <View style={styles.previewStatBox}>
+                  <Text style={styles.previewStatVal}>{groupShowTokenPerMinute || '0'}</Text>
+                  <Text style={styles.previewStatSub}>coins/seat group</Text>
+                </View>
+              </View>
+
+              {photos.length > 0 ? (
+                <View style={styles.previewSection}>
+                  <View style={styles.previewSectionHeader}>
+                    <LucideIcon name="image" size={13} color={C.pink} />
+                    <Text style={styles.previewSectionTitle}>Gallery ({photos.length})</Text>
+                  </View>
+                  <View style={styles.previewGalleryStrip}>
+                    {photos.slice(0, 6).map((p: ArtistPhoto) => (
+                      <Image source={{ uri: p.photoUrl }} key={p.id} style={styles.previewThumb} contentFit="cover" />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </View>
 
             {/* Save bar */}
@@ -1680,171 +2037,300 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
   },
 
-  /* Public preview */
+  tagLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  tagCounter: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.dim,
+  },
+  tagChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,63,173,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,63,173,0.3)',
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  tagChipPrimary: {
+    backgroundColor: 'rgba(255,200,107,0.14)',
+    borderColor: 'rgba(255,200,107,0.4)',
+  },
+  primaryBadge: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: C.gold,
+    letterSpacing: 0.5,
+    marginRight: 2,
+  },
+  tagChipText: {
+    color: C.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tagChipClose: {
+    padding: 2,
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addBtn: {
+    backgroundColor: C.pink,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  maxReachedText: {
+    fontSize: 11,
+    color: C.dim,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  tagSuggestionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  suggestionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  suggestionPillText: {
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  catHint: {
+    color: C.dim,
+    fontSize: 11,
+    marginBottom: 8,
+  },
+  subGroupWrap: {
+    marginTop: 10,
+    paddingLeft: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255,63,173,0.3)',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  modalDoneBtn: {
+    backgroundColor: C.pink,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  modalDoneText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pickerTrigger: {
+    marginTop: 2,
+  },
   previewHint: {
     color: C.dim,
     fontSize: 12,
-    marginTop: -6,
+    marginTop: -4,
     marginBottom: 12,
   },
   previewMedia: {
-    height: 160,
-    borderRadius: 16,
+    height: 110,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: C.surfaceStrong,
     borderWidth: 1,
     borderColor: C.border,
+    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewCoverImg: {
+    width: '100%',
+    height: '100%',
+  },
+  previewCoverPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  previewMediaImg: {
-    ...StyleSheet.absoluteFillObject,
   },
   previewBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 999,
-    paddingVertical: 3,
-    paddingHorizontal: 9,
-    zIndex: 1,
-  },
-  previewBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: C.muted,
-  },
-  micGlow: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,63,173,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewId: {
+    top: 8,
+    left: 8,
+    zIndex: 2,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    marginBottom: 12,
+    gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  previewBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.danger,
+  },
+  previewBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  previewIdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
   },
   previewAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.surfaceStrong,
+    borderWidth: 1,
+    borderColor: C.pink,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
   previewAvatarImg: {
-    width: 46,
-    height: 46,
+    width: '100%',
+    height: '100%',
   },
-  previewAvatarText: {
-    fontWeight: '900',
+  previewAvatarInitials: {
+    color: C.pink,
     fontSize: 16,
-    color: '#fff',
+    fontWeight: '800',
   },
   previewNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
-  previewName: {
+  previewStageName: {
     color: C.text,
     fontSize: 15,
     fontWeight: '800',
   },
-  previewSub: {
+  previewMeta: {
     color: C.dim,
-    fontSize: 11.5,
+    fontSize: 11,
     marginTop: 2,
   },
   previewBio: {
     color: C.muted,
-    fontSize: 12.5,
-    lineHeight: 18,
-    minHeight: 34,
-    marginBottom: 6,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
   },
   previewSection: {
-    marginTop: 12,
+    marginTop: 8,
   },
-  previewSectionLabel: {
+  previewSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 7,
+    marginBottom: 6,
   },
-  previewSectionLabelText: {
+  previewSectionTitle: {
     color: C.dim,
-    fontSize: 10.4,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  previewAbout: {
-    color: C.muted,
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  chipPreview: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  chip: {
-    backgroundColor: 'rgba(140,77,255,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(140,77,255,0.3)',
-    borderRadius: 999,
-    paddingVertical: 3,
-    paddingHorizontal: 9,
-  },
-  chipText: {
-    color: C.chipPurpleText,
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  previewStats: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+  previewAboutText: {
+    color: C.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 8,
   },
-  previewStat: {
-    flex: 1,
-    paddingVertical: 8,
+  previewChip: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 999,
     paddingHorizontal: 9,
-    alignItems: 'center',
-    backgroundColor: C.surfaceStrong,
+    paddingVertical: 3,
     borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 10,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  previewStatBig: {
+  previewChipText: {
     color: C.text,
-    fontSize: 13,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  previewEmptyText: {
+    color: C.dim,
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  previewStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  previewStatBox: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  previewStatVal: {
+    color: C.gold,
+    fontSize: 16,
     fontWeight: '800',
   },
-  previewStatSmall: {
+  previewStatSub: {
     color: C.dim,
-    fontSize: 9.4,
-    textTransform: 'uppercase',
+    fontSize: 10,
     marginTop: 2,
   },
   previewGalleryStrip: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
+    marginTop: 6,
   },
-  previewStripImg: {
-    width: '31%',
-    aspectRatio: 1,
+  previewThumb: {
+    width: 48,
+    height: 48,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: C.border,
   },
 });
 

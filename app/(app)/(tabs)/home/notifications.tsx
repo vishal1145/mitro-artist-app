@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -51,6 +52,13 @@ const NotificationsScreen = () => {
   const hasMore = useNotificationStore((s) => s.hasMore);
   const loadingMore = useNotificationStore((s) => s.loadingMore);
   const loadMore = useNotificationStore((s) => s.loadMore);
+
+  // Automatically refresh on screen focus so latest private/group calls appear immediately (Issue 9).
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   // Web parity (Mitro.Artist.UI/src/main.tsx, CreatorNotificationsScreen):
   // tapping a row only flips it to read. The web's `.notif-row` onClick is

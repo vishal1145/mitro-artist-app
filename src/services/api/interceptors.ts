@@ -1,8 +1,10 @@
 import {
   type AxiosError,
+  type AxiosInstance,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { Platform } from 'react-native';
 
 import { ALLOW_INSECURE_HTTP, API_CONFIG, REGEX, SECURE_KEYS, TIMING } from '@constants';
 import { secureStorage } from '@services/storage';
@@ -35,6 +37,57 @@ export const registerAuthHandlers = (handlers: {
 }): void => {
   onAuthFailure = handlers.onAuthFailure;
   onTokensRefreshed = handlers.onTokensRefreshed;
+};
+
+// --- Per-platform login sessions (max 1 web + 1 android per artist) ---
+// The backend needs to know which slot this client occupies and which
+// install it is, on every request (login, refresh, logout, everything):
+// X-Client-Platform ("android" for the native app) and X-Device-Id, a UUID
+// generated once per install and kept in secure storage, so the same phone
+// logging in again replaces its own session instead of being blocked as
+// "another phone".
+const CLIENT_PLATFORM = Platform.OS === 'web' ? 'web' : 'android';
+let cachedDeviceId: string | null = null;
+
+const generateDeviceId = (): string =>
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+
+export const getDeviceId = async (): Promise<string> => {
+  if (cachedDeviceId) return cachedDeviceId;
+  let id = await secureStorage.get(SECURE_KEYS.deviceId);
+  if (!id) {
+    id = generateDeviceId();
+    try {
+      await secureStorage.set(SECURE_KEYS.deviceId, id);
+    } catch {
+      // keep the in-memory id for this process; a new one is made next launch
+    }
+  }
+  cachedDeviceId = id;
+  return id;
+};
+
+const attachClientSessionHeaders = (instance: AxiosInstance): void => {
+  instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+    config.headers.set('X-Client-Platform', CLIENT_PLATFORM);
+    config.headers.set('X-Device-Id', await getDeviceId());
+    return config;
+  });
+};
+
+// 401 bodies with one of these codes mean the login session itself is gone
+// (replaced by a newer login from this device / expired / revoked by logout
+// or password reset). There is nothing to refresh - the refresh token was
+// revoked with it - so go straight to logout.
+const SESSION_ENDED_CODES = new Set(['SESSION_INVALIDATED', 'SESSION_EXPIRED', 'SESSION_REVOKED']);
+
+const isSessionEnded = (data: unknown): boolean => {
+  if (typeof data !== 'object' || data === null || !('code' in data)) return false;
+  const code = (data as { code?: unknown }).code;
+  return typeof code === 'string' && SESSION_ENDED_CODES.has(code);
 };
 
 // --- Single-flight refresh coordination ---
@@ -70,6 +123,9 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
 }
 
 export const attachInterceptors = (): void => {
+  attachClientSessionHeaders(api);
+  attachClientSessionHeaders(refreshClient);
+
   api.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
       // Release builds refuse plaintext outright. Dev builds are allowed to
@@ -105,6 +161,12 @@ export const attachInterceptors = (): void => {
 
       const isRefreshCall = original?.url === ENDPOINTS.auth.refresh;
       const retryCount = original?._retryCount ?? 0;
+
+      if (status === 401 && original && !isRefreshCall && isSessionEnded(error.response?.data)) {
+        // Session ended server-side: no refresh attempt, straight to login.
+        await onAuthFailure?.();
+        return Promise.reject(error);
+      }
 
       if (
         status === 401 &&

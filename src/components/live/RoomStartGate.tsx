@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@components/ui';
 import { colors, fontFamily, radius, spacing } from '@theme';
@@ -35,6 +36,16 @@ export interface RoomStartGateProps {
 }
 
 /**
+ * Full-screen overlay that keeps its bottom CTA above the system navigation bar.
+ * The overlay is absolutely positioned, so it ignores the parent SafeAreaView's
+ * padding — the bottom inset (3-button / gesture nav) has to be applied here.
+ */
+const GateOverlay = ({ children }: { children: ReactNode }) => {
+  const insets = useSafeAreaInsets();
+  return <View style={[styles.overlay, { paddingBottom: insets.bottom + spacing.lg }]}>{children}</View>;
+};
+
+/**
  * The OFFLINE confirmation screen a room shows before it actually opens —
  * the artist web's "Start Call" gate, in the broadcast studio's layout.
  *
@@ -59,7 +70,7 @@ export const RoomStartGate = memo(
     onFlipCamera,
     showCamera = true,
   }: RoomStartGateProps) => (
-    <View style={styles.overlay}>
+    <GateOverlay>
       <View style={styles.header}>
         <Pressable
           style={styles.back}
@@ -140,7 +151,7 @@ export const RoomStartGate = memo(
           <Text style={styles.startText}>{starting ? 'STARTING…' : startLabel}</Text>
         </LinearGradient>
       </Pressable>
-    </View>
+    </GateOverlay>
   ),
 );
 RoomStartGate.displayName = 'RoomStartGate';

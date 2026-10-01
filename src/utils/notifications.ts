@@ -80,6 +80,9 @@ export const navigateToNotification = (item: NotificationItem): void => {
  * artist, not just the ones with a rich UI to jump to.
  */
 export const showNotificationToast = (item: NotificationItem): void => {
+  if (item.type === 'private_message' || item.referenceType === 'private_message') {
+    return;
+  }
   Toast.show({
     type: 'appNotification',
     text1: item.title,

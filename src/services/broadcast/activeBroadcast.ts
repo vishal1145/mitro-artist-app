@@ -22,12 +22,12 @@ export interface ActiveBroadcastRecord {
 }
 
 export const activeBroadcastStore = {
-  save(title: string, category: string | undefined, r: StartBroadcastResponse): Promise<void> {
+  save(title: string, category: string | undefined, r: StartBroadcastResponse, startedAt?: number): Promise<void> {
     return mmkvStorage.setJSON(KEY, {
       broadcastId: r.broadcastId,
       title,
       category,
-      startedAt: Date.now(),
+      startedAt: startedAt ?? Date.now(),
       agoraChannelName: r.agoraChannelName,
       agoraUid: r.agoraUid,
       agoraToken: r.agoraToken,

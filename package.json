@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
-    "ios:clean": "rm -rf ios/Pods ios/Podfile.lock ios/build && RCT_USE_PREBUILT_RNCORE=0 expo run:ios"
+    "ios:clean": "rm -rf ios/Pods ios/Podfile.lock ios/build && RCT_USE_PREBUILT_RNCORE=0 expo run:ios",
+    "build:apk": "cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

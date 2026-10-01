@@ -30,11 +30,11 @@ export const RoomPanel = memo(
         <Pressable
           style={styles.close}
           onPress={onClose}
-          hitSlop={8}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel={`Close ${title.toLowerCase()}`}
         >
-          <Feather name="x" size={rf(16)} color={colors.textMuted} />
+          <Feather name="x" size={rf(18)} color={colors.textMuted} />
         </Pressable>
       </View>
       {children}
@@ -70,9 +70,9 @@ const styles = StyleSheet.create({
   },
   rule: { flex: 1, height: 1, backgroundColor: live.hairline },
   close: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: live.hairline,

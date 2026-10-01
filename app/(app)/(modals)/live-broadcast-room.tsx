@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AgoraVideoView } from '@components/call/AgoraVideoView';
 import { ActivityRow, RoundChip } from '@components/live';
@@ -52,6 +52,7 @@ const HEARTBEAT_MS = 15000;
 
 const LiveBroadcastRoomScreen = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { sessionConfig } = useLocalSearchParams<{ sessionConfig?: string }>();
 
   const config = (() => {
@@ -208,9 +209,9 @@ const LiveBroadcastRoomScreen = () => {
           router.back();
           return;
         }
+        setElapsed(0);
         conn = startRes.data;
         idRef.current = conn.broadcastId;
-        await activeBroadcastStore.save(displayTitle, config.category, conn);
         if (typeof config.highlightedMessagePrice === 'number' && config.highlightedMessagePrice > 0) {
           broadcastApi.setHighlightedMessagePrice(conn.broadcastId, config.highlightedMessagePrice);
         }
@@ -222,6 +223,8 @@ const LiveBroadcastRoomScreen = () => {
         if (liveStartedRef.current || endedRef.current) return;
         liveStartedRef.current = true;
         setStatus('live');
+        void activeBroadcastStore.save(displayTitle, config.category, conn!, Date.now());
+        setElapsed(0);
         // Remount the local video surface now that the engine has joined and
         // the camera is publishing — this binds the preview reliably.
         setVideoKey((k) => k + 1);
@@ -236,7 +239,12 @@ const LiveBroadcastRoomScreen = () => {
         refreshViewers();
         refreshDeliveries();
         broadcastHub.connect(broadcastId, {
-          onActivityAdded: (item) => mergeActivity([item]),
+          onActivityAdded: (item) => {
+            mergeActivity([item]);
+            if (item.type === 'reward' || item.type === 'fun_wheel') {
+              refreshDeliveries();
+            }
+          },
           onViewerCountChanged: (count) => {
             setViewerCount(count);
             setPeakViewer((p) => Math.max(p, count));
@@ -265,6 +273,12 @@ const LiveBroadcastRoomScreen = () => {
     return () => {
       endedRef.current = true;
       confirmResolveRef.current?.(); // unblock the START SHOW gate if still waiting
+      if (!liveStartedRef.current) {
+        void activeBroadcastStore.clear();
+        if (idRef.current) {
+          void broadcastApi.end(idRef.current, 'cancelled');
+        }
+      }
       [elapsedTimer, heartbeatTimer, activityTimer, viewersTimer, deliveriesTimer].forEach((t) => t && clearInterval(t));
       if (rebindTimer) clearTimeout(rebindTimer);
       broadcastHub.disconnect();
@@ -563,7 +577,7 @@ const LiveBroadcastRoomScreen = () => {
 
       {/* ── START SHOW confirmation — web "Stream studio" (OFFLINE) layout ── */}
       {awaitingConfirm ? (
-        <View style={styles.confirmOverlay}>
+        <View style={[styles.confirmOverlay, { paddingBottom: insets.bottom + spacing.lg }]}>
           {/* Header */}
           <View style={styles.confirmHeader}>
             <Pressable style={styles.confirmBack} onPress={() => router.back()} accessibilityLabel="Back">
