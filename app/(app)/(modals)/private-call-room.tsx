@@ -161,9 +161,9 @@ const PrivateCallRoomScreen = () => {
   const refreshDeliveries = useCallback(() => {
     const id = idRef.current;
     if (!id) return;
-    rewardOrdersApi.list('pending', 100, id).then((r) => {
+    rewardOrdersApi.list(null, 100, id).then((r) => {
       if (!r.success) return;
-      setPendingRewards(r.data);
+      setPendingRewards(r.data.filter((o) => o.status === 'pending'));
       mergeActivity(
         r.data.map((o) => ({
           type: 'reward',
@@ -181,9 +181,9 @@ const PrivateCallRoomScreen = () => {
         })),
       );
     });
-    funWheelSpinsApi.list('pending', 100, id).then((r) => {
+    funWheelSpinsApi.list(null, 100, id).then((r) => {
       if (!r.success) return;
-      setPendingSpins(r.data);
+      setPendingSpins(r.data.filter((s) => s.status === 'pending'));
       mergeActivity(
         r.data.map((s) => ({
           type: 'fun_wheel',

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { privateCallApi } from '@services/api/privateCallApi';
 import type { PrivateCallRequestItem } from '@app-types/privateCall';
+import { parseServerUtcMs } from '@utils/format';
 
 /**
  * Global incoming private-call requests.
@@ -36,15 +37,17 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 /** Requests the artist already actioned this session — never re-pop these. */
 const resolved = new Set<string>();
 
-const isLive = (r: PrivateCallRequestItem): boolean =>
-  new Date(r.expiresAtUtc).getTime() > Date.now();
+const isLive = (r: PrivateCallRequestItem): boolean => {
+  const at = parseServerUtcMs(r.expiresAtUtc);
+  return at !== null ? at > Date.now() : true;
+};
 
 /** Earliest-expiring still-pending request that hasn't been actioned. */
 const pickNext = (items: PrivateCallRequestItem[]): PrivateCallRequestItem | null => {
   const live = items
     .filter((r) => !resolved.has(r.requestId) && isLive(r))
     .sort(
-      (a, b) => new Date(a.expiresAtUtc).getTime() - new Date(b.expiresAtUtc).getTime(),
+      (a, b) => (parseServerUtcMs(a.expiresAtUtc) ?? 0) - (parseServerUtcMs(b.expiresAtUtc) ?? 0),
     );
   return live[0] ?? null;
 };

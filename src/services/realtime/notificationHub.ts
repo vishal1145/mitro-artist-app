@@ -23,6 +23,9 @@ const HUB_URL = `${API_CONFIG.baseUrl}${NOTIFICATIONS.hubPath}`;
 
 let connection: HubConnection | null = null;
 let handler: ((item: NotificationItem) => void) | null = null;
+let onReconnectedHandler: (() => void) | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let retryAttempt = 0;
 
 const getAccessToken = async (): Promise<string> =>
   (await secureStorage.get(SECURE_KEYS.accessToken)) ?? '';
@@ -34,10 +37,24 @@ const buildConnection = (): HubConnection =>
     .configureLogging(LogLevel.Warning)
     .build();
 
+const scheduleRetry = (): void => {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  const delay = Math.min(30000, 2000 * Math.pow(1.5, retryAttempt));
+  retryAttempt++;
+  reconnectTimer = setTimeout(() => {
+    void notificationHub.connect();
+  }, delay);
+};
+
 export const notificationHub = {
   /** Set (or clear, with `null`) the callback fired on `NotificationReceived`. */
   setHandler(next: ((item: NotificationItem) => void) | null): void {
     handler = next;
+  },
+
+  /** Set the callback fired when hub re-establishes connection. */
+  setOnReconnected(next: (() => void) | null): void {
+    onReconnectedHandler = next;
   },
 
   /** Connect (or no-op if already connected/connecting). Never throws. */
@@ -45,6 +62,14 @@ export const notificationHub = {
     if (connection && connection.state !== HubConnectionState.Disconnected) {
       return;
     }
+
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+
+    const token = await getAccessToken();
+    if (!token) return;
 
     connection = buildConnection();
 
@@ -54,24 +79,32 @@ export const notificationHub = {
 
     connection.onreconnected(() => {
       logger.info('Notification hub reconnected');
+      retryAttempt = 0;
+      onReconnectedHandler?.();
     });
 
     connection.onclose((error) => {
       if (error) {
         logger.warn('Notification hub closed', { error: String(error) });
       }
+      scheduleRetry();
     });
 
     try {
       await connection.start();
+      retryAttempt = 0;
     } catch (error) {
-      // Best-effort: a signed-in artist without a live hub connection still
-      // gets notifications via the REST list/unread-count on refresh.
-      logger.warn('Notification hub failed to connect', { error: String(error) });
+      logger.warn('Notification hub failed to connect, will retry', { error: String(error) });
+      scheduleRetry();
     }
   },
 
   async disconnect(): Promise<void> {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    retryAttempt = 0;
     const current = connection;
     connection = null;
     if (!current) {

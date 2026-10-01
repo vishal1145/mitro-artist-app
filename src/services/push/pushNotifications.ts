@@ -10,9 +10,11 @@ import {
   type Messaging,
   type RemoteMessage,
 } from '@react-native-firebase/messaging';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { notificationApi } from '@services/api';
+import { incomingCallNative } from '@services/push/incomingCallNative';
+import { useIncomingCallStore } from '@store/incomingCallStore';
 import { useNotificationStore } from '@store/notificationStore';
 import type { DevicePlatform, NotificationItem } from '@app-types/api';
 import { logger } from '@utils/logger';
@@ -111,6 +113,10 @@ export const pushNotifications = {
         return;
       }
 
+      // Android 14+: lock-screen call UI needs the "full screen notifications"
+      // special access. Non-blocking; prompts at most once a day.
+      void incomingCallNative.ensureFullScreenIntentAccess();
+
       const token = await getToken(messaging);
       currentToken = token;
 
@@ -159,6 +165,21 @@ export const pushNotifications = {
     // Foreground: the OS never shows a banner for these, so the toast (via
     // ingest -> showNotificationToast) is the only surface the artist sees.
     const unsubscribeMessage = onMessage(messaging, async (message) => {
+      // Private-call pushes: the in-app overlay (incomingCallStore) is the ringer
+      // while the app is open, so pop it immediately and skip the toast. The
+      // native ring stays silent in the foreground; "closed" clears any leftover.
+      const type = (message.data as Record<string, string | undefined> | undefined)?.type;
+      if (type === 'private_call_request' || type === 'call_request') {
+        void useIncomingCallStore.getState().refresh();
+        return;
+      }
+      if (type === 'private_call_request_closed') {
+        const closedId = (message.data as Record<string, string | undefined> | undefined)?.requestId;
+        if (closedId) incomingCallNative.cancel(closedId);
+        void useIncomingCallStore.getState().refresh();
+        return;
+      }
+
       const item = parseNotificationData(message);
       if (item) {
         useNotificationStore.getState().ingest(item);
@@ -199,7 +220,17 @@ export const pushNotifications = {
       }
     });
 
+    // App came to the foreground: the in-app overlay takes over, so silence any
+    // native ring (never two ringers) and pull the pending request right away.
+    const appStateSub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        incomingCallNative.cancelAll();
+        void useIncomingCallStore.getState().refresh();
+      }
+    });
+
     return () => {
+      appStateSub.remove();
       unsubscribeMessage();
       unsubscribeOpened();
       unsubscribeTokenRefresh();

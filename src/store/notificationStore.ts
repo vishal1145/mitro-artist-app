@@ -18,6 +18,23 @@ import { useIncomingCallStore } from './incomingCallStore';
  * logout. See connectAuthInterceptors' sibling wiring in store/authStore.ts.
  */
 
+/**
+ * Excluded notification types that must NEVER appear in the notification bell,
+ * dropdown, or full notifications list (e.g. chat messages have their own tab badge).
+ * Matches Mitro.Artist.UI/src/context/NotificationContext.tsx (Issue 3).
+ */
+export const EXCLUDED_NOTIFICATION_TYPES = ['private_message'] as const;
+
+export const isExcludedNotification = (
+  n: { type?: string | null; referenceType?: string | null } | null | undefined,
+): boolean => {
+  if (!n) return false;
+  return (
+    (!!n.type && EXCLUDED_NOTIFICATION_TYPES.includes(n.type as any)) ||
+    (!!n.referenceType && EXCLUDED_NOTIFICATION_TYPES.includes(n.referenceType as any))
+  );
+};
+
 /** Collapse duplicates by id AND by content signature — the same event delivered
  * twice (realtime hub + FCM) can arrive under two different ids. */
 const sigOf = (n: NotificationItem) =>
@@ -28,6 +45,7 @@ const dedupeNotifications = (items: NotificationItem[]): NotificationItem[] => {
   const seenSig = new Set<string>();
   const out: NotificationItem[] = [];
   for (const it of items) {
+    if (isExcludedNotification(it)) continue;
     const sig = sigOf(it);
     if (seenId.has(it.id) || seenSig.has(sig)) continue;
     seenId.add(it.id);
@@ -105,7 +123,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   init: async () => {
-    const [listResult, countResult] = await Promise.all([
+    const [listResult] = await Promise.all([
       notificationApi.getNotifications(NOTIFICATIONS.take),
       notificationApi.getUnreadCount(),
     ]);
@@ -113,24 +131,24 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     if (!listResult.success) {
       logger.warn('Failed to load notifications', { error: listResult.error });
     }
-    if (!countResult.success) {
-      logger.warn('Failed to load unread count', { error: countResult.error });
-    }
 
+    const filteredItems = listResult.success ? dedupeNotifications(listResult.data) : [];
     set({
-      items: listResult.success ? dedupeNotifications(listResult.data) : [],
-      unreadCount: countResult.success ? countResult.data.unreadCount : 0,
+      items: filteredItems,
+      unreadCount: filteredItems.filter((i) => !i.isRead).length,
       hydrated: true,
       take: NOTIFICATIONS.take,
       hasMore: listResult.success ? listResult.data.length >= NOTIFICATIONS.take : false,
     });
 
     notificationHub.setHandler((item) => get().ingest(item));
+    notificationHub.setOnReconnected(() => void get().refresh());
     await notificationHub.connect();
   },
 
   teardown: () => {
     notificationHub.setHandler(null);
+    notificationHub.setOnReconnected(null);
     void notificationHub.disconnect();
     set({
       items: [],
@@ -148,13 +166,14 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     // pulling down doesn't collapse the list back to the first page.
     const windowSize = get().take;
     set({ refreshing: true });
-    const [listResult, countResult] = await Promise.all([
+    const [listResult] = await Promise.all([
       notificationApi.getNotifications(windowSize),
       notificationApi.getUnreadCount(),
     ]);
+    const filteredItems = listResult.success ? dedupeNotifications(listResult.data) : get().items;
     set({
-      items: listResult.success ? dedupeNotifications(listResult.data) : get().items,
-      unreadCount: countResult.success ? countResult.data.unreadCount : get().unreadCount,
+      items: filteredItems,
+      unreadCount: filteredItems.filter((i) => !i.isRead).length,
       hasMore: listResult.success ? listResult.data.length >= windowSize : get().hasMore,
       refreshing: false,
     });
@@ -175,9 +194,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }));
 
     const result = await notificationApi.markRead(id);
-    if (result.success) {
-      set({ unreadCount: result.data.unreadCount });
-    } else {
+    if (!result.success) {
       logger.warn('markRead failed', { id, error: result.error });
     }
   },
@@ -191,9 +208,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }));
 
     const result = await notificationApi.markAllRead();
-    if (result.success) {
-      set({ unreadCount: result.data.unreadCount });
-    } else {
+    if (!result.success) {
       // Roll back — a failed write shouldn't leave the badge silently wrong.
       set({ items: previous });
       logger.warn('markAllRead failed', { error: result.error });
@@ -205,6 +220,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     // rather than waiting for the next poll — mirror the web's hub-driven pop.
     if (item.type === 'private_call_request') {
       void useIncomingCallStore.getState().refresh();
+    }
+
+    // Excluded notifications (e.g. chat messages) must NEVER appear in the
+    // notification bell list, dropdown, or unread badge (Issue 3).
+    if (isExcludedNotification(item)) {
+      return;
     }
 
     const sig = sigOf(item);

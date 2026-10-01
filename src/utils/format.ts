@@ -1,4 +1,17 @@
-/** Display formatters. Kept here so the same number reads the same everywhere. */
+/**
+ * Normalise .NET server ISO timestamps to ms precision UTC.
+ * .NET sends 7-digit fractional seconds and sometimes no zone suffix.
+ * Hermes / mobile engines parse that as NaN or local time, breaking countdowns.
+ */
+export const parseServerUtcMs = (iso?: string | null): number | null => {
+  if (!iso) return null;
+  let s = String(iso).trim().replace(' ', 'T');
+  s = s.replace(/(\.\d{3})\d+/, '$1');
+  if (!/(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(s)) s += 'Z';
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+};
+
 
 /**
  * Compact count: 940 → "940", 1240 → "1.2k", 48_200 → "48.2K".

@@ -40,7 +40,8 @@
       },
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "USE_FULL_SCREEN_INTENT"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -60,6 +61,7 @@
         }
       ],
       "./plugins/withNotificationColorMergeFix",
+      "./plugins/withIncomingCallNotification",
       [
         "expo-image-picker",
         {

@@ -6,7 +6,7 @@
 /** Result<T> pattern — every service call returns this discriminated union. */
 export type Result<T> =
   | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: false; error: string; code?: string };
 
 /** Standard envelope our API wraps successful payloads in. */
 export interface ApiResponse<T> {
@@ -187,6 +187,11 @@ export interface ArtistProfile {
   /** Second level under `categoryId`; null when the artist hasn't picked one. */
   subcategoryId: string | null;
   subcategoryName: string | null;
+  /** Multi-select categories (Issue 15). */
+  categoryIds?: string[];
+  categoryNames?: string[];
+  subcategoryIds?: string[];
+  subcategoryNames?: string[];
   /**
    * KYC verification state, from the same `/profile/me` payload the web reads
    * (`artistProfileService.getMe().kycStatus`): "" / "pending" / "approved" /
@@ -324,6 +329,9 @@ export interface UpdateCategoryPayload {
    * camel-cased `subCategoryId` is silently ignored.
    */
   subcategoryId?: string | null;
+  /** Multi-select categories (Issue 15). */
+  categoryIds?: string[];
+  subcategoryIds?: string[];
 }
 
 export interface ChangeStageNamePayload {

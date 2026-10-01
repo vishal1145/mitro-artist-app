@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -122,6 +123,30 @@ const MessagesScreen = () => {
     });
   };
 
+  const confirmDeleteConversation = (c: ArtistConversationSummary) => {
+    const name = c.userDisplayName || 'this fan';
+    Alert.alert(
+      'Delete chat?',
+      `This removes your entire chat with ${name} from your inbox. It stays visible to them.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const res = await privateMessageApi.deleteConversation(c.userId);
+            if (res.success) {
+              queryClient.invalidateQueries({ queryKey: queryKeys.messages.list() });
+              showToast('Chat deleted.', 'success');
+            } else {
+              showToast(res.error, 'error');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Screen
       tabBarSpacing
@@ -204,8 +229,10 @@ const MessagesScreen = () => {
                 key={c.userId}
                 style={[styles.row, i === 0 ? null : styles.rowDivider]}
                 onPress={() => openThread(c)}
+                onLongPress={() => confirmDeleteConversation(c)}
+                delayLongPress={350}
                 accessibilityRole="button"
-                accessibilityLabel={`Conversation with ${name}`}
+                accessibilityLabel={`Conversation with ${name}. Long press to delete.`}
               >
                 <Avatar
                   uri={c.userAvatarUrl ?? undefined}
@@ -500,9 +527,9 @@ const styles = StyleSheet.create({
     backgroundColor: webColors.panelFill,
   },
   popupClose: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: webColors.chip,

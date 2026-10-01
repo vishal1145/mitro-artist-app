@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
 
   inWrap: { alignSelf: 'flex-start', maxWidth: '82%' },
   outWrap: { alignSelf: 'flex-end', maxWidth: '82%', alignItems: 'flex-end' },
-  bubble: { borderRadius: radius.card, paddingHorizontal: 16, paddingVertical: 13 },
+  bubble: { borderRadius: radius.card, paddingHorizontal: 16, paddingVertical: 13, flexShrink: 1, maxWidth: '100%' },
   bubbleIn: {
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 6,
   },
   bubbleOut: { backgroundColor: colors.textPrimary, borderBottomRightRadius: 6 },
-  bubbleText: { lineHeight: rf(18) },
+  bubbleText: { lineHeight: rf(18), flexShrink: 1, flexWrap: 'wrap' },
   deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.8 },
   deletedText: { fontStyle: 'italic' },
   quote: {
@@ -866,6 +866,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     marginBottom: 6,
     opacity: 0.9,
+    flexShrink: 1,
   },
   quoteWho: { fontFamily: fontFamily.bold },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },

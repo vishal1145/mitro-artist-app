@@ -5,6 +5,7 @@
 // sleep — which means before expo-router mounts anything. Registering it
 // inside a component (or after the router import) is too late: Android may
 // deliver a background/quit-state push before that code ever runs.
+const { AppRegistry } = require('react-native');
 const { getApp } = require('@react-native-firebase/app');
 const { getMessaging, setBackgroundMessageHandler } = require('@react-native-firebase/messaging');
 
@@ -18,5 +19,13 @@ setBackgroundMessageHandler(getMessaging(getApp()), async (remoteMessage) => {
     console.log('[push] background message', remoteMessage.messageId);
   }
 });
+
+// Headless task run by the native "Decline" button on the incoming-call
+// notification (plugins/incoming-call/IncomingCallHeadlessService.kt). Must be
+// registered here at the top level so it exists even when the app was killed.
+AppRegistry.registerHeadlessTask(
+  'IncomingCallDecline',
+  () => require('./src/services/push/incomingCallHeadless').declineIncomingCall,
+);
 
 require('expo-router/entry');

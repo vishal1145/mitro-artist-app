@@ -78,6 +78,7 @@ const isAxiosError = (error: unknown): error is AxiosError<ApiErrorBody | string
 
 const messageForStatus = (status: number): string => {
   if (status === 401) return ERROR_MESSAGES.unauthorized;
+  if (status === 402) return "User doesn't have enough coins for this call.";
   if (status === 403) return ERROR_MESSAGES.forbidden;
   if (status === 404) return ERROR_MESSAGES.notFound;
   if (status === 422) return ERROR_MESSAGES.validation;
@@ -126,6 +127,12 @@ const clientMessage = (
   // Some endpoints answer 4xx with a bare string rather than JSON.
   if (typeof body === 'string') {
     return text(body);
+  }
+  if (
+    body?.code === 'INSUFFICIENT_BALANCE' ||
+    (body as any)?.errorCode === 'INSUFFICIENT_BALANCE'
+  ) {
+    return "User doesn't have enough coins for this call.";
   }
   return (
     validationMessage(body?.errors) ??

@@ -276,7 +276,12 @@ const GroupCallRoomScreen = () => {
         refreshParticipants();
         refreshDeliveries();
         groupCallHub.connect(groupCallId, {
-          onActivityAdded: (item) => mergeActivity([item]),
+          onActivityAdded: (item) => {
+            mergeActivity([item]);
+            if (item.type === 'reward' || item.type === 'fun_wheel') {
+              refreshDeliveries();
+            }
+          },
           onParticipantRequested: () => {
             refreshParticipants();
             // The approve action lives inside the Participants panel, so say

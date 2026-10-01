@@ -198,11 +198,11 @@ const BottomSheetComponent = ({
               <Pressable
                 style={styles.close}
                 onPress={close}
-                hitSlop={8}
+                hitSlop={12}
                 accessibilityRole="button"
                 accessibilityLabel="Close"
               >
-                <Feather name="x" size={rf(16)} color={colors.textMuted} />
+                <Feather name="x" size={rf(18)} color={colors.textMuted} />
               </Pressable>
             </View>
           ) : null}
@@ -255,9 +255,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   close: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.07)',
