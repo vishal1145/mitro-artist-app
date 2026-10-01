@@ -34,7 +34,7 @@ const buildConnection = (): HubConnection =>
   new HubConnectionBuilder()
     .withUrl(HUB_URL, { accessTokenFactory: getAccessToken })
     .withAutomaticReconnect()
-    .configureLogging(LogLevel.Warning)
+    .configureLogging(LogLevel.Critical)
     .build();
 
 const scheduleRetry = (): void => {

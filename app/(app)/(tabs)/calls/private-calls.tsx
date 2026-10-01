@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -174,26 +174,49 @@ const PrivateCallsScreen = () => {
    * The backend knows whether a call is still running, so ask it rather than
    * trusting only the local record — that is what the web's PrivateCallScreen
    * does. Remember the id so the room can reconnect to it.
+   *
+   * On first entry to this screen a running call is resumed automatically —
+   * same as the Go Live tab and Schedule Session do for broadcasts / group
+   * calls. `replace` (not `push`) so backing out of the room doesn't land
+   * straight back here and bounce the artist into the call again.
    */
-  useEffect(() => {
-    let cancelled = false;
-    privateCallApi.getActive().then((r) => {
-      if (cancelled || !r.success) return;
-      if (r.data.hasActiveSession && r.data.privateCallId) {
-        setActiveCallId(r.data.privateCallId);
-        activePrivateCallStore.savePointer(r.data.privateCallId, {
-          userId: r.data.userId,
-          ratePerMin: r.data.pricePerMinuteSnapshot,
-        });
-      } else {
-        setActiveCallId(null);
-        activePrivateCallStore.clear();
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const autoRejoinCheckedRef = useRef(false);
+  const checkActiveCall = useCallback(
+    (autoRejoin: boolean) => {
+      let cancelled = false;
+      privateCallApi.getActive().then(async (r) => {
+        if (cancelled || !r.success) return;
+        if (r.data.hasActiveSession && r.data.privateCallId) {
+          setActiveCallId(r.data.privateCallId);
+          await activePrivateCallStore.savePointer(r.data.privateCallId, {
+            userId: r.data.userId,
+            ratePerMin: r.data.pricePerMinuteSnapshot,
+          });
+          if (autoRejoin && !cancelled) {
+            showToast('Reconnecting to your call in progress…', 'info');
+            router.replace('/(app)/(modals)/private-call-room');
+          }
+        } else {
+          setActiveCallId(null);
+          activePrivateCallStore.clear();
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    },
+    [router],
+  );
+
+  // Every focus refreshes the card (e.g. after backing out of the room or
+  // ending the call); only the first one auto-rejoins.
+  useFocusEffect(
+    useCallback(() => {
+      const autoRejoin = !autoRejoinCheckedRef.current;
+      autoRejoinCheckedRef.current = true;
+      return checkActiveCall(autoRejoin);
+    }, [checkActiveCall]),
+  );
 
   const refreshRequests = useCallback(() => {
     privateCallApi.getRequests().then((r) => r.success && setRequests(r.data));

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { privateMessageInboxHub } from '@services/realtime/privateMessageInboxHub';
 
 import { SECURE_KEYS } from '@constants';
 import { authApi, registerAuthHandlers } from '@services/api';
@@ -23,12 +24,14 @@ const startNotifications = (): void => {
   void useNotificationStore.getState().init();
   useIncomingCallStore.getState().start();
   void pushNotifications.register();
+  void privateMessageInboxHub.connect();
 };
 
 const stopNotifications = (): void => {
   useNotificationStore.getState().teardown();
   useIncomingCallStore.getState().stop();
   void pushNotifications.unregister();
+  void privateMessageInboxHub.disconnect();
 };
 
 /**

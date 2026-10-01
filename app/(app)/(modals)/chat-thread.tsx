@@ -28,6 +28,7 @@ import {
   type PrivateMessageReceivedPayload,
   type PrivateMessageDeletedPayload,
 } from '@services/realtime/privateMessageHub';
+import { privateMessageInboxHub } from '@services/realtime/privateMessageInboxHub';
 import type { ArtistConversationSummary, PrivateMessageItem } from '@app-types/api';
 import { colors, fontFamily, gradientDirection, gradients, layout, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
@@ -257,6 +258,13 @@ const ChatThreadScreen = () => {
     const id = setInterval(() => load(true), POLL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  // Suppress the app-wide "new message" toast for the fan whose chat is open.
+  useEffect(() => {
+    if (!userId) return;
+    privateMessageInboxHub.setOpenChat(userId);
+    return () => privateMessageInboxHub.setOpenChat(null);
+  }, [userId]);
 
   useEffect(() => {
     if (!artistId || !userId) return;
