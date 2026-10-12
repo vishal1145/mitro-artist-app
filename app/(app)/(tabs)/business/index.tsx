@@ -27,7 +27,7 @@ import { EarningsBar, LoadFailed, Screen, Skeleton } from '@components/shared';
 import { LucideIcon, Text, type LucideIconName } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
 import { useNotificationStore } from '@store';
-import { fontFamily, webColors } from '@theme';
+import { fontFamily, fontSize, letterSpacing, lineHeight, webColors } from '@theme';
 import { webSourceHint, webSourceLabel } from '@utils/earnings';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, shortWeekday } from '@utils/format';
@@ -629,16 +629,16 @@ const styles = StyleSheet.create({
   h1: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
-    letterSpacing: -0.22,
-    lineHeight: rf(27),
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
+    lineHeight: lineHeight.heading,
     marginBottom: 4,
   },
   headP: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 
   /* .notice --------------------------------------------------------------- */
@@ -659,8 +659,8 @@ const styles = StyleSheet.create({
     color: webColors.muted,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(18.5),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   noticeStrong: {
     color: webColors.textStrong,
@@ -708,25 +708,25 @@ const styles = StyleSheet.create({
   },
   eyebrowText: {
     color: webColors.gold,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10.5),
-    letterSpacing: 0.5,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   heroBig: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(32),
-    letterSpacing: -0.32,
-    lineHeight: rf(38),
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
+    lineHeight: lineHeight.heading,
     marginBottom: 8,
   },
   heroP: {
     color: webColors.muted,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(19.5),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     marginBottom: 14,
   },
   heroPills: {
@@ -748,8 +748,8 @@ const styles = StyleSheet.create({
   heroPillText: {
     color: webColors.muted,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* .stat-tile grid ------------------------------------------------------- */
@@ -784,14 +784,14 @@ const styles = StyleSheet.create({
   statLabel: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   statValue: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(24),
-    lineHeight: rf(29),
+    fontSize: fontSize.heading,
+    lineHeight: lineHeight.heading,
   },
   statChip: {
     alignSelf: 'flex-start',
@@ -801,8 +801,8 @@ const styles = StyleSheet.create({
   },
   statChipText: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(10.5),
-    lineHeight: rf(14),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* .trend-card ----------------------------------------------------------- */
@@ -834,15 +834,15 @@ const styles = StyleSheet.create({
   trendTitle: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(15.5),
-    lineHeight: rf(20),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 3,
   },
   trendSub: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   trendIcon: {
     alignItems: 'center',
@@ -870,8 +870,8 @@ const styles = StyleSheet.create({
   barValue: {
     color: webColors.dim,
     fontFamily: fontFamily.bold,
-    fontSize: rf(9),
-    lineHeight: rf(12),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   barTrack: {
     alignSelf: 'stretch',
@@ -886,8 +886,8 @@ const styles = StyleSheet.create({
   barDay: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11),
-    lineHeight: rf(14),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* .source-pie-card ------------------------------------------------------ */
@@ -947,28 +947,28 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flexShrink: 1,
     fontFamily: fontFamily.bold,
-    fontSize: rf(13.5),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     minWidth: 0,
   },
   legendPct: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(12.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   legendAmt: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginLeft: 21,
     marginTop: 2,
   },
   emptyText: {
     color: webColors.textSoft,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 
   /* HelpTip popup -------------------------------------------------------- */
@@ -990,8 +990,8 @@ const styles = StyleSheet.create({
   tipText: {
     color: webColors.muted,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 });
 

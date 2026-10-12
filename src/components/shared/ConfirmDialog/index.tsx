@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, gradientDirection, gradients, typography } from '@theme';
+import { colors, gradientDirection, gradients, lineHeight, typography } from '@theme';
 
 export type ConfirmTone = 'danger' | 'primary';
 
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   cancelLabel: {
     ...typography.buttonSm,
     /* See `confirmLabel` — same descender clipping, same remedy. */
-    lineHeight: 20,
+    lineHeight: lineHeight.small,
     includeFontPadding: false,
     textAlignVertical: 'center',
     color: '#FFFFFF',
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
    */
   confirmLabel: {
     ...typography.buttonSm,
-    lineHeight: 20,
+    lineHeight: lineHeight.small,
     includeFontPadding: false,
     textAlignVertical: 'center',
     color: '#FFFFFF',

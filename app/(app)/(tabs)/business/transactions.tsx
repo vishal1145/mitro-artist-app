@@ -17,7 +17,7 @@ import { EarningsBar, LoadFailed, Screen, Skeleton } from '@components/shared';
 import { LucideIcon, Text, type LucideIconName } from '@components/ui';
 import { useEarningsSummary, useEarningsTransactionsPaged } from '@hooks/useInsights';
 import { useNotificationStore } from '@store';
-import { fontFamily, webColors } from '@theme';
+import { fontFamily, fontSize, letterSpacing, lineHeight, webColors } from '@theme';
 import { webSourceLabel } from '@utils/earnings';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, webDateTime } from '@utils/format';
@@ -455,10 +455,10 @@ const styles = StyleSheet.create({
   },
   eyebrowText: {
     color: webColors.gold,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10.5),
-    letterSpacing: 0.53,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   /** `.ledger-head h2 { display:flex; gap:5px; margin: 8px 0 0; 1rem/800 }`. */
@@ -471,8 +471,8 @@ const styles = StyleSheet.create({
   ledgerH2: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(16),
-    lineHeight: rf(21),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
   /** `.ledger-card .tx-ledger-callout { margin: 0 18px 14px }`. */
   ledgerCallout: {
@@ -512,14 +512,14 @@ const styles = StyleSheet.create({
   txStrong: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(13.5),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   txSmall: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   /** `.bcast-reaction-icon` — the fan's reaction glyph, inline in the subline. */
   reactionIcon: {
@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
   txAmt: {
     color: webColors.gold,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   txAmtReversed: {
     color: webColors.dim,
@@ -561,10 +561,10 @@ const styles = StyleSheet.create({
     backgroundColor: webColors.txRefundedChip,
   },
   txStatusText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   txStatusInkPending: {
@@ -582,8 +582,8 @@ const styles = StyleSheet.create({
   earningsEmpty: {
     color: webColors.textSoft,
     fontFamily: fontFamily.regular,
-    fontSize: rf(16),
-    lineHeight: rf(24.8),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     padding: 24,
     textAlign: 'center',
   },
@@ -595,16 +595,16 @@ const styles = StyleSheet.create({
   emptyStrong: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14.5),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     marginBottom: 6,
     textAlign: 'center',
   },
   emptyBody: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(16),
-    lineHeight: rf(24.8),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     textAlign: 'center',
   },
   loadFailed: {

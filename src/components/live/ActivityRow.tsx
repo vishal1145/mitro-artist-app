@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Avatar, Text } from '@components/ui';
 import type { BroadcastActivityItem } from '@app-types/broadcast';
-import { callStatusStyle, callUi, fontFamily, radius } from '@theme';
+import { callStatusStyle, callUi, fontFamily, fontSize, letterSpacing, radius } from '@theme';
 import { rf } from '@utils/responsive';
 
 import { GiftGlyph, PinGlyph, SparklesGlyph } from './LiveGlyphs';
@@ -76,9 +76,9 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap', flex: 1 },
   highlightDetail: { color: feed.highlightText, fontFamily: fontFamily.semibold, fontStyle: 'italic', flexShrink: 1 },
   hostBadge: { backgroundColor: feed.hostBg, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  hostBadgeText: { fontFamily: fontFamily.extrabold, fontSize: rf(9), letterSpacing: 0.3, color: feed.host },
+  hostBadgeText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: feed.host },
   tokenPill: { backgroundColor: callUi.tokenPill, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  tokenPillText: { fontFamily: fontFamily.extrabold, fontSize: rf(10), color: callUi.tokenPillInk },
+  tokenPillText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, color: callUi.tokenPillInk },
   itemStatus: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  itemStatusText: { fontFamily: fontFamily.bold, fontSize: rf(9.5), letterSpacing: 0.3 },
+  itemStatusText: { fontFamily: fontFamily.bold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small },
 });

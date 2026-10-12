@@ -8,8 +8,7 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily } from '@theme';
-import { rf } from '@utils/responsive';
+import { colors, fontFamily, fontSize } from '@theme';
 
 export interface InsightLineProps {
   /** Emphasised opening clause, rendered bold in primary text. */
@@ -80,6 +79,6 @@ const styles = StyleSheet.create({
   },
   helpMark: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(10),
+    fontSize: fontSize.xs,
   },
 });

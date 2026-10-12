@@ -47,7 +47,7 @@ import {
 } from '@services/agora/agoraEngine';
 import type { BroadcastActivityItem } from '@app-types/broadcast';
 import type { PrivateCallConnectionResponse } from '@app-types/privateCall';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, radius, spacing } from '@theme';
 import { logger } from '@utils/logger';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
@@ -993,14 +993,14 @@ const styles = StyleSheet.create({
   liveBadgeText: {
     fontFamily: fontFamily.extrabold,
     color: live.white,
-    fontSize: rf(10.5),
-    letterSpacing: 0.5,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.small,
   },
   headerSub: {
     flexShrink: 1,
     fontFamily: fontFamily.semibold,
     color: live.headerSub,
-    fontSize: rf(12),
+    fontSize: fontSize.xs,
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerPill: {
@@ -1015,7 +1015,7 @@ const styles = StyleSheet.create({
   headerPillText: {
     fontFamily: fontFamily.bold,
     color: colors.textPrimary,
-    fontSize: rf(12),
+    fontSize: fontSize.xs,
   },
 
   // Banners
@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
   fsPillFull: { top: 6 },
   fsPillText: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
+    fontSize: fontSize.xs,
     color: live.white,
   },
   cornerBadges: {
@@ -1115,7 +1115,7 @@ const styles = StyleSheet.create({
   },
   cornerBadgeText: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
+    fontSize: fontSize.xs,
     color: colors.textPrimary,
   },
   pip: {

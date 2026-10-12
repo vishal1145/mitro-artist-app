@@ -16,7 +16,7 @@ import { useFunWheel, useRewardMenu } from '@hooks/useCreatorSettings';
 import { queryKeys } from '@constants';
 import { settingsApi } from '@services/api';
 import { queryClient } from '@services/queryClient';
-import { fontFamily, gradientDirection, palette, webColors, webGradients } from '@theme';
+import { fontFamily, fontSize, gradientDirection, letterSpacing, lineHeight, palette, webColors, webGradients } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { rf } from '@utils/responsive';
 import { showToast } from '@utils/toast';
@@ -203,7 +203,23 @@ const SettingsScreen = () => {
   // Seed the fields once the wheel arrives, and whenever the server's copy
   // changes underneath us (a refetch after save).
   useEffect(() => {
-    if (!wheel) return;
+    if (!wheel) {
+      // New artist (or wheel just deleted): nothing on the server yet. Leave
+      // the form editable with blank rows and the switch on, since the server
+      // creates a first wheel as active.
+      setWheelName('');
+      setWheelPrice('');
+      setWheelOn(true);
+      setSlices(
+        Array.from({ length: 6 }).map((_, i) => ({
+          id: `temp-${i}`,
+          activityName: '',
+          weight: '1',
+          isNew: true,
+        })),
+      );
+      return;
+    }
     setWheelName(wheel.wheelName);
     setWheelPrice(String(wheel.pricePerSpin));
     setWheelOn(wheel.isActive);
@@ -233,7 +249,7 @@ const SettingsScreen = () => {
   );
 
   const saveWheel = useCallback(async () => {
-    if (!wheel || savingWheel) return;
+    if (savingWheel) return;
     const name = wheelName.trim();
     const price = Number(wheelPrice);
     if (!name) {
@@ -244,13 +260,30 @@ const SettingsScreen = () => {
       showToast('Enter a valid price per spin.', 'error');
       return;
     }
+    if (!wheel && price <= 0) {
+      showToast('Price per spin must be greater than 0.', 'error');
+      return;
+    }
     setSavingWheel(true);
     try {
-      const res = await settingsApi.updateFunWheel(wheel.id, {
-        wheelName: name,
-        pricePerSpin: price,
-      });
-      if (!res.success) throw new Error(res.error);
+      if (wheel) {
+        const res = await settingsApi.updateFunWheel(wheel.id, {
+          wheelName: name,
+          pricePerSpin: price,
+        });
+        if (!res.success) throw new Error(res.error);
+      } else {
+        // First-time setup: create the wheel, then honour the switch (the
+        // server creates it active).
+        const created = await settingsApi.createFunWheel({
+          wheelName: name,
+          pricePerSpin: price,
+        });
+        if (!created.success) throw new Error(created.error);
+        if (!wheelOn) {
+          await settingsApi.setFunWheelActive(created.data.id, false);
+        }
+      }
 
       // Persist every activity row: new rows are created, existing rows
       // updated — the same branch the web's handleSave takes.
@@ -281,11 +314,16 @@ const SettingsScreen = () => {
     } finally {
       setSavingWheel(false);
     }
-  }, [refreshWheel, savingWheel, slices, wheel, wheelName, wheelPrice]);
+  }, [refreshWheel, savingWheel, slices, wheel, wheelName, wheelOn, wheelPrice]);
 
   const toggleWheel = useCallback(
     async (next: boolean) => {
-      if (!wheel || savingWheel) return;
+      if (savingWheel) return;
+      if (!wheel) {
+        // Nothing to PATCH yet — remember the choice; Save applies it.
+        setWheelOn(next);
+        return;
+      }
       setWheelOn(next); // optimistic — reverted below if the server says no
       setSavingWheel(true);
       const res = await settingsApi.setFunWheelActive(wheel.id, next);
@@ -553,7 +591,7 @@ const SettingsScreen = () => {
                 <Switch
                   value={wheelOn}
                   onValueChange={toggleWheel}
-                  disabled={!wheel || savingWheel}
+                  disabled={savingWheel}
                   trackColor={{ false: webColors.panelBorder, true: webColors.pinkHot }}
                   thumbColor={palette.white}
                   accessibilityLabel="Fun wheel enabled"
@@ -573,7 +611,7 @@ const SettingsScreen = () => {
                 <TextInput
                   value={wheelName}
                   onChangeText={setWheelName}
-                  editable={Boolean(wheel) && !savingWheel}
+                  editable={!savingWheel}
                   maxLength={20}
                   placeholder="Fun Wheel"
                   placeholderTextColor={webColors.dim}
@@ -588,7 +626,7 @@ const SettingsScreen = () => {
                 <TextInput
                   value={wheelPrice}
                   onChangeText={(t) => setWheelPrice(t.replace(/[^0-9]/g, ''))}
-                  editable={Boolean(wheel) && !savingWheel}
+                  editable={!savingWheel}
                   keyboardType="number-pad"
                   placeholder="0"
                   placeholderTextColor={webColors.dim}
@@ -617,7 +655,7 @@ const SettingsScreen = () => {
                         onChangeText={(t) => updateSliceName(slice.id, t)}
                         placeholder="Write your activity"
                         placeholderTextColor={webColors.dim}
-                        editable={Boolean(wheel) && !savingWheel}
+                        editable={!savingWheel}
                         style={styles.activityNameInput}
                         accessibilityLabel="Activity name"
                       />
@@ -625,7 +663,7 @@ const SettingsScreen = () => {
                         value={slice.weight}
                         onChangeText={(t) => updateSliceWeight(slice.id, t)}
                         keyboardType="number-pad"
-                        editable={Boolean(wheel) && !savingWheel}
+                        editable={!savingWheel}
                         style={styles.weightField}
                         accessibilityLabel="Activity weight"
                       />
@@ -663,10 +701,10 @@ const SettingsScreen = () => {
               <View style={styles.btnRow}>
                 <Pressable
                   onPress={saveWheel}
-                  disabled={!wheel || savingWheel}
+                  disabled={savingWheel}
                   style={styles.btnPrimary}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: !wheel || savingWheel, busy: savingWheel }}
+                  accessibilityState={{ disabled: savingWheel, busy: savingWheel }}
                   accessibilityLabel="Save"
                 >
                   <LinearGradient
@@ -774,16 +812,16 @@ const styles = StyleSheet.create({
   h1: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
-    letterSpacing: -0.22,
-    lineHeight: rf(27),
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
+    lineHeight: lineHeight.heading,
     marginBottom: 4,
   },
   headSub: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 
   /* .tab-bar -------------------------------------------------------------- */
@@ -817,14 +855,14 @@ const styles = StyleSheet.create({
   tabLabel: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   tabLabelActive: {
     color: palette.white,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* Section ---------------------------------------------------------------
@@ -849,8 +887,8 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   /** `.creator-settings-page .info-callout { margin: 2px 0 16px }`. */
   cardCallout: {
@@ -867,28 +905,28 @@ const styles = StyleSheet.create({
   headCellLeft: {
     color: webColors.dim,
     flex: 1,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   headCellPrice: {
     color: webColors.dim,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textAlign: 'center',
     textTransform: 'uppercase',
     width: 90,
   },
   headCellStatus: {
     color: webColors.dim,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textAlign: 'center',
     textTransform: 'uppercase',
     width: 60,
@@ -916,14 +954,14 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   rewardPrice: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textAlign: 'center',
     width: 90,
   },
@@ -935,15 +973,15 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     padding: 0,
   },
   rewardPriceInput: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     padding: 0,
     textAlign: 'center',
     width: 90,
@@ -966,8 +1004,8 @@ const styles = StyleSheet.create({
   btnAddLabel: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textAlign: 'center',
   },
   btnRow: {
@@ -993,8 +1031,8 @@ const styles = StyleSheet.create({
   btnPrimaryLabel: {
     color: palette.white,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   btnGhost: {
     backgroundColor: webColors.surfaceStrong,
@@ -1007,8 +1045,8 @@ const styles = StyleSheet.create({
   btnGhostLabel: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   btnDanger: {
     backgroundColor: webColors.dangerChip,
@@ -1021,8 +1059,8 @@ const styles = StyleSheet.create({
   btnDangerLabel: {
     color: webColors.dangerInk,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* .wheel-head / .wheel-visual / .wheel-title / .wheel-on-badge ---------- */
@@ -1048,14 +1086,14 @@ const styles = StyleSheet.create({
   wheelName: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   wheelSub: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   wheelBadge: {
     alignSelf: 'flex-start',
@@ -1074,14 +1112,14 @@ const styles = StyleSheet.create({
   wheelBadgeText: {
     color: webColors.green,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    lineHeight: rf(13),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   wheelBadgeTextOff: {
     color: webColors.dim,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    lineHeight: rf(13),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* .field / .field-input -------------------------------------------------- */
@@ -1092,8 +1130,8 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginBottom: 5,
   },
   fieldInput: {
@@ -1111,8 +1149,8 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* .activity-list-head / .activity-row ----------------------------------- */
@@ -1124,20 +1162,20 @@ const styles = StyleSheet.create({
   },
   actHeadWeight: {
     color: webColors.dim,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textAlign: 'center',
     textTransform: 'uppercase',
     width: 52,
   },
   actHeadPct: {
     color: webColors.dim,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textAlign: 'right',
     textTransform: 'uppercase',
     width: 44,
@@ -1164,14 +1202,14 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   activityNameInput: {
     color: webColors.textStrong,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
+    fontSize: fontSize.xs,
     padding: 0,
   },
   weightField: {
@@ -1181,7 +1219,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
+    fontSize: fontSize.xs,
     paddingHorizontal: 4,
     paddingVertical: 5,
     textAlign: 'center',
@@ -1199,15 +1237,15 @@ const styles = StyleSheet.create({
   weightValue: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textAlign: 'center',
   },
   activityPct: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textAlign: 'right',
     width: 44,
   },
@@ -1218,8 +1256,8 @@ const styles = StyleSheet.create({
   activityHint: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(10.5),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginBottom: 10,
   },
 
@@ -1249,16 +1287,16 @@ const styles = StyleSheet.create({
   popupTitle: {
     color: palette.white,
     fontFamily: fontFamily.bold,
-    fontSize: rf(18.7),
-    lineHeight: rf(25),
+    fontSize: fontSize.subheading,
+    lineHeight: lineHeight.subheading,
     marginBottom: 12,
   },
   /** `.popup-modal p { color: #aaa; margin-bottom: 24px; font-size: .95rem }`. */
   popupBody: {
     color: webColors.popupBodyInk,
     fontFamily: fontFamily.regular,
-    fontSize: rf(15.2),
-    lineHeight: rf(23.5),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 24,
   },
   /** `.popup-modal-actions { justify-content: flex-end; gap: 12px }`. */
@@ -1280,8 +1318,8 @@ const styles = StyleSheet.create({
   popupCancelLabel: {
     color: palette.white,
     fontFamily: fontFamily.regular,
-    fontSize: rf(15.2),
-    lineHeight: rf(20),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
   /** `.popup-btn-confirm` — 135° #ff4757 → #ff6b81, no border, 8/16, r8, bold. */
   popupConfirm: {
@@ -1295,8 +1333,8 @@ const styles = StyleSheet.create({
   popupConfirmLabel: {
     color: palette.white,
     fontFamily: fontFamily.bold,
-    fontSize: rf(15.2),
-    lineHeight: rf(20),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
 });
 

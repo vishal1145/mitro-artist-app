@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { LucideIcon, Text } from '@components/ui';
 import type { VerificationBannerCopy } from '@hooks/useVerificationGate';
-import { colors, fontFamily, typography, webColors } from '@theme';
+import { colors, fontFamily, fontSize, lineHeight, typography, webColors } from '@theme';
 import { rf } from '@utils/responsive';
 
 /**
@@ -114,14 +114,14 @@ const styles = StyleSheet.create({
   headline: {
     // 0.82rem / 700 — a shade under bodyLg, so it isn't taken from typography.
     fontFamily: fontFamily.bold,
-    fontSize: rf(13),
-    lineHeight: rf(17),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     color: colors.textPrimary,
   },
   body: {
     ...typography.bodySm,
     marginTop: 3,
-    lineHeight: rf(18),
+    lineHeight: lineHeight.small,
     color: colors.textSecondary,
   },
   btn: {
@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
   },
   btnLabel: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     color: webColors.verifyWarnInk,
   },
 });

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, spacing } from '@theme';
+import { colors, letterSpacing, spacing } from '@theme';
 
 export interface DividerProps {
   /** Optional centered label (e.g. "OR CONNECT"). */
@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
   },
   label: {
     marginHorizontal: spacing.md,
-    letterSpacing: 1.5,
+    letterSpacing: letterSpacing.mono,
   },
 });

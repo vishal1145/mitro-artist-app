@@ -5,17 +5,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
-import {
-  JetBrainsMono_500Medium,
-  JetBrainsMono_600SemiBold,
-} from '@expo-google-fonts/jetbrains-mono';
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from '@expo-google-fonts/plus-jakarta-sans';
+import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
@@ -100,17 +90,12 @@ const RootLayout = () => {
   const initialized = useRef(false);
 
   const [fontsLoaded, fontError] = useFonts({
-    // Plus Jakarta Sans is the whole type system now.
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    // DESIGN.md: Inter for UI text, JetBrains Mono for labels. Nothing heavier
+    // than 600, nothing else.
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
-    JetBrainsMono_500Medium,
-    JetBrainsMono_600SemiBold,
+    JetBrainsMono_400Regular,
   });
 
   // Fonts are best-effort: if they fail we still render with system fonts.

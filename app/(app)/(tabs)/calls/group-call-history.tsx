@@ -26,7 +26,7 @@ import {
   useGroupCallHistoryPaged,
   useGroupCallHistorySummary,
 } from '@hooks/useGroupCallHistory';
-import { colors, fontFamily, layout, webColors } from '@theme';
+import { colors, fontFamily, fontSize, layout, letterSpacing, lineHeight, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, webDateTime, webDuration } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -405,26 +405,26 @@ const chipStyles = StyleSheet.create({
 const chipInk = StyleSheet.create({
   ended: {
     color: webColors.muted,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   cancelled: {
     color: webColors.redInk,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   terminated: {
     color: webColors.gold,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    letterSpacing: 0.4,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
 });
@@ -531,14 +531,14 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flexShrink: 1,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   callMeta: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   callRight: {
     alignItems: 'center',
@@ -548,14 +548,14 @@ const styles = StyleSheet.create({
   callEarn: {
     color: webColors.gold,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   callEarnZero: {
     color: webColors.dim,
     fontFamily: fontFamily.medium,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   chevOpen: {
     transform: [{ rotate: '180deg' }],
@@ -570,10 +570,10 @@ const styles = StyleSheet.create({
   },
   breakdownHead: {
     color: webColors.dim,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-    letterSpacing: 0.66,
-    lineHeight: rf(15),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     marginBottom: 10,
     textTransform: 'uppercase',
   },
@@ -589,21 +589,21 @@ const styles = StyleSheet.create({
   bdTotalLabel: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(13),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   bdTotalAmt: {
     color: webColors.gold,
     fontFamily: fontFamily.bold,
-    fontSize: rf(13),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     marginLeft: 'auto',
   },
   gcallNote: {
     color: webColors.textSoft,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13.5),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     marginTop: 12,
   },
 });

@@ -3,83 +3,112 @@ import type { TextStyle } from 'react-native';
 import { rf } from '@utils/responsive';
 
 /**
- * Typography — Plus Jakarta Sans, per DESIGN_SYSTEM.md.
+ * Typography — the Mitro design system ("Dovetail" scale), see DESIGN.md.
+ *
+ * Two families only: Inter for all UI text, JetBrains Mono for labels, IDs,
+ * timestamps, counts and badges. Weights stop at 600 (Inter 400 / 500 / 600,
+ * JetBrains Mono 400).
  *
  * Always set `fontFamily`, never `fontWeight`. The weight is baked into the
  * family name, and setting both makes Android fake-bold an already-bold face,
  * which renders muddy.
+ *
+ * DESIGN.md is written in CSS px / em. React Native needs absolute numbers, so
+ * line heights and letter spacings below are the doc's ratios already
+ * multiplied by the size (e.g. heading: 24 × 1.33 = 32, 24 × -0.025 = -0.6).
  */
 
 export const fontFamily = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semibold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extrabold: 'PlusJakartaSans_800ExtraBold',
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  /** DESIGN.md caps weight at 600, so the heavy aliases resolve to semibold. */
+  bold: 'Inter_600SemiBold',
+  extrabold: 'Inter_600SemiBold',
+  /** JetBrains Mono — loads at 400 only. */
+  mono: 'JetBrainsMono_400Regular',
 
-  // Legacy aliases — every role resolves to Jakarta.
-  display: 'PlusJakartaSans_800ExtraBold',
-  heading: 'PlusJakartaSans_700Bold',
-  headingSemibold: 'PlusJakartaSans_600SemiBold',
-  body: 'PlusJakartaSans_400Regular',
-  bodyMedium: 'PlusJakartaSans_500Medium',
-  bodySemibold: 'PlusJakartaSans_600SemiBold',
-  mono: 'PlusJakartaSans_500Medium',
-  monoSemibold: 'PlusJakartaSans_700Bold',
+  // Legacy aliases kept so existing call sites compile.
+  display: 'Inter_600SemiBold',
+  heading: 'Inter_600SemiBold',
+  headingSemibold: 'Inter_600SemiBold',
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemibold: 'Inter_600SemiBold',
+  monoSemibold: 'JetBrainsMono_400Regular',
 } as const;
 
 export const fontWeight = {
   regular: '400',
   medium: '500',
   semibold: '600',
-  bold: '700',
-  extrabold: '800',
+  bold: '600',
+  extrabold: '600',
 } as const satisfies Record<string, TextStyle['fontWeight']>;
 
 /**
- * Sizes come from the spec's role table. Each value sits inside its allowed
- * band — do not use arbitrary sizes outside this scale.
- *
- *   Display / hero value  28–34  extrabold
- *   H1                    22–28  extrabold
- *   H2 / card title       15–16  extrabold or bold
- *   Body                  14–16  medium or semibold
- *   Label / button text   13–14.5 bold or extrabold
- *   Small / meta          11–13.5 regular / medium / semibold
- *   Micro (uppercase)     10–11  bold, tracking 0.5–1.4
+ * The Dovetail type scale (DESIGN.md §1.3). Nothing in the app is larger than
+ * `headingLg`; `display` is reserved for marketing-style screens.
  */
 export const fontSize = {
-  numHero: rf(30),
-  numLg: rf(28),
-  h1: rf(23),
+  display: rf(56),
+  headingLg: rf(40),
+  heading: rf(24),
+  subheading: rf(20),
+  body: rf(16),
+  small: rf(14),
+  mono: rf(12),
+  monoLg: rf(14),
+  /** Smallest UI text: captions, badges, meta. Alias of `mono`. */
+  xs: rf(12),
+
+  // Role aliases used by the variants below and by screens.
+  numHero: rf(24),
+  numLg: rf(24),
+  h1: rf(24),
   h2: rf(16),
-  h3: rf(15),
-  body: rf(14),
+  h3: rf(14),
   bodyLg: rf(14),
   bodySm: rf(12),
-  label: rf(10),
-
-  /** Uppercase kicker above a screen title. */
-  eyebrow: rf(11),
-  /** Stat-strip figure — smaller than a hero number, bigger than a heading. */
-  metric: rf(17),
-  /** Text the artist types. Never smaller than this: 11-13px inputs read as disabled. */
+  label: rf(12),
+  eyebrow: rf(12),
+  metric: rf(20),
   input: rf(14),
-  /** Compact button (dialogs, inline actions). */
-  buttonSm: rf(13),
-  /** Count bubbles and status pills. */
-  badge: rf(9),
+  buttonSm: rf(14),
+  badge: rf(12),
 
-  // Legacy scale aliases.
-  xs: rf(11),
+  // Legacy scale aliases, snapped to the nearest token.
   sm: rf(12),
   md: rf(14),
-  lg: rf(15),
+  lg: rf(16),
   xl: rf(16),
-  xxl: rf(23),
-  xxxl: rf(28),
-  display: rf(30),
+  xxl: rf(24),
+  xxxl: rf(24),
   subtitle: rf(14),
+} as const;
+
+/** Line heights, in px (DESIGN.md `--leading-*` × size). */
+export const lineHeight = {
+  display: rf(64),
+  headingLg: rf(52),
+  heading: rf(32),
+  subheading: rf(28),
+  body: rf(24),
+  small: rf(20),
+  mono: rf(17),
+  monoLg: rf(20),
+} as const;
+
+/** Letter spacing, in px (DESIGN.md `--tracking-*` × size). */
+export const letterSpacing = {
+  display: -2.02,
+  headingLg: -1.24,
+  heading: -0.6,
+  subheading: -0.42,
+  body: -0.19,
+  small: -0.17,
+  mono: 0.85,
+  monoLg: 1.16,
 } as const;
 
 export type TypographyVariant =
@@ -106,139 +135,108 @@ export type TypographyVariant =
   | 'link'
   | 'button';
 
+/** Reusable trios — size, line height and tracking always travel together. */
+const roleHeadingLg: TextStyle = {
+  fontSize: fontSize.headingLg,
+  lineHeight: lineHeight.headingLg,
+  letterSpacing: letterSpacing.headingLg,
+};
+const roleHeading: TextStyle = {
+  fontSize: fontSize.heading,
+  lineHeight: lineHeight.heading,
+  letterSpacing: letterSpacing.heading,
+};
+const roleSubheading: TextStyle = {
+  fontSize: fontSize.subheading,
+  lineHeight: lineHeight.subheading,
+  letterSpacing: letterSpacing.subheading,
+};
+const roleBody: TextStyle = {
+  fontSize: fontSize.body,
+  lineHeight: lineHeight.body,
+  letterSpacing: letterSpacing.body,
+};
+const roleSmall: TextStyle = {
+  fontSize: fontSize.small,
+  lineHeight: lineHeight.small,
+  letterSpacing: letterSpacing.small,
+};
+const roleMono: TextStyle = {
+  fontFamily: fontFamily.mono,
+  fontSize: fontSize.mono,
+  lineHeight: lineHeight.mono,
+  letterSpacing: letterSpacing.mono,
+};
+
 export const typography: Record<TypographyVariant, TextStyle> = {
   // --- Spec roles ---
-  /** Display / hero value. */
-  numHero: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.numHero,
-    lineHeight: rf(36),
-    letterSpacing: -0.5,
-  },
-  numLg: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.numLg,
-    lineHeight: rf(34),
-  },
-  h1: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.h1,
-    lineHeight: rf(28),
-  },
-  /** H2 / card title. */
-  h2: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.h2,
-    lineHeight: rf(22),
-  },
-  h3: {
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.h3,
-    lineHeight: rf(20),
-  },
-  body: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.body,
-    lineHeight: rf(20),
-  },
+  /** Stat number (earnings, followers). */
+  numHero: { ...roleHeading, fontFamily: fontFamily.semibold },
+  numLg: { ...roleHeading, fontFamily: fontFamily.semibold },
+  /** Page title. */
+  h1: { ...roleHeading, fontFamily: fontFamily.semibold },
+  /** Card / section title. */
+  h2: { ...roleBody, fontFamily: fontFamily.semibold },
+  h3: { ...roleSmall, fontFamily: fontFamily.semibold },
+  /** Primary text. */
+  body: { ...roleSmall, fontFamily: fontFamily.regular },
   /** Label / button text. */
-  bodyLg: {
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.bodyLg,
-    lineHeight: rf(20),
-  },
+  bodyLg: { ...roleSmall, fontFamily: fontFamily.medium },
   /** Small / meta. */
   bodySm: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.bodySm,
-    lineHeight: rf(17),
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
+    letterSpacing: letterSpacing.small,
   },
-  /** Micro — uppercase tags. */
-  label: {
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.label,
-    lineHeight: rf(13),
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
-  },
+  /** Mono, uppercase — form labels, table headers, stat labels. */
+  label: { ...roleMono, textTransform: 'uppercase' },
 
   /* --- Semantic roles ---------------------------------------------------- */
 
-  /** Uppercase kicker sitting directly above an `h1` screen title. */
-  eyebrow: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.eyebrow,
-    lineHeight: rf(14),
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
-  },
+  /** Uppercase mono kicker sitting directly above an `h1` screen title. */
+  eyebrow: { ...roleMono, textTransform: 'uppercase' },
   /** The figure in a summary/stat cell. */
-  metric: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.metric,
-    lineHeight: rf(22),
-  },
+  metric: { ...roleSubheading, fontFamily: fontFamily.semibold },
   /** Every `TextInput` in the app. */
-  input: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.input,
-    lineHeight: rf(20),
-  },
+  input: { ...roleSmall, fontFamily: fontFamily.regular },
   /** Dialog and inline buttons — one step below the full-width CTA. */
-  buttonSm: {
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.buttonSm,
-    lineHeight: rf(18),
-  },
-  /** Count bubbles, status pills. */
-  badge: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.badge,
-    lineHeight: rf(12),
-    letterSpacing: 0.3,
-  },
+  buttonSm: { ...roleSmall, fontFamily: fontFamily.medium },
+  /** Count bubbles, status pills — mono, uppercase. */
+  badge: { ...roleMono, textTransform: 'uppercase' },
 
   // --- Legacy aliases ---
-  display: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.numHero,
-    lineHeight: rf(36),
-    letterSpacing: -0.5,
-  },
-  bodyLarge: {
-    fontFamily: fontFamily.semibold,
-    fontSize: fontSize.body,
-    lineHeight: rf(20),
-  },
+  display: { ...roleHeading, fontFamily: fontFamily.semibold },
+  bodyLarge: { ...roleSmall, fontFamily: fontFamily.medium },
   /** Screen subtitle — the sentence under an `h1`/`eyebrow` block. */
-  subtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(19),
-  },
+  subtitle: { ...roleSmall, fontFamily: fontFamily.regular },
   /**
-   * Deprecated alias of `bodySm` — identical values, kept so the ~60 existing
-   * call sites keep compiling. New code should use `bodySm`; there is one
-   * secondary-text role, not two.
+   * Deprecated alias of `bodySm` — identical values, kept so existing call
+   * sites keep compiling. New code should use `bodySm`.
    */
   caption: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.bodySm,
-    lineHeight: rf(17),
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
+    letterSpacing: letterSpacing.small,
   },
   legal: {
     fontFamily: fontFamily.regular,
-    fontSize: fontSize.bodySm,
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
+    letterSpacing: letterSpacing.small,
   },
-  link: {
-    fontFamily: fontFamily.semibold,
-    fontSize: fontSize.bodyLg,
-    lineHeight: rf(20),
-  },
-  button: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.bodyLg,
-    lineHeight: rf(20),
-  },
+  link: { ...roleSmall, fontFamily: fontFamily.medium },
+  button: { ...roleSmall, fontFamily: fontFamily.medium },
 };
+
+// `roleBody` / `roleHeadingLg` are part of the scale even when no variant uses
+// them yet; exported so new screens can compose from the same trios.
+export const typeRoles = {
+  headingLg: roleHeadingLg,
+  heading: roleHeading,
+  subheading: roleSubheading,
+  body: roleBody,
+  small: roleSmall,
+  mono: roleMono,
+} as const;

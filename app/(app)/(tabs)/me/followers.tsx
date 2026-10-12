@@ -12,7 +12,7 @@ import { LoadFailed, PageHeader, Screen, Skeleton } from '@components/shared';
 import { LucideIcon } from '@components/ui';
 import { Text } from '@components/ui';
 import { useFollowers } from '@hooks/useFollowers';
-import { colors, fontFamily, gradientDirection, layout, webColors } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, layout, letterSpacing, lineHeight, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -315,16 +315,16 @@ const styles = StyleSheet.create({
   pageTitle: {
     marginBottom: 4,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
-    lineHeight: rf(27),
-    letterSpacing: -0.22,
+    fontSize: fontSize.heading,
+    lineHeight: lineHeight.heading,
+    letterSpacing: letterSpacing.heading,
     color: webColors.textStrong,
   },
   /* p — 0.81rem, --premium-dim */
   pageSub: {
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.96),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     color: webColors.dim,
   },
 
@@ -356,8 +356,8 @@ const styles = StyleSheet.create({
   /* 0.66rem / 800 / 0.05em / uppercase */
   eyebrowText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10.56),
-    letterSpacing: 0.53,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.small,
     color: webColors.pinkHot,
   },
 
@@ -365,17 +365,17 @@ const styles = StyleSheet.create({
   pulseBig: {
     marginBottom: 8,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(32),
-    lineHeight: rf(38),
-    letterSpacing: -0.32,
+    fontSize: fontSize.heading,
+    lineHeight: lineHeight.heading,
+    letterSpacing: letterSpacing.heading,
     color: webColors.textStrong,
   },
   /* .pulse-left p — 0.81rem / 1.5 / --premium-muted / max-width 420 */
   pulseCopy: {
     maxWidth: 420,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.96),
-    lineHeight: rf(19.44),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     color: webColors.muted,
   },
   pulsePills: {
@@ -398,12 +398,12 @@ const styles = StyleSheet.create({
   /* .pulse-pill strong — --premium-text */
   pillStrong: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.48),
+    fontSize: fontSize.xs,
     color: webColors.textStrong,
   },
   pillText: {
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.48),
+    fontSize: fontSize.xs,
     color: webColors.muted,
   },
 
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(17.6),
+    fontSize: fontSize.subheading,
     color: colors.white,
   },
   /* .f-main { flex: 1; min-width: 0 } */
@@ -458,23 +458,23 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    lineHeight: rf(15),
-    letterSpacing: 0.3,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
+    letterSpacing: letterSpacing.small,
   },
   /* .f-main strong — 0.9rem / 700 */
   name: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(14.4),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     color: webColors.textStrong,
   },
 
   /* .f-main small — 0.72rem / --premium-dim */
   meta: {
     fontFamily: fontFamily.regular,
-    fontSize: rf(11.52),
-    lineHeight: rf(17),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     color: webColors.dim,
   },
   /* .f-right — column, right-aligned, gap 8 */
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   },
   coins: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(14.08),
+    fontSize: fontSize.small,
     color: webColors.gold,
   },
   /* .msg-btn — 0.72rem / 700 / surface-soft pill */
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
 
   msgBtnText: {
     fontFamily: fontFamily.bold,
-    fontSize: rf(11.52),
+    fontSize: fontSize.xs,
     color: webColors.muted,
   },
 
@@ -516,8 +516,8 @@ const styles = StyleSheet.create({
   dimHint: {
     padding: 24,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13.6),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     textAlign: 'center',
     color: webColors.dimHint,
   },
