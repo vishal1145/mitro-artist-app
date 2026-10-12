@@ -27,7 +27,7 @@ import { EarningsBar, LoadFailed, Screen, Skeleton } from '@components/shared';
 import { LucideIcon, Text, type LucideIconName } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
 import { useNotificationStore } from '@store';
-import { fontFamily, fontSize, letterSpacing, lineHeight, webColors } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, lineHeight, webColors } from '@theme';
 import { webSourceHint, webSourceLabel } from '@utils/earnings';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, shortWeekday } from '@utils/format';
@@ -103,9 +103,9 @@ const STAT_ACCENT: Record<
     chipInk: webColors.green,
   },
   pending: {
-    icBg: 'rgba(255, 200, 107, 0.14)',
+    icBg: colors.warningChip,
     icInk: webColors.gold,
-    chipBg: 'rgba(255, 200, 107, 0.14)',
+    chipBg: colors.warningChip,
     chipInk: webColors.gold,
   },
   available: {
@@ -643,8 +643,8 @@ const styles = StyleSheet.create({
 
   /* .notice --------------------------------------------------------------- */
   notice: {
-    backgroundColor: 'rgba(255, 200, 107, 0.08)',
-    borderColor: 'rgba(255, 200, 107, 0.28)',
+    backgroundColor: colors.warningSoft,
+    borderColor: colors.warningBorder,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
@@ -696,8 +696,8 @@ const styles = StyleSheet.create({
   eyebrow: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 200, 107, 0.14)',
-    borderColor: 'rgba(255, 200, 107, 0.3)',
+    backgroundColor: colors.warningChip,
+    borderColor: colors.warningBorder,
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
@@ -901,8 +901,8 @@ const styles = StyleSheet.create({
   },
   pieHeadIcon: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 63, 173, 0.14)',
-    borderColor: 'rgba(255, 63, 173, 0.32)',
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryBorder,
     borderRadius: 8,
     borderWidth: 1,
     height: 36,
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   legendRowDivider: {
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: webColors.hairline06,
     borderTopWidth: 1,
   },
   legendTop: {
@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
   /* HelpTip popup -------------------------------------------------------- */
   tipScrim: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: colors.overlayDim,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 32,

@@ -118,13 +118,16 @@ export const WebCallout = memo(
   ({
     tone = 'cyan',
     icon = 'info',
+    plain = false,
     children,
   }: {
     tone?: CalloutTone;
     icon?: LucideIconName;
+    /** No box: icon + text under a horizontal divider. */
+    plain?: boolean;
     children: ReactNode;
   }) => (
-    <View style={styles[CALLOUT_BOX[tone]]}>
+    <View style={plain ? styles.calloutPlain : styles[CALLOUT_BOX[tone]]}>
       <View style={styles.calloutIcon}>
         <LucideIcon name={icon} size={rf(15)} color={CALLOUT_INK[tone]} />
       </View>
@@ -258,13 +261,25 @@ const TwoColGrid = ({
 export const SummaryStrip = ({
   children,
   style,
+  plain = false,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  plain?: boolean;
 }) => (
-  <TwoColGrid gap={12} style={style}>
-    {children}
-  </TwoColGrid>
+  plain ? (
+    <View style={[styles.stripPlain, style]}>
+      {Children.toArray(children).map((child, i) => (
+        <View key={i} style={[styles.stripPlainCell, i > 0 ? styles.stripPlainDivided : null]}>
+          {child}
+        </View>
+      ))}
+    </View>
+  ) : (
+    <TwoColGrid gap={12} style={style}>
+      {children}
+    </TwoColGrid>
+  )
 );
 
 /** One `.summary-cell`. */
@@ -275,7 +290,12 @@ export const SummaryCell = memo(
     label,
     value,
     hint,
+    plain = false,
+    stacked = false,
   }: {
+    plain?: boolean;
+    /** Phone layout of `.txv-stat`: icon box above the text. */
+    stacked?: boolean;
     icon: LucideIconName;
     tint: CellTint;
     label: string;
@@ -283,15 +303,24 @@ export const SummaryCell = memo(
     /** The web's `data-tooltip` for this cell. */
     hint: string;
   }) => (
-    <View style={styles.summaryCell}>
-      <View style={[styles.summaryIc, { backgroundColor: CELL_TINT[tint].bg }]}>
-        <LucideIcon name={icon} size={rf(17)} color={CELL_TINT[tint].ink} />
-      </View>
+    <View style={plain ? styles.summaryCellPlain : [styles.summaryCell, stacked ? styles.summaryCellStacked : null]}>
+      {plain ? null : (
+        <View style={[styles.summaryIc, { backgroundColor: CELL_TINT[tint].bg }]}>
+          <LucideIcon name={icon} size={rf(17)} color={CELL_TINT[tint].ink} />
+        </View>
+      )}
       {/* No `numberOfLines` anywhere below: on the web these are plain divs
           that wrap, and the grid stretches every cell in a row to match. */}
-      <View style={styles.summaryCopy}>
+      <View style={[styles.summaryCopy, stacked ? styles.summaryCopyStacked : null]}>
         <View style={styles.labelRow}>
-          <Text style={styles.summaryLabel}>{label}</Text>
+          <Text
+            style={styles.summaryLabel}
+            numberOfLines={plain ? 1 : undefined}
+            adjustsFontSizeToFit={plain}
+            minimumFontScale={0.75}
+          >
+            {label}
+          </Text>
           <HelpIcon hint={hint} />
         </View>
         <Text style={styles.summaryValue}>{value}</Text>
@@ -660,12 +689,48 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  summaryCellStacked: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  summaryCellPlain: {
+    minWidth: 0,
+    paddingVertical: 4,
+  },
+  // One row, cells split by thin vertical lines.
+  stripPlain: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  stripPlainCell: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 10,
+  },
+  stripPlainDivided: {
+    borderLeftColor: colors.border,
+    borderLeftWidth: 1,
+  },
+  calloutPlain: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    paddingVertical: 12,
+  },
   summaryIc: {
     alignItems: 'center',
     borderRadius: 8,
     height: 40,
     justifyContent: 'center',
     width: 40,
+  },
+  summaryCopyStacked: {
+    alignSelf: 'stretch',
+    flex: 0,
   },
   summaryCopy: {
     flex: 1,

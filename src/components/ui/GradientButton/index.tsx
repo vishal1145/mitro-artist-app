@@ -25,18 +25,23 @@ import { rf } from '@utils/responsive';
 
 import type { GradientButtonProps } from './types';
 
-// CTA gradient runs 90deg — left to right.
-const GRADIENT_START = gradientDirection.horizontal.start;
-const GRADIENT_END = gradientDirection.horizontal.end;
+// CTA gradient runs 135deg like the web's --color-primary-gradient.
+const GRADIENT_START = gradientDirection.diagonal.start;
+const GRADIENT_END = gradientDirection.diagonal.end;
+
+const HEIGHT = { md: size.cta, lg: 52 } as const;
 
 /**
- * Primary call-to-action with a gradient fill and soft glow (matches the
- * Mitro "Go Live" / "Create Account" buttons). Handles loading + disabled.
+ * THE primary action button for the whole app (Go Live, Start Live, Schedule
+ * Session, Turn on, Save…). Same height, radius, type and gradient everywhere;
+ * screens must not hand-build their own gradient buttons.
  */
 const GradientButtonComponent = ({
   label,
   gradient = 'primary',
   textColor = 'onPrimary',
+  size: buttonSize = 'md',
+  fullWidth = true,
   loading = false,
   disabled = false,
   leftIcon,
@@ -48,13 +53,15 @@ const GradientButtonComponent = ({
   ...rest
 }: GradientButtonProps) => {
   const isInactive = disabled || loading;
-  // Pass every stop — the brand ramp is three-stop (violet -> pink -> rose).
   const stops = gradients[gradient];
   const tint = colors[textColor];
 
-  const glowStyle = useMemo<ViewStyle>(
-    () => ({ shadowColor: gradientGlow[gradient] }),
-    [gradient],
+  const wrapperStyle = useMemo<ViewStyle>(
+    () => ({
+      shadowColor: gradientGlow[gradient],
+      alignSelf: fullWidth ? 'stretch' : 'flex-start',
+    }),
+    [gradient, fullWidth],
   );
 
   const handlePress = useCallback(
@@ -77,7 +84,7 @@ const GradientButtonComponent = ({
       accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         styles.wrapper,
-        glowStyle,
+        wrapperStyle,
         pressed && !isInactive ? styles.pressed : null,
         isInactive ? styles.inactive : null,
         style,
@@ -88,30 +95,20 @@ const GradientButtonComponent = ({
         colors={stops}
         start={GRADIENT_START}
         end={GRADIENT_END}
-        style={styles.fill}
+        style={[styles.fill, { height: HEIGHT[buttonSize] }]}
       >
         {loading ? (
           <ActivityIndicator color={tint} />
         ) : (
           <View style={styles.content}>
             {leftIcon ? (
-              <Feather
-                name={leftIcon}
-                size={rf(18)}
-                color={tint}
-                style={styles.leftIcon}
-              />
+              <Feather name={leftIcon} size={rf(18)} color={tint} style={styles.leftIcon} />
             ) : null}
-            <Text variant="button" color={textColor}>
+            <Text variant="button" color={textColor} numberOfLines={1}>
               {label}
             </Text>
             {rightIcon ? (
-              <Feather
-                name={rightIcon}
-                size={rf(18)}
-                color={tint}
-                style={styles.rightIcon}
-              />
+              <Feather name={rightIcon} size={rf(18)} color={tint} style={styles.rightIcon} />
             ) : null}
           </View>
         )}
@@ -123,15 +120,14 @@ const GradientButtonComponent = ({
 export const GradientButton = memo(GradientButtonComponent);
 
 const styles = StyleSheet.create({
-  // Web: full width, radius-base (8), no resting shadow (depth comes from
-  // surface steps and borders). Height stays at the 44pt touch target.
+  // Web: radius-base (8), no resting shadow (depth = surface steps + borders).
   wrapper: {
     borderRadius: radius.button,
+    overflow: 'hidden',
   },
   fill: {
-    height: size.cta,
     borderRadius: radius.button,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: HIT_TARGET,

@@ -79,12 +79,23 @@ const showInboxToast = (p: PrivateMessageInboxPayload) => {
   });
 };
 
+/** Web `scheduleSync`: a burst of messages collapses into one inbox refetch. */
+const INBOX_SYNC_DEBOUNCE_MS = 250;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+const scheduleInboxSync = () => {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    void queryClient.invalidateQueries({ queryKey: queryKeys.messages.list() });
+  }, INBOX_SYNC_DEBOUNCE_MS);
+};
+
 const handle = (p: PrivateMessageInboxPayload) => {
   if (!p?.id || seen.has(p.id)) return;
   seen.add(p.id);
   if (seen.size > 200) seen.clear();
-  // Messages list + unread badge pick the new message up straight away.
-  void queryClient.invalidateQueries({ queryKey: queryKeys.messages.list() });
+  // Messages list + unread badge pick the new message up (debounced like web).
+  scheduleInboxSync();
   listeners.forEach((l) => {
     try {
       l(p);

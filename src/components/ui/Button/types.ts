@@ -1,7 +1,7 @@
 import type { Feather } from '@expo/vector-icons';
 import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'plain' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends Omit<PressableProps, 'style'> {

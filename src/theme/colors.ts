@@ -31,6 +31,10 @@ export const palette = {
   // Values synced with Artist Web design-tokens.css (--color-*).
   background: '#060513',
   backgroundAlt: '#0D0C1F',
+  /** Web --color-bg-deep (inputs, Go Live shell). */
+  backgroundDeep: '#08071A',
+  /** Web --color-glass: floating bars over media. */
+  glass: 'rgba(12, 11, 28, 0.9)',
   surface: 'rgba(20, 18, 38, 0.72)',
   surfaceStrong: 'rgba(27, 23, 48, 0.94)',
   surfaceSoft: 'rgba(255, 255, 255, 0.045)',
@@ -80,6 +84,8 @@ export const colors = {
   // --- Surfaces (spec names) ---
   background: palette.background,
   backgroundAlt: palette.backgroundAlt,
+  backgroundDeep: palette.backgroundDeep,
+  glass: palette.glass,
   surface: palette.surface,
   surfaceStrong: palette.surfaceStrong,
   surfaceSoft: palette.surfaceSoft,
@@ -190,6 +196,9 @@ export const colors = {
   info: palette.cyan,
   infoSoft: withAlpha(palette.cyan, 0.12),
   infoBorder: withAlpha(palette.cyan, 0.35),
+  /** Web --color-accent-bg / --color-accent-border (numbered section badges). */
+  accentBg: withAlpha(palette.purple, 0.14),
+  accentBorder: withAlpha(palette.purple, 0.3),
 
   // --- Translucent, role-named ---
   scrim: withAlpha(palette.background, 0.65),
@@ -233,6 +242,8 @@ export const gradients = {
   live: [palette.pink, palette.violet] as const,
   primary: [palette.pink, palette.violet] as const,
   forgot: [palette.pink, palette.violet] as const,
+  /** Positive actions (Turn on, Withdraw) — web .bcast-price-card-form button. */
+  green: ['#42F5A7', '#6AA238'] as const,
 
   /** Disabled CTA — the brand ramp at low opacity. */
   ctaMuted: [
@@ -258,6 +269,22 @@ export const gradients = {
     withAlpha(palette.cyan, 0.1),
   ] as const,
   scrim: [withAlpha(palette.background, 0), palette.background] as const,
+  /** Dashboard hero photo overlay (web .dv2-hero::before): 90deg, bg → clear. */
+  /** Go Live preview stage (web .golive-preview-stage): pink glow centre + violet→pink sheen. */
+  stageGlow: [withAlpha(palette.pink, 0.16), withAlpha(palette.pink, 0.05), 'transparent'] as const,
+  stageSheen: [withAlpha(palette.violet, 0.12), withAlpha(palette.pink, 0.05)] as const,
+  /** Go Live shell (web .gl3): violet glow top-left, pink glow bottom-right. */
+  shellViolet: [withAlpha(palette.violet, 0.38), 'transparent'] as const,
+  shellPink: ['transparent', withAlpha(palette.pink, 0.22)] as const,
+  /** Empty preview (web .gl3-empty): violet glow behind the icon. */
+  emptyGlow: ['transparent', withAlpha(palette.violet, 0.28), 'transparent'] as const,
+  /** Schedule session preview cover (web .gs3-cover): 160deg pink 45% → violet 55%. */
+  sessionCover: [withAlpha(palette.pink, 0.45), withAlpha(palette.violet, 0.55)] as const,
+  heroPhotoScrim: [
+    palette.background,
+    withAlpha(palette.background, 0.82),
+    withAlpha(palette.background, 0.35),
+  ] as const,
   glassHighlight: [
     withAlpha(palette.pink, 0),
     withAlpha(palette.pink, 0.35),
@@ -304,6 +331,7 @@ export const gradientGlow = {
   live: colors.ctaGlow,
   primary: colors.ctaGlow,
   forgot: colors.ctaGlow,
+  green: colors.ctaGlow,
 } as const;
 
 /* -------------------------------------------------------------------------- */

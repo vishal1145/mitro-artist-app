@@ -38,7 +38,7 @@
         "foregroundImage": "./src/static/images/icon-adaptive.png",
         "backgroundColor": "#FFFFFF"
       },
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "POST_NOTIFICATIONS",
         "USE_FULL_SCREEN_INTENT"

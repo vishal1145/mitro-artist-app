@@ -1,66 +1,15 @@
-import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { memo, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { HelpIcon } from '@components/history';
 import { PageHeader, Screen } from '@components/shared';
-import { Text } from '@components/ui';
+import { GradientButton, LucideIcon, Text, type LucideIconName } from '@components/ui';
 import { groupCallApi } from '@services/api/groupCallApi';
 import { activeGroupCallStore } from '@services/groupCall/activeGroupCall';
-import { layout, typography } from '@theme';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius, size, spacing, typography } from '@theme';
 import { showToast } from '@utils/toast';
 import { rf } from '@utils/responsive';
-
-type FeatherIconName = keyof typeof Feather.glyphMap;
-
-/**
- * Palette + geometry lifted verbatim from the artist web's `.gsched-*` /
- * `.gcall-mode-*` rules (Mitro.Artist.UI/src/styles.css) so this screen is the
- * mobile-responsive web page, not an approximation of it.
- */
-const web = {
-  textStrong: '#FFFAFF',
-  textSoft: 'rgba(255, 250, 255, 0.72)',
-  hint: 'rgba(255, 255, 255, 0.4)',
-  help: 'rgba(255, 255, 255, 0.35)',
-  eyebrow: '#FF8FC7',
-  backBg: 'rgba(255, 255, 255, 0.06)',
-  backBorder: 'rgba(255, 255, 255, 0.14)',
-  cardBase: 'rgba(12, 10, 25, 0.78)',
-  cardBorder: 'rgba(255, 255, 255, 0.13)',
-  sideBase: 'rgba(12, 10, 25, 0.7)',
-  inputBg: 'rgba(5, 4, 11, 0.6)',
-  inputBorder: 'rgba(255, 255, 255, 0.14)',
-  placeholder: 'rgba(255, 255, 255, 0.32)',
-  modeIdleBg: 'rgba(255, 255, 255, 0.04)',
-  modeIdleBorder: 'rgba(255, 255, 255, 0.12)',
-  approvalBg: 'rgba(255, 255, 255, 0.03)',
-  approvalBorder: 'rgba(255, 255, 255, 0.1)',
-  switchTrack: 'rgba(255, 255, 255, 0.16)',
-  checkIdleText: 'rgba(255, 255, 255, 0.45)',
-  checkIdleIcon: 'rgba(255, 255, 255, 0.25)',
-  green: '#42F5A7',
-  gold: '#FFC86B',
-  mathBorder: 'rgba(255, 255, 255, 0.08)',
-  shadow: '#000000',
-  pinkGlow: 'rgba(255, 63, 173, 0.3)',
-  white: '#FFFFFF',
-  transparent: 'transparent',
-} as const;
-
-/** linear-gradient(135deg, #ff3fad, #8c4dff) */
-const HOT_STOPS = ['#FF3FAD', '#8C4DFF'] as const;
-/** linear-gradient(145deg, rgba(255,255,255,.095), rgba(255,255,255,.035)) */
-const CARD_SHEEN = ['rgba(255, 255, 255, 0.095)', 'rgba(255, 255, 255, 0.035)'] as const;
-/** linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.02)) */
-const SIDE_SHEEN = ['rgba(255, 255, 255, 0.075)', 'rgba(255, 255, 255, 0.02)'] as const;
-
-const DIAG_START = { x: 0, y: 0 };
-const DIAG_END = { x: 1, y: 1 };
-/** 145deg — steeper than the corner-to-corner diagonal. */
-const SHEEN_END = { x: 0.7, y: 1 };
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
@@ -81,123 +30,38 @@ const normalizeTime = (raw: string) => {
   return `${pad2(hours)}:${pad2(minutes)}`;
 };
 
-/* -------------------------------------------------------------------------- */
-/*  .gsched-label / .gsched-hint / .gsched-field                               */
-/* -------------------------------------------------------------------------- */
-
-interface FieldProps {
-  label: string;
-  /** Renders the lowercase `<i>(optional)</i>` suffix the web label uses. */
-  optional?: boolean;
-  /** The web's `.gsched-help` `title` text. Renders a tappable question mark. */
-  help?: string;
-  hint?: string;
-  children: ReactNode;
-}
-
-const Field = memo(({ label, optional, help, hint, children }: FieldProps) => (
-  <View style={styles.field}>
-    <View style={styles.labelRow}>
-      <Text style={styles.label}>{label}</Text>
-      {optional ? <Text style={styles.labelOptional}>(optional)</Text> : null}
-      {help ? <HelpIcon hint={help} size={13} /> : null}
+/** One option row: pink icon · title + hint · control (web .gs3-row). */
+const Row = memo(({ icon, title, hint, first, inline, children }: { icon: LucideIconName; title: string; hint: string; first?: boolean; inline?: boolean; children: React.ReactNode }) => (
+  <View style={[styles.row, first ? styles.rowFirst : styles.rowBorder]}>
+    <View style={styles.rowTop}>
+      <LucideIcon name={icon} size={rf(18)} color={colors.pink} />
+      <View style={styles.rowCopy}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowHint}>{hint}</Text>
+      </View>
+      {inline ? children : null}
     </View>
-    {children}
-    {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+    {inline ? null : <View style={styles.rowCtl}>{children}</View>}
   </View>
 ));
-Field.displayName = 'Field';
+Row.displayName = 'Row';
 
-interface BoxInputProps {
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder?: string;
-  numeric?: boolean;
-  multiline?: boolean;
-}
-
-const BoxInput = memo(({ value, onChangeText, placeholder, numeric, multiline }: BoxInputProps) => (
-  <TextInput
-    value={value}
-    onChangeText={onChangeText}
-    placeholder={placeholder}
-    placeholderTextColor={web.placeholder}
-    keyboardType={numeric ? 'number-pad' : 'default'}
-    multiline={multiline}
-    textAlignVertical={multiline ? 'top' : 'center'}
-    style={[styles.input, styles.inputText, multiline ? styles.inputMultiline : null]}
-  />
+/** Number input with a trailing unit (web .gs3-unit). */
+const UnitInput = memo(({ value, onChangeText, placeholder, unit, label }: { value: string; onChangeText: (v: string) => void; placeholder: string; unit: string; label: string }) => (
+  <View style={styles.unitWrap}>
+    <TextInput
+      value={value}
+      onChangeText={(t) => onChangeText(t.replace(/[^0-9]/g, ''))}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textDim}
+      keyboardType="number-pad"
+      accessibilityLabel={label}
+      style={styles.unitInput}
+    />
+    <Text style={styles.unitText} pointerEvents="none">{unit}</Text>
+  </View>
 ));
-BoxInput.displayName = 'BoxInput';
-
-/* -------------------------------------------------------------------------- */
-/*  .gcall-mode-toggle                                                         */
-/* -------------------------------------------------------------------------- */
-
-interface ModeButtonProps {
-  icon: FeatherIconName;
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}
-
-const ModeButton = memo(({ icon, label, active, onPress }: ModeButtonProps) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="radio"
-    accessibilityState={{ selected: active }}
-    style={[styles.modeBtn, active ? styles.modeBtnActive : styles.modeBtnIdle]}
-  >
-    {active ? (
-      <LinearGradient
-        colors={HOT_STOPS}
-        start={DIAG_START}
-        end={DIAG_END}
-        style={StyleSheet.absoluteFill}
-      />
-    ) : null}
-    <Feather name={icon} size={rf(18)} color={active ? web.white : web.textSoft} />
-    <Text style={active ? styles.modeTextActive : styles.modeText}>{label}</Text>
-  </Pressable>
-));
-ModeButton.displayName = 'ModeButton';
-
-/* -------------------------------------------------------------------------- */
-/*  .gsched-switch                                                             */
-/* -------------------------------------------------------------------------- */
-
-interface SwitchProps {
-  value: boolean;
-  onValueChange: (next: boolean) => void;
-  accessibilityLabel: string;
-}
-
-const GschedSwitch = memo(({ value, onValueChange, accessibilityLabel }: SwitchProps) => (
-  <Pressable
-    onPress={() => onValueChange(!value)}
-    accessibilityRole="switch"
-    accessibilityLabel={accessibilityLabel}
-    accessibilityState={{ checked: value }}
-    style={styles.switch}
-  >
-    {value ? (
-      <LinearGradient
-        colors={HOT_STOPS}
-        start={DIAG_START}
-        end={DIAG_END}
-        style={styles.switchTrackFill}
-      />
-    ) : (
-      <View style={styles.switchTrackOff} />
-    )}
-    <View style={[styles.switchKnob, value ? styles.switchKnobOn : null]} />
-  </Pressable>
-));
-GschedSwitch.displayName = 'GschedSwitch';
-
-/* -------------------------------------------------------------------------- */
-/*  Screen                                                                     */
-/* -------------------------------------------------------------------------- */
+UnitInput.displayName = 'UnitInput';
 
 const ScheduleSessionScreen = () => {
   const router = useRouter();
@@ -274,16 +138,6 @@ const ScheduleSessionScreen = () => {
     !hasRefund ? 'refund threshold' : null,
   ].filter((v): v is string => v !== null);
   const canSchedule = missing.length === 0 && seatsNum > 0 && priceNum >= 0;
-
-  const checklist = [
-    { label: 'Title and topic', done: hasTitle },
-    { label: 'Date and time (optional)', done: true },
-    { label: 'Seat limit', done: seatsNum > 0 },
-    { label: 'Coin price', done: priceNum >= 0 },
-    { label: 'Highlighted message price', done: hasHighlighted },
-    { label: 'Refund threshold', done: hasRefund },
-    { label: 'Approval preference set', done: true },
-  ];
 
   const schedule = async () => {
     if (creating) {
@@ -382,595 +236,247 @@ const ScheduleSessionScreen = () => {
   if (checkingActive) {
     return (
       <Screen tabBarSpacing contentContainerStyle={styles.checking}>
-        <ActivityIndicator size="small" color={web.eyebrow} />
+        <ActivityIndicator size="small" color={colors.pink} />
       </Screen>
     );
   }
+
+  const sections = [
+    { n: 1, label: 'Basics', done: hasTitle },
+    { n: 2, label: 'Time & seats', done: seatsNum > 0 },
+    { n: 3, label: 'Price & rules', done: priceNum >= 0 && hasHighlighted && hasRefund },
+  ];
+  const readyCount = sections.filter((x) => x.done).length;
+  const normalizedTime = normalizeTime(scheduledTime);
+  const startLabel = normalizedTime
+    ? new Date(`${todayIso}T${normalizedTime}:00`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : null;
 
   return (
     <Screen
       tabBarSpacing
       scrollable
-      /* `content` owns the gutter — without this the Screen added its own on
-         top of it and this page sat twice as far from the edge. */
       padded={false}
       contentContainerStyle={styles.content}
       header={
-        <PageHeader title="Schedule Session" onBack={() => router.back()} />
+        <PageHeader eyebrow="GROUP CALL" eyebrowIcon="video" title="Schedule Group Session" onBack={() => router.back()} />
       }
     >
-      {/* .gsched-card */}
-      <View style={styles.card}>
-        <LinearGradient
-          colors={CARD_SHEEN}
-          start={DIAG_START}
-          end={SHEEN_END}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-
-        <View style={styles.cardHead}>
-          <Text style={styles.h2}>Create a paid group session</Text>
-          <Text style={styles.cardHeadText}>
-            Set the date, seats, topic, and coin price — fans pay to join and everyone shares the
-            room.
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          <Field label="Session Title">
-            <BoxInput value={title} onChangeText={setTitle} placeholder="e.g. Late Night Q&A" />
-          </Field>
-
-          <Field
-            label="Date & Time"
-            help="Sessions can only be scheduled for today — leave time blank to start on-demand."
-            hint="Today only — blank time = starts on-demand, whenever you hit go."
-          >
-            <View style={styles.split}>
-              <View style={[styles.input, styles.inputDisabled]}>
-                <Text style={styles.disabledValue}>{todayLabel}</Text>
-              </View>
-              <View style={[styles.input, styles.timeBox]}>
-                <TextInput
-                  value={scheduledTime}
-                  onChangeText={(next) => setScheduledTime(maskTime(next))}
-                  onBlur={() => setScheduledTime((prev) => normalizeTime(prev))}
-                  placeholder="--:-- --"
-                  placeholderTextColor={web.placeholder}
-                  keyboardType="number-pad"
-                  maxLength={5}
-                  accessibilityLabel="Start time"
-                  style={styles.timeInput}
-                />
-                <Feather name="clock" size={rf(14)} color={web.textSoft} />
-              </View>
+      {/* .gs3-steps */}
+      <View style={styles.steps}>
+        {sections.map((x) => (
+          <View key={x.n} style={[styles.step, x.done ? styles.stepDone : null]}>
+            <View style={[styles.stepNum, x.done ? styles.stepNumDone : null]}>
+              {x.done ? (
+                <LucideIcon name="check" size={rf(12)} color={colors.success} />
+              ) : (
+                <Text style={styles.stepNumText}>{x.n}</Text>
+              )}
             </View>
-          </Field>
-
-          <Field
-            label="Expected Duration (min)"
-            hint="Used for the refund threshold default in the studio."
-          >
-            <BoxInput value={duration} onChangeText={setDuration} placeholder="30" numeric />
-          </Field>
-
-          <Field label="Available Seats" hint="Max people who can be in the room at once.">
-            <BoxInput value={seats} onChangeText={setSeats} placeholder="e.g. 20" numeric />
-          </Field>
-
-          <Field label="Coin Price" hint="One-time price per seat, not per minute.">
-            <BoxInput value={coinPrice} onChangeText={setCoinPrice} placeholder="e.g. 10" numeric />
-          </Field>
-
-          <Field
-            label="Highlighted message price"
-            hint="What a participant pays to pin their message."
-          >
-            <BoxInput
-              value={highlightedPrice}
-              onChangeText={setHighlightedPrice}
-              placeholder="e.g. 100 coins to pin a message"
-              numeric
-            />
-          </Field>
-
-          <Field
-            label="Refund threshold"
-            hint="Minutes connected before an early end no longer refunds entry."
-          >
-            <BoxInput
-              value={refundThreshold}
-              onChangeText={setRefundThreshold}
-              placeholder="e.g. 2 minutes before refunds stop"
-              numeric
-            />
-          </Field>
-
-          <Field label="Session Description" optional>
-            <BoxInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="What's this session about?"
-              multiline
-            />
-          </Field>
-
-          <Field
-            label="Call Mode"
-            help="Choose whether fans can see your camera or only hear you."
-            hint="Audio-only uses less bandwidth — good for talk-focused sessions."
-          >
-            <View style={styles.modeToggle}>
-              <ModeButton
-                icon="video"
-                label="Video call"
-                active={mode === 'video'}
-                onPress={() => setMode('video')}
-              />
-              <ModeButton
-                icon="radio"
-                label="Audio only"
-                active={mode === 'audio'}
-                onPress={() => setMode('audio')}
-              />
-            </View>
-          </Field>
-
-          {/* .gsched-approval-row */}
-          <View style={styles.approvalRow}>
-            <View style={styles.approvalCopy}>
-              <View style={styles.approvalTitleRow}>
-                <Text style={styles.approvalTitle}>
-                  Require my approval before someone can join
-                </Text>
-                <HelpIcon hint="Approve each fan before they enter the room." size={13} />
-              </View>
-              <Text style={styles.approvalNote}>
-                Off = fans join instantly up to your seat limit. On = they wait in a queue you
-                approve one by one.
-              </Text>
-            </View>
-            <GschedSwitch
-              value={requiresApproval}
-              onValueChange={setRequiresApproval}
-              accessibilityLabel="Require my approval before someone can join"
-            />
+            <Text style={[styles.stepText, x.done ? styles.stepTextDone : null]}>{x.label}</Text>
           </View>
+        ))}
+      </View>
 
-          {/* .gsched-submit */}
-          <Pressable
-            onPress={schedule}
-            disabled={creating || !canSchedule}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: creating || !canSchedule, busy: creating }}
-            accessibilityHint={
-              missing.length > 0 ? `Still needed: ${missing.join(', ')}` : undefined
-            }
-            style={[styles.submit, creating || !canSchedule ? styles.submitDisabled : null]}
-          >
-            <LinearGradient
-              colors={HOT_STOPS}
-              start={DIAG_START}
-              end={DIAG_END}
-              style={styles.submitFill}
-            >
-              <Feather name="video" size={rf(20)} color={web.white} />
-              <Text style={styles.submitLabel}>
-                {creating ? 'Scheduling...' : 'Schedule Session'}
-              </Text>
-            </LinearGradient>
-          </Pressable>
-
-          {missing.length > 0 ? (
-            <View style={styles.blockedNote}>
-              <Feather name="alert-circle" size={rf(13)} color={web.gold} />
-              <Text style={styles.blockedNoteText}>
-                Add your {missing.length === 1 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`} to start the session.
-              </Text>
+      {/* .gs3-preview (sits first on phones) */}
+      <View style={styles.previewCol}>
+        <View style={styles.card}>
+          <View style={styles.cover}>
+            <LinearGradient colors={gradients.sessionCover} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+            <View style={styles.mode}>
+              <LucideIcon name={mode === 'video' ? 'video' : 'radio'} size={rf(13)} color={colors.white} />
+              <Text style={styles.modeText}>{mode === 'video' ? 'Video call' : 'Audio only'}</Text>
             </View>
-          ) : (
-            <Text style={styles.submitNote}>
-              You&apos;ll land in the group call studio next, where you actually start and manage
-              the room.
+            <Text style={styles.coverTitle}>{title.trim() || 'Your session title'}</Text>
+            <Text style={styles.coverSub}>
+              {startLabel ? `Today at ${startLabel}` : 'Starts on-demand'}
+              {duration ? ` · ${duration} min` : ''}
             </Text>
-          )}
-        </View>
-      </View>
-
-      {/* .gsched-side-card — Session Checklist */}
-      <View style={styles.sideCard}>
-        <LinearGradient
-          colors={SIDE_SHEEN}
-          start={DIAG_START}
-          end={SHEEN_END}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-        <Text style={styles.h3}>Session Checklist</Text>
-        <Text style={styles.sideSub}>Fills in automatically as you complete the form.</Text>
-        <View style={styles.checklist}>
-          {checklist.map((item) => (
-            <View key={item.label} style={styles.checkRow}>
-              <Feather
-                name={item.done ? 'check-circle' : 'circle'}
-                size={rf(18)}
-                color={item.done ? web.green : web.checkIdleIcon}
-              />
-              <Text style={item.done ? styles.checkTextDone : styles.checkText}>{item.label}</Text>
+          </View>
+          <View style={styles.cardBody}>
+            {description.trim() ? <Text style={styles.cardDesc}>{description.trim()}</Text> : null}
+            <View style={styles.chips}>
+              <View style={styles.chip}>
+                <LucideIcon name="users" size={rf(14)} color={colors.pink} />
+                <Text style={styles.chipText}>{seatsNum} seats</Text>
+              </View>
+              <View style={styles.chip}>
+                <LucideIcon name="coins" size={rf(14)} color={colors.pink} />
+                <Text style={styles.chipText}>{priceNum.toLocaleString()} coins</Text>
+              </View>
+              {requiresApproval ? (
+                <View style={styles.chip}>
+                  <LucideIcon name="shield-check" size={rf(14)} color={colors.pink} />
+                  <Text style={styles.chipText}>Approval</Text>
+                </View>
+              ) : null}
             </View>
-          ))}
+          </View>
+          <View style={styles.math}>
+            <Text style={styles.mathTitle}>If every seat fills</Text>
+            <View style={styles.mathRow}>
+              <Text style={styles.mathLabel}>Seats × price</Text>
+              <Text style={styles.mathValue}>{potential} coins</Text>
+            </View>
+            <View style={styles.mathRow}>
+              <Text style={styles.mathLabel}>Price per seat (one-time)</Text>
+              <Text style={styles.mathValue}>{priceNum.toLocaleString()} coins</Text>
+            </View>
+          </View>
+        </View>
+        <Text style={styles.ready}>{`${readyCount} of 3 sections ready`}</Text>
+      </View>
+
+      {/* .gs3-form */}
+      <View style={styles.block}>
+        <TextInput value={title} onChangeText={setTitle} placeholder="Session title" placeholderTextColor={colors.textDim} style={styles.titleInput} accessibilityLabel="Session title" />
+        <TextInput value={description} onChangeText={setDescription} placeholder="Add a short description (optional)" placeholderTextColor={colors.textDim} style={styles.descInput} multiline textAlignVertical="top" accessibilityLabel="Session description" />
+      </View>
+
+      <View style={styles.block}>
+        <View style={styles.h}>
+          <View style={styles.hNum}><Text style={styles.hNumText}>2</Text></View>
+          <Text style={styles.hText}>Time &amp; seats</Text>
+        </View>
+        <View>
+          <Row first icon="calendar-days" title="Start" hint="Today only. Leave the time blank to start on-demand.">
+            <View style={styles.split}>
+              <TextInput value={todayLabel} editable={false} style={[styles.ctlInput, styles.ctlDisabled]} accessibilityLabel="Date" />
+              <View style={styles.timeWrap}>
+                <TextInput value={scheduledTime} onChangeText={(t) => setScheduledTime(maskTime(t))} placeholder="--:--" placeholderTextColor={colors.textDim} keyboardType="number-pad" maxLength={5} style={[styles.ctlInput, styles.timeInput]} accessibilityLabel="Start time" />
+                <View style={styles.timeIcon} pointerEvents="none">
+                  <LucideIcon name="clock" size={rf(14)} color={colors.textMuted} />
+                </View>
+              </View>
+            </View>
+          </Row>
+          <Row icon="clock" title="Expected duration" hint="Used for the refund threshold default.">
+            <UnitInput value={duration} onChangeText={setDuration} placeholder="30" unit="min" label="Duration" />
+          </Row>
+          <Row icon="users" title="Available seats" hint="Max people in the room at once.">
+            <UnitInput value={seats} onChangeText={setSeats} placeholder="20" unit="seats" label="Available seats" />
+          </Row>
         </View>
       </View>
 
-      {/* .gsched-side-card — If every seat fills */}
-      <View style={[styles.sideCard, styles.mathCard]}>
-        <LinearGradient
-          colors={SIDE_SHEEN}
-          start={DIAG_START}
-          end={SHEEN_END}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-        <Text style={styles.h3}>If every seat fills</Text>
-        <View style={styles.mathRow}>
-          <Text style={styles.mathLabel}>Seats × price</Text>
-          <Text style={styles.mathValue}>{potential} coins</Text>
+      <View style={styles.block}>
+        <View style={styles.h}>
+          <View style={styles.hNum}><Text style={styles.hNumText}>3</Text></View>
+          <Text style={styles.hText}>Price &amp; rules</Text>
         </View>
-        <View style={[styles.mathRow, styles.mathRowDivided]}>
-          <Text style={styles.mathLabel}>Price per seat (one-time)</Text>
-          <Text style={styles.mathValue}>{priceNum.toLocaleString('en-US')} coins</Text>
+        <View>
+          <Row first icon="coins" title="Coin price" hint="One-time price per seat, not per minute.">
+            <UnitInput value={coinPrice} onChangeText={setCoinPrice} placeholder="10" unit="coins" label="Coin price" />
+          </Row>
+          <Row icon="sparkles" title="Highlighted message price" hint="What a participant pays to pin their message.">
+            <UnitInput value={highlightedPrice} onChangeText={setHighlightedPrice} placeholder="100" unit="coins" label="Highlighted message price" />
+          </Row>
+          <Row icon="undo-2" title="Refund threshold" hint="Minutes connected before an early end no longer refunds entry.">
+            <UnitInput value={refundThreshold} onChangeText={setRefundThreshold} placeholder="2" unit="min" label="Refund threshold" />
+          </Row>
+          <Row inline icon="video" title="Call mode" hint="Audio-only uses less bandwidth.">
+            <View style={styles.seg} accessibilityRole="radiogroup">
+              {(['video', 'audio'] as const).map((m) => {
+                const active = mode === m;
+                return (
+                  <Pressable key={m} onPress={() => setMode(m)} accessibilityRole="radio" accessibilityState={{ selected: active }} style={styles.segBtn}>
+                    {active ? <LinearGradient colors={gradients.cta} start={gradientDirection.diagonal.start} end={gradientDirection.diagonal.end} style={StyleSheet.absoluteFill} /> : null}
+                    <LucideIcon name={m === 'video' ? 'video' : 'radio'} size={rf(14)} color={active ? colors.white : colors.textMuted} />
+                    <Text style={[styles.segText, active ? styles.segTextActive : null]}>{m === 'video' ? 'Video' : 'Audio'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Row>
+          <Row inline icon="shield-check" title="Require my approval to join" hint="Off: fans join instantly. On: they wait in a queue you approve.">
+            <Pressable onPress={() => setRequiresApproval((v) => !v)} accessibilityRole="switch" accessibilityState={{ checked: requiresApproval }} accessibilityLabel="Require my approval before someone can join" style={styles.switchTrack}>
+              {requiresApproval ? <LinearGradient colors={gradients.cta} start={gradientDirection.diagonal.start} end={gradientDirection.diagonal.end} style={StyleSheet.absoluteFill} /> : null}
+              <View style={[styles.switchKnob, requiresApproval ? styles.switchKnobOn : null]} />
+            </Pressable>
+          </Row>
         </View>
       </View>
+
+      <GradientButton
+        label={creating ? 'Scheduling...' : 'Schedule Session'}
+        leftIcon="video"
+        disabled={creating || !canSchedule}
+        onPress={schedule}
+        accessibilityHint={missing.length > 0 ? `Still needed: ${missing.join(', ')}` : undefined}
+      />
+      <Text style={styles.note}>You&apos;ll land in the group call studio next, where you actually start and manage the room.</Text>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  /* .creator-main @media (max-width: 768px) { padding: 12px } + .gsched-page gap */
-  content: {
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: 24,
-    gap: 20,
-  },
-
-  /* .gsched-header */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  back: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: web.backBorder,
-    backgroundColor: web.backBg,
-  },
-  headerCopy: {
-    flex: 1,
-  },
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  eyebrow: {
-    ...typography.eyebrow,
-    color: web.eyebrow,
-  },
-  h1: {
-    ...typography.h1,
-    marginTop: 4,
-    color: web.textStrong,
-  },
-
-  /* .gsched-card */
-  card: {
-    borderWidth: 1,
-    borderColor: web.cardBorder,
-    borderRadius: 8,
-    backgroundColor: web.cardBase,
-    overflow: 'hidden',
-  },
-  cardHead: {
-    paddingTop: 20,
-    paddingHorizontal: 22,
-    paddingBottom: 4,
-  },
-  h2: {
-    ...typography.h2,
-    color: web.textStrong,
-  },
-  cardHeadText: {
-    ...typography.bodySm,
-    marginTop: 6,
-    color: web.textSoft,
-  },
-
-  /* .gsched-form */
-  form: {
-    paddingTop: 16,
-    paddingHorizontal: 22,
-    paddingBottom: 22,
-    gap: 14,
-  },
-
-  /* .gsched-field */
-  field: {
-    gap: 6,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  label: {
-    ...typography.label,
-    color: web.textSoft,
-  },
-  labelOptional: {
-    ...typography.label,
-    color: web.hint,
-  },
-
-  /* .gsched-field input / textarea */
-  // The field box. Shared with the two read-only <View> fields below, so it
-  // carries no text style of its own — see `inputText`.
-  input: {
-    minHeight: 36,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    color: web.textStrong,
-    borderWidth: 1,
-    borderColor: web.inputBorder,
-    borderRadius: 8,
-    backgroundColor: web.inputBg,
-  },
-  inputText: {
-    ...typography.input,
-  },
-  inputMultiline: {
-    minHeight: 60,
-  },
-  inputDisabled: {
-    flex: 1,
-    justifyContent: 'center',
-    opacity: 0.7,
-  },
-  disabledValue: {
-    ...typography.input,
-    color: web.textSoft,
-  },
-
-  /* .gsched-datetime-split */
-  split: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  timeBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 0,
-  },
-  timeInput: {
-    ...typography.input,
-    flex: 1,
-    paddingVertical: 8,
-    color: web.textStrong,
-  },
-
-  /* .gsched-hint */
-  hint: {
-    ...typography.bodySm,
-    color: web.hint,
-  },
-
-  /* .gcall-mode-toggle / .gcall-mode-btn */
-  modeToggle: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  modeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  modeBtnIdle: {
-    borderColor: web.modeIdleBorder,
-    backgroundColor: web.modeIdleBg,
-  },
-  modeBtnActive: {
-    borderColor: web.transparent,
-    backgroundColor: web.transparent,
-  },
-  modeText: {
-    ...typography.body,
-    color: web.textSoft,
-  },
-  modeTextActive: {
-    ...typography.body,
-    color: web.white,
-  },
-
-  /* .gsched-approval-row */
-  approvalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: web.approvalBorder,
-    borderRadius: 8,
-    backgroundColor: web.approvalBg,
-  },
-  approvalCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  approvalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  approvalTitle: {
-    ...typography.bodyLg,
-    flex: 1,
-    color: web.textStrong,
-  },
-  approvalNote: {
-    ...typography.bodySm,
-    color: web.hint,
-  },
-
-  /* .gsched-switch */
-  switch: {
-    width: 40,
-    height: 22,
-    borderRadius: 999,
-    justifyContent: 'center',
-  },
-  switchTrackFill: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-  },
-  switchTrackOff: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    backgroundColor: web.switchTrack,
-  },
-  switchKnob: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: web.white,
-  },
-  switchKnobOn: {
-    transform: [{ translateX: 18 }],
-  },
-
-  /* .gsched-submit */
-  submit: {
-    minHeight: 52,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  submitDisabled: {
-    opacity: 0.7,
-  },
-  submitFill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 52,
-  },
-  submitLabel: {
-    ...typography.button,
-    color: web.white,
-  },
+  content: { paddingHorizontal: layout.screenPadding, paddingTop: spacing.md, gap: spacing.sm },
   checking: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  blockedNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-  },
-  blockedNoteText: {
-    ...typography.bodySm,
-    flexShrink: 1,
-    color: web.gold,
-  },
-  submitNote: {
-    ...typography.bodySm,
-    textAlign: 'center',
-    color: web.hint,
-  },
 
-  /* .gsched-side-card */
-  sideCard: {
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: web.cardBorder,
-    borderRadius: 8,
-    backgroundColor: web.sideBase,
-    overflow: 'hidden',
-  },
-  /* .gsched-sidebar gap is 16, the page grid gap is 20. */
-  mathCard: {
-    marginTop: -4,
-  },
-  h3: {
-    ...typography.h3,
-    color: web.textStrong,
-  },
-  sideSub: {
-    ...typography.bodySm,
-    marginTop: 4,
-    marginBottom: 14,
-    color: web.hint,
-  },
+  steps: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  step: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xxs, paddingLeft: spacing.xxs, paddingRight: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill },
+  stepDone: { borderColor: colors.successBorder },
+  stepNum: { width: 20, height: 20, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSoft },
+  stepNumDone: { backgroundColor: colors.successBg },
+  stepNumText: { ...typography.bodySm, fontFamily: fontFamily.semibold, color: colors.textMuted },
+  stepText: { ...typography.bodySm, fontFamily: fontFamily.medium, color: colors.textMuted },
+  stepTextDone: { color: colors.success },
 
-  /* .gsched-checklist */
-  checklist: {
-    gap: 12,
-  },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  checkText: {
-    ...typography.body,
-    flex: 1,
-    color: web.checkIdleText,
-  },
-  checkTextDone: {
-    ...typography.body,
-    flex: 1,
-    color: web.textStrong,
-  },
+  previewCol: { gap: spacing.sm },
+  card: { overflow: 'hidden', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.card },
+  cover: { minHeight: 168, justifyContent: 'flex-end', gap: spacing.xxs, padding: spacing.md, backgroundColor: colors.background },
+  mode: { position: 'absolute', top: spacing.md, left: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, backgroundColor: colors.chipSurface, borderRadius: radius.pill },
+  modeText: { ...typography.bodySm, fontFamily: fontFamily.medium, color: colors.white },
+  coverTitle: { ...typography.h1, color: colors.white },
+  coverSub: { ...typography.subtitle, color: colors.white, opacity: 0.85 },
+  cardBody: { gap: spacing.sm, padding: spacing.md },
+  cardDesc: { ...typography.subtitle, color: colors.textMuted },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill },
+  chipText: { ...typography.bodySm, fontFamily: fontFamily.medium, color: colors.textPrimary },
+  math: { gap: spacing.xs, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  mathTitle: { ...typography.body, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  mathRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  mathLabel: { ...typography.subtitle, color: colors.textMuted },
+  mathValue: { ...typography.subtitle, fontFamily: fontFamily.semibold, color: colors.warning },
+  ready: { ...typography.label, textAlign: 'center', color: colors.textMuted },
 
-  /* .gsched-math-row */
-  mathRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  mathRowDivided: {
-    borderTopWidth: 1,
-    borderTopColor: web.mathBorder,
-  },
-  mathLabel: {
-    ...typography.bodySm,
-    flex: 1,
-    color: web.textSoft,
-  },
-  mathValue: {
-    ...typography.h3,
-    color: web.gold,
-  },
+  block: { gap: spacing.sm, padding: spacing.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.card },
+  titleInput: { ...typography.h1, padding: 0, color: colors.textPrimary },
+  descInput: { ...typography.input, minHeight: size.input, padding: 0, color: colors.textPrimary },
+  h: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  hNum: { width: 24, height: 24, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentBg, borderWidth: 1, borderColor: colors.accentBorder },
+  hNumText: { ...typography.bodySm, color: colors.pink },
+  hText: { ...typography.metric, color: colors.textPrimary },
+
+  row: { gap: spacing.xs, paddingVertical: spacing.sm },
+  rowFirst: { paddingTop: 0 },
+  rowBorder: { borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowCopy: { flex: 1, gap: spacing.xxs },
+  rowTitle: { ...typography.bodyLg, color: colors.textPrimary },
+  rowHint: { ...typography.bodySm, color: colors.textMuted },
+  rowCtl: { marginLeft: spacing.lg + spacing.xs },
+
+  split: { flexDirection: 'row', gap: spacing.xs },
+  splitCell: { flex: 1 },
+  ctlInput: { ...typography.input, height: size.input, minWidth: 0, paddingHorizontal: spacing.sm, color: colors.textPrimary, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.border, borderRadius: radius.input },
+  ctlDisabled: { flex: 1, opacity: 0.6 },
+  timeWrap: { flex: 1, justifyContent: 'center' },
+  timeInput: { paddingRight: spacing.xl },
+  timeIcon: { position: 'absolute', right: spacing.sm },
+  unitWrap: { alignSelf: 'stretch', justifyContent: 'center' },
+  unitInput: { ...typography.input, height: size.input, paddingLeft: spacing.sm, paddingRight: spacing.xl + spacing.sm, textAlign: 'right', color: colors.textPrimary, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.border, borderRadius: radius.input },
+  unitText: { ...typography.bodySm, position: 'absolute', right: spacing.sm, color: colors.textDim },
+  seg: { flexDirection: 'row', gap: spacing.xxs, padding: spacing.xxs, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.border, borderRadius: radius.card },
+  segBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, borderRadius: radius.xs, overflow: 'hidden' },
+  segText: { ...typography.subtitle, fontFamily: fontFamily.medium, color: colors.textMuted },
+  segTextActive: { color: colors.white },
+  switchTrack: { width: 40, height: 22, borderRadius: radius.pill, backgroundColor: colors.borderStrong, overflow: 'hidden', justifyContent: 'center' },
+  switchKnob: { width: 16, height: 16, marginLeft: 3, borderRadius: radius.pill, backgroundColor: colors.white },
+  switchKnobOn: { marginLeft: 21 },
+
+  note: { ...typography.bodySm, textAlign: 'center', color: colors.textMuted, paddingBottom: spacing.sm },
 });
 
 export default ScheduleSessionScreen;

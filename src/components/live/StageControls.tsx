@@ -8,6 +8,8 @@ import { rf, wp } from '@utils/responsive';
 import { live } from './liveTokens';
 
 export interface StageControlsProps {
+  /** 'bottom' pins the cluster, centred, to the bottom edge of the stage. */
+  placement?: 'top' | 'bottom';
   camOn: boolean;
   micOn: boolean;
   onToggleCam: () => void;
@@ -40,8 +42,15 @@ export const StageControls = memo(
     onFlipCamera,
     showCamera = true,
     topOffset,
+    placement = 'top',
   }: StageControlsProps) => (
-    <View style={[styles.row, topOffset != null && { top: topOffset }]}>
+    <View
+      style={[
+        styles.row,
+        placement === 'bottom' && styles.rowBottom,
+        placement === 'top' && topOffset != null && { top: topOffset },
+      ]}
+    >
       {showCamera ? (
         <Pressable
           style={[styles.btn, !camOn && styles.btnMuted]}
@@ -91,6 +100,13 @@ const styles = StyleSheet.create({
     zIndex: 20,
     flexDirection: 'row',
     gap: 8,
+  },
+  rowBottom: {
+    top: undefined,
+    right: 0,
+    left: 0,
+    bottom: 14,
+    justifyContent: 'center',
   },
   btn: {
     width: wp(9),

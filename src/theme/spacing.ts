@@ -77,7 +77,7 @@ export const layout = {
    * on a wrapper inside the content — that is what made every non-dashboard
    * screen sit further from the edge than this one.
    */
-  screenPadding: 16,
+  screenPadding: 12,
   /** Cards: 20–22 top/sides, 18 bottom. */
   cardPadding: 16,
   cardPaddingBottom: 16,

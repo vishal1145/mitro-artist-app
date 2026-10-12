@@ -1,6 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Image,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import {
   CalloutStrong,
@@ -12,7 +21,8 @@ import { LoadFailed, PageHeader, Screen, Skeleton } from '@components/shared';
 import { LucideIcon } from '@components/ui';
 import { Text } from '@components/ui';
 import { useFollowers } from '@hooks/useFollowers';
-import { colors, fontFamily, fontSize, gradientDirection, layout, letterSpacing, lineHeight, webColors } from '@theme';
+import { useDebounce } from '@hooks/useDebounce';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, letterSpacing, lineHeight, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -30,8 +40,7 @@ import type { Follower, FollowerBadge } from '@app-types/api';
 /*  mobile block (`@media (max-width: 768px)` re-declares them).               */
 /* -------------------------------------------------------------------------- */
 
-const RADIUS = 14; // --premium-radius (mobile)
-const RADIUS_LG = 18; // --premium-radius-lg (mobile)
+const RADIUS_LG = 8; // radius-v2.css: .pulse-card → var(--radius-base)
 
 /* `data-tooltip` strings, verbatim from main.tsx. */
 const HINT_PULSE =
@@ -50,15 +59,6 @@ const BADGE_LABEL: Record<FollowerBadge, string> = {
   session_regular: 'Session regular',
   returning_fan: 'Returning fan',
   follower: 'Follower',
-};
-
-/** `followerBadgeClass()` → `.f-badge.{top|new|returning|regular|sessions}`. */
-const BADGE_TINT: Record<FollowerBadge, { ink: string; fill: string }> = {
-  top_supporter: { ink: webColors.green, fill: webColors.badgeGreen },
-  new_follower: { ink: webColors.cyan, fill: webColors.badgeCyan },
-  returning_fan: { ink: webColors.gold, fill: webColors.badgeGold },
-  session_regular: { ink: webColors.purple, fill: webColors.badgePurple },
-  follower: { ink: webColors.pinkHot, fill: webColors.badgePink },
 };
 
 /** `followerInitials()`. */
@@ -83,24 +83,56 @@ const formatFollowedAgo = (iso: string): string => {
   return `Followed ${diffYears} year${diffYears === 1 ? '' : 's'} ago`;
 };
 
+/** `.fl-card` meta line. */
 const activityText = (f: Follower): string =>
   f.interactionCount > 0
-    ? `${grouped(f.totalCoinsSpent)} coins · ${f.interactionCount} interaction${f.interactionCount === 1 ? '' : 's'}`
+    ? `${f.interactionCount} interaction${f.interactionCount === 1 ? '' : 's'}`
     : formatFollowedAgo(f.followedAtUtc);
 
-/** One `.follower-card` skeleton — same block sizes the web renders. */
-const CardSkeleton = () => (
-  <View style={styles.card}>
-    <Skeleton width={46} height={46} round={23} />
-    <View style={styles.skelMain}>
-      <Skeleton width={64} height={16} round={999} />
-      <Skeleton width="60%" height={13} round={6} />
-      <Skeleton width="40%" height={10} round={6} />
-    </View>
-    <View style={styles.skelRight}>
-      <Skeleton width={74} height={12} round={6} />
-      <Skeleton width={92} height={28} round={8} />
-    </View>
+type TabKey = 'all' | FollowerBadge;
+const TABS: readonly { key: TabKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'top_supporter', label: 'Top supporters' },
+  { key: 'session_regular', label: 'Session regulars' },
+  { key: 'new_follower', label: 'New followers' },
+];
+
+/** `.fl-scope .tone-*`. */
+const TONE: Record<FollowerBadge, { ink: string; bg: string; border: string }> = {
+  top_supporter: { ink: colors.success, bg: colors.successBg, border: colors.successBorder },
+  session_regular: { ink: webColors.uploadInk, bg: colors.accentBg, border: colors.accentBorder },
+  new_follower: { ink: colors.pink, bg: colors.accentBg, border: colors.borderHot },
+  returning_fan: { ink: colors.info, bg: colors.infoSoft, border: colors.infoBorder },
+  follower: { ink: colors.textMuted, bg: colors.surfaceHover, border: colors.border },
+};
+
+const MessageButton = ({ f, onPress }: { f: Follower; onPress: () => void }) => (
+  <Pressable
+    style={styles.msgBtn}
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityLabel={`Message ${f.displayName}`}
+  >
+    <LucideIcon name="message-circle" size={rf(13)} color={colors.textMuted} />
+    <Text style={styles.msgBtnText}>Message</Text>
+  </Pressable>
+);
+
+const Initials = ({ name, style, textStyle }: { name: string; style: object; textStyle: object }) => (
+  <LinearGradient
+    colors={gradients.primary}
+    start={gradientDirection.diagonal.start}
+    end={gradientDirection.diagonal.end}
+    style={style}
+  >
+    <Text style={textStyle}>{followerInitials(name)}</Text>
+  </LinearGradient>
+);
+
+/** `.fl-skel` — 3:4 tile. */
+const CardSkeleton = ({ width }: { width: number }) => (
+  <View style={{ width }}>
+    <Skeleton width="100%" height={Math.round(width * (4 / 3))} round={8} />
   </View>
 );
 
@@ -109,6 +141,19 @@ const FollowersScreen = () => {
   const { data, isLoading, isError, error, refetch, isRefetching } = useFollowers();
   const summary = data?.summary;
   const followers = data?.followers ?? [];
+  const [tab, setTab] = useState<TabKey>('all');
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query);
+  const { width: winW } = useWindowDimensions();
+  /** `.fl-grid` — two columns at phone width, 16px gap. */
+  const cardW = Math.floor((winW - layout.screenPadding * 2 - 16) / 2);
+
+  const tabCount = (k: TabKey) =>
+    k === 'all' ? followers.length : followers.filter((f) => f.badge === k).length;
+  const needle = debouncedQuery.trim().toLowerCase();
+  const visible = followers.filter(
+    (f) => (tab === 'all' || f.badge === tab) && (needle === '' || f.displayName.toLowerCase().includes(needle)),
+  );
 
   const messageFollower = (f: Follower) =>
     router.push({
@@ -207,93 +252,112 @@ const FollowersScreen = () => {
             <LucideIcon name="check" size={rf(14)} color={webColors.gold} />
             <Text style={styles.pillStrong}>{summary?.topSupporterCount ?? 0}</Text>
             <Text style={styles.pillText}>top supporters</Text>
-            <HelpIcon hint={HINT_TOP_SUPPORTERS} />
+            <View style={styles.pillHelp}>
+              <HelpIcon hint={HINT_TOP_SUPPORTERS} />
+            </View>
           </View>
           <View style={styles.pulsePill}>
             <LucideIcon name="users" size={rf(14)} color={webColors.gold} />
             <Text style={styles.pillStrong}>{summary?.sessionRegularCount ?? 0}</Text>
             <Text style={styles.pillText}>session regulars</Text>
-            <HelpIcon hint={HINT_SESSION_REGULARS} />
+            <View style={styles.pillHelp}>
+              <HelpIcon hint={HINT_SESSION_REGULARS} />
+            </View>
           </View>
         </View>
       </View>
 
-      {/* .follower-grid — one column at phone width (max-width: 720px) */}
-      <View style={styles.grid}>
-        {isLoading ? (
-          <>
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-          </>
-        ) : isError ? (
-          <LoadFailed message={getErrorMessage(error)} onRetry={refetch} />
-        ) : followers.length === 0 ? (
-          <Text style={styles.dimHint}>
-            No followers yet — once fans favorite your profile, they&apos;ll show up
-            here.
-          </Text>
-        ) : (
-          followers.map((f) => {
-            const tint = BADGE_TINT[f.badge];
-            return (
-              <View key={f.userId} style={styles.card}>
-                {f.avatarUrl ? (
-                  <Image source={{ uri: f.avatarUrl }} style={styles.avatarImg} />
-                ) : (
-                  <LinearGradient
-                    colors={webColors.avatarHot}
-                    start={gradientDirection.diagonal.start}
-                    end={gradientDirection.diagonal.end}
-                    style={styles.avatar}
-                  >
-                    <Text style={styles.avatarText}>
-                      {followerInitials(f.displayName)}
-                    </Text>
-                  </LinearGradient>
-                )}
-
-                <View style={styles.main}>
-                  <View style={[styles.badge, { backgroundColor: tint.fill }]}>
-                    <Text style={[styles.badgeText, { color: tint.ink }]}>
-                      {BADGE_LABEL[f.badge]}
-                    </Text>
-                  </View>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {f.displayName}
-                  </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {activityText(f)}
-                  </Text>
-                </View>
-
-                <View style={styles.right}>
-                  {/* .f-coins — gold figure + the faint (?) beside it */}
-                  <View style={styles.coinsRow}>
-                    <Text style={styles.coins}>
-                      {`${grouped(f.totalCoinsSpent)} coins`}
-                    </Text>
-                    <HelpIcon hint={HINT_COINS} />
-                  </View>
-                  <Pressable
-                    style={styles.msgBtn}
-                    onPress={() => messageFollower(f)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Message ${f.displayName}`}
-                  >
-                    <LucideIcon
-                      name="message-circle"
-                      size={rf(13)}
-                      color={webColors.muted}
+      <View style={styles.scope}>
+        <View style={styles.toolbar}>
+          <View style={styles.search}>
+            <LucideIcon name="search" size={rf(15)} color={colors.textMuted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search followers"
+              placeholderTextColor={colors.textDim}
+              style={styles.searchInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+          </View>
+          <View style={styles.tabs}>
+            {TABS.map((t) => {
+              const on = tab === t.key;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => setTab(t.key)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  style={on ? styles.tabOn : styles.tab}
+                >
+                  {on ? (
+                    <LinearGradient
+                      colors={gradients.primary}
+                      start={gradientDirection.diagonal.start}
+                      end={gradientDirection.diagonal.end}
+                      style={StyleSheet.absoluteFill}
                     />
-                    <Text style={styles.msgBtnText}>Message</Text>
-                  </Pressable>
+                  ) : null}
+                  <Text style={on ? styles.tabTextOn : styles.tabText}>{t.label}</Text>
+                  <Text style={[on ? styles.tabTextOn : styles.tabText, styles.tabCount]}>
+                    {tabCount(t.key)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.grid}>
+          {isLoading ? (
+            [0, 1, 2, 3].map((i) => <CardSkeleton key={i} width={cardW} />)
+          ) : isError ? (
+            <LoadFailed message={getErrorMessage(error)} onRetry={refetch} />
+          ) : followers.length === 0 ? (
+            <Text style={styles.dimHint}>
+              No followers yet — once fans favorite your profile, they&apos;ll show up here.
+            </Text>
+          ) : visible.length === 0 ? (
+            <Text style={styles.dimHint}>No followers match this view.</Text>
+          ) : (
+            visible.map((f) => {
+              const tone = TONE[f.badge];
+              return (
+                <View key={f.userId} style={[styles.flCard, { width: cardW }]}>
+                  <View style={styles.photo}>
+                    {f.avatarUrl ? (
+                      <Image source={{ uri: f.avatarUrl }} style={styles.photoImg} />
+                    ) : (
+                      <Initials name={f.displayName} style={styles.photoImg} textStyle={styles.photoInitials} />
+                    )}
+                    <View
+                      style={[
+                        styles.flBadge,
+                        { backgroundColor: tone.bg, borderColor: tone.border },
+                      ]}
+                    >
+                      <Text style={[styles.flBadgeText, { color: tone.ink }]} numberOfLines={1}>
+                        {BADGE_LABEL[f.badge]}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.flBody}>
+                    <Text style={styles.flName} numberOfLines={1}>{f.displayName}</Text>
+                    <Text style={styles.flSmall} numberOfLines={1}>{activityText(f)}</Text>
+                    <View style={styles.coinsRow}>
+                      <Text style={styles.coins}>{`${grouped(f.totalCoinsSpent)} coins`}</Text>
+                      <HelpIcon hint={HINT_COINS} />
+                    </View>
+                  </View>
+                  <MessageButton f={f} onPress={() => messageFollower(f)} />
                 </View>
-              </View>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </View>
       </View>
     </Screen>
   );
@@ -330,9 +394,8 @@ const styles = StyleSheet.create({
 
   /* .pulse-card — flex-wrap: wrap, so it stacks to a column at phone width */
   pulseCard: {
-    gap: 20,
-    paddingVertical: 22,
-    paddingHorizontal: 24,
+    gap: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: webColors.panelBorder,
     borderRadius: RADIUS_LG,
@@ -379,26 +442,32 @@ const styles = StyleSheet.create({
     color: webColors.muted,
   },
   pulsePills: {
-    gap: 8,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  pillHelp: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
   },
   /* .pulse-pill — 0.78rem, surface-soft on the 13% border */
   pulsePill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    alignItems: 'flex-start',
     backgroundColor: webColors.surfaceSoft,
-    borderWidth: 1,
     borderColor: webColors.panelBorder,
-    borderRadius: 999,
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+    padding: 12,
   },
 
   /* .pulse-pill strong — --premium-text */
   pillStrong: {
     fontFamily: fontFamily.bold,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.subheading,
+    lineHeight: lineHeight.subheading,
     color: webColors.textStrong,
   },
   pillText: {
@@ -407,110 +476,162 @@ const styles = StyleSheet.create({
     color: webColors.muted,
   },
 
-  /* .follower-grid / .follower-card */
-  grid: {
-    gap: 12,
-  },
-  card: {
+  /* .fl-scope — gap-section 32 */
+  scope: { gap: 32 },
+  flHead: {
+    alignItems: 'center',
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 15,
-    paddingHorizontal: 17,
-    backgroundColor: webColors.surface,
-    borderWidth: 1,
-    borderColor: webColors.panelBorder,
-    borderRadius: RADIUS,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  /* .f-avatar — 52px circle, linear-gradient(135deg, #ff3fad, #6b2df4) */
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* .f-avatar-img — object-fit: cover */
-  avatarImg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    resizeMode: 'cover',
-  },
-  avatarText: {
+  flHeadTitle: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  flH2: {
+    color: colors.text,
     fontFamily: fontFamily.bold,
     fontSize: fontSize.subheading,
-    color: colors.white,
+    lineHeight: lineHeight.subheading,
+    letterSpacing: letterSpacing.subheading,
   },
-  /* .f-main { flex: 1; min-width: 0 } */
-  main: {
-    flex: 1,
-    minWidth: 0,
-  },
-  /* .f-badge — 0.625rem / 800 / 0.03em */
-  badge: {
-    alignSelf: 'flex-start',
-    marginBottom: 5,
-    paddingVertical: 2,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-  },
-  badgeText: {
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.mono,
-    letterSpacing: letterSpacing.small,
-  },
-  /* .f-main strong — 0.9rem / 700 */
-  name: {
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.small,
-    lineHeight: lineHeight.small,
-    color: webColors.textStrong,
-  },
+  flMeta: { color: colors.textDim, fontFamily: fontFamily.regular, fontSize: fontSize.small },
+  flSmall: { color: colors.textDim, fontFamily: fontFamily.regular, fontSize: fontSize.xs },
 
-  /* .f-main small — 0.72rem / --premium-dim */
-  meta: {
-    fontFamily: fontFamily.regular,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.mono,
-    color: webColors.dim,
-  },
-  /* .f-right — column, right-aligned, gap 8 */
-  right: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  /* .f-coins — inline-flex, gap 4 */
-  coinsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  coins: {
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.small,
-    color: webColors.gold,
-  },
-  /* .msg-btn — 0.72rem / 700 / surface-soft pill */
-  msgBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 13,
-    backgroundColor: webColors.surfaceSoft,
+  topGrid: { gap: 16 },
+  topCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: webColors.panelBorder,
-    borderRadius: 999,
+    gap: 16,
+    overflow: 'hidden',
+    padding: 16,
   },
-
-  msgBtnText: {
-    fontFamily: fontFamily.bold,
+  topCardGold: {},
+  rank: {
+    color: colors.textDim,
+    fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
-    color: webColors.muted,
+    letterSpacing: letterSpacing.mono,
+    position: 'absolute',
+    right: 12,
+    top: 12,
   },
+  rankGold: { color: colors.warning },
+  topRow: { alignItems: 'center', flexDirection: 'row', gap: 16 },
+  topAvatar: {
+    alignItems: 'center',
+    borderRadius: 24,
+    height: 48,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 48,
+  },
+  topInitials: { color: colors.white, fontFamily: fontFamily.bold, fontSize: fontSize.body },
+  topMain: { flex: 1, gap: 4, minWidth: 0 },
+  topName: { color: colors.text, fontFamily: fontFamily.bold, fontSize: fontSize.body },
+  topCoins: {
+    color: colors.warning,
+    fontFamily: fontFamily.bold,
+    fontSize: fontSize.subheading,
+    lineHeight: lineHeight.subheading,
+  },
+  topCoinsSmall: { color: colors.textDim, fontFamily: fontFamily.regular, fontSize: fontSize.xs },
+
+  toolbar: { gap: 12 },
+  search: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    height: 40,
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    color: colors.text,
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.small,
+    minWidth: 0,
+    paddingVertical: 0,
+  },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tab: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceSoft,
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  tabOn: {
+    alignItems: 'center',
+    borderColor: colors.transparent,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  tabText: { color: colors.textMuted, fontFamily: fontFamily.medium, fontSize: fontSize.small },
+  tabTextOn: { color: colors.text, fontFamily: fontFamily.medium, fontSize: fontSize.small },
+  tabCount: { fontSize: fontSize.xs, opacity: 0.8 },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  flCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+  },
+  photo: {
+    aspectRatio: 1,
+    backgroundColor: colors.surfaceSoft,
+    borderRadius: 8,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  photoImg: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  photoInitials: { color: colors.white, fontFamily: fontFamily.bold, fontSize: fontSize.headingLg },
+  flBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    left: 8,
+    maxWidth: '90%',
+    paddingHorizontal: 8,
+    position: 'absolute',
+    top: 8,
+  },
+  flBadgeText: { fontFamily: fontFamily.bold, fontSize: fontSize.xs },
+  flBody: { gap: 4, minWidth: 0 },
+  flName: { color: colors.text, fontFamily: fontFamily.bold, fontSize: fontSize.small },
+  coinsRow: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  coins: { color: colors.warning, fontFamily: fontFamily.bold, fontSize: fontSize.small },
+  msgBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    height: 32,
+    justifyContent: 'center',
+    marginTop: 'auto',
+  },
+  msgBtnText: { color: colors.textMuted, fontFamily: fontFamily.regular, fontSize: fontSize.small },
 
   /* .dim-hint — 0.85rem, --text-soft fallback #9b9bab, 24px pad, centered */
   dimHint: {

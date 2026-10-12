@@ -1,48 +1,38 @@
 import { Feather } from '@expo/vector-icons';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   View,
   type GestureResponderEvent,
-  type ViewStyle,
 } from 'react-native';
 
+import { GradientButton } from '@components/ui/GradientButton';
 import { Text } from '@components/ui/Text';
-import { colors, radius, spacing, HIT_TARGET } from '@theme';
-import { rf, wp } from '@utils/responsive';
+import { colors, radius, size, spacing, HIT_TARGET } from '@theme';
+import { rf } from '@utils/responsive';
 
-import type { ButtonProps, ButtonSize, ButtonVariant } from './types';
+import type { ButtonProps, ButtonVariant } from './types';
 
-const VARIANT_BG: Record<ButtonVariant, string> = {
-  primary: colors.primary,
-  secondary: colors.surfaceElevated,
-  ghost: colors.transparent,
-  danger: colors.error,
-};
-
-const VARIANT_TEXT: Record<ButtonVariant, keyof typeof colors> = {
-  primary: 'onPrimary',
+const VARIANT_TEXT: Record<Exclude<ButtonVariant, 'primary'>, keyof typeof colors> = {
   secondary: 'textPrimary',
-  ghost: 'primary',
+  ghost: 'pink',
+  plain: 'textPrimary',
   danger: 'white',
 };
 
-const SIZE_HEIGHT: Record<ButtonSize, number> = {
-  sm: HIT_TARGET,
-  md: 52,
-  lg: 58,
-};
+const HEIGHT = { sm: HIT_TARGET, md: size.cta, lg: 52 } as const;
 
 /**
- * Accessible, tokenized button. Handles loading + disabled visual states,
- * optional icons, and a guaranteed 44pt minimum touch target.
+ * Every button in the app. `primary` is the brand gradient; `secondary` is the
+ * web's outlined surface button; `ghost` is a quiet text button; `danger` is
+ * destructive. Same height, radius and type on every screen.
  */
 const ButtonComponent = ({
   label,
   variant = 'primary',
-  size = 'md',
+  size: buttonSize = 'md',
   loading = false,
   disabled = false,
   fullWidth = true,
@@ -55,16 +45,6 @@ const ButtonComponent = ({
   ...rest
 }: ButtonProps) => {
   const isInactive = disabled || loading;
-  const textColor = VARIANT_TEXT[variant];
-
-  const containerStyle = useMemo<ViewStyle>(
-    () => ({
-      height: SIZE_HEIGHT[size],
-      backgroundColor: VARIANT_BG[variant],
-      alignSelf: fullWidth ? 'stretch' : 'flex-start',
-    }),
-    [size, variant, fullWidth],
-  );
 
   const handlePress = useCallback(
     (event: GestureResponderEvent) => {
@@ -76,6 +56,27 @@ const ButtonComponent = ({
     [isInactive, onPress],
   );
 
+  if (variant === 'primary') {
+    return (
+      <GradientButton
+        label={label}
+        size={buttonSize === 'lg' ? 'lg' : 'md'}
+        fullWidth={fullWidth}
+        loading={loading}
+        disabled={disabled}
+        leftIcon={leftIcon}
+        rightIcon={rightIcon}
+        style={style}
+        onPress={onPress}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        {...rest}
+      />
+    );
+  }
+
+  const textColor = VARIANT_TEXT[variant];
+
   return (
     <Pressable
       onPress={handlePress}
@@ -86,8 +87,9 @@ const ButtonComponent = ({
       accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         styles.base,
-        containerStyle,
-        variant === 'ghost' ? styles.ghostBorder : null,
+        { height: HEIGHT[buttonSize], alignSelf: fullWidth ? 'stretch' : 'flex-start' },
+        variant === 'secondary' ? styles.secondary : null,
+        variant === 'danger' ? styles.danger : null,
         pressed && !isInactive ? styles.pressed : null,
         isInactive ? styles.inactive : null,
         style,
@@ -99,23 +101,13 @@ const ButtonComponent = ({
       ) : (
         <View style={styles.content}>
           {leftIcon ? (
-            <Feather
-              name={leftIcon}
-              size={rf(18)}
-              color={colors[textColor]}
-              style={styles.leftIcon}
-            />
+            <Feather name={leftIcon} size={rf(18)} color={colors[textColor]} style={styles.leftIcon} />
           ) : null}
-          <Text variant="button" color={textColor}>
+          <Text variant="button" color={textColor} numberOfLines={1}>
             {label}
           </Text>
           {rightIcon ? (
-            <Feather
-              name={rightIcon}
-              size={rf(18)}
-              color={colors[textColor]}
-              style={styles.rightIcon}
-            />
+            <Feather name={rightIcon} size={rf(18)} color={colors[textColor]} style={styles.rightIcon} />
           ) : null}
         </View>
       )}
@@ -127,20 +119,26 @@ export const Button = memo(ButtonComponent);
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
+    borderRadius: radius.button,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: HIT_TARGET,
+    backgroundColor: colors.transparent,
+  },
+  // Web .dv2-btn: surface-soft fill, 1px border.
+  secondary: {
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  danger: {
+    backgroundColor: colors.error,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  ghostBorder: {
-    borderWidth: wp(0.3),
-    borderColor: colors.primary,
   },
   pressed: {
     opacity: 0.85,

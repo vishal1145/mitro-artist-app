@@ -1,20 +1,25 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EarningsBar, Screen, Skeleton, VerificationBanner } from '@components/shared';
-import { Card, LucideIcon, Text } from '@components/ui';
+import { Button, Card, GradientButton, LucideIcon, Text } from '@components/ui';
 import type { LucideIconName } from '@components/ui';
 import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
 import { useFollowers } from '@hooks/useFollowers';
 import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, lineHeight, radius, size, spacing, typography, webColors } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, lineHeight, radius, spacing, typography, webColors } from '@theme';
 import { compactCount, duration, formatTokens, grouped, relativeShort, shortDate } from '@utils/format';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
 
 /** How many past broadcasts / notifications the dashboard panels show. */
+/** Same studio photo the web dashboard hero uses (main.tsx neonStudioImage). */
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80';
+
 const RECENT_COUNT = 5;
 const NOTES_COUNT = 5;
 
@@ -123,12 +128,15 @@ const HomeScreen = () => {
       {showSkeleton ? renderSkeleton() : (
       <>
       {/* ── Creator hero (dark, web-matched) ── */}
-      <LinearGradient
-        colors={gradients.heroWash}
-        start={gradientDirection.diagonal.start}
-        end={gradientDirection.diagonal.end}
-        style={styles.hero}
-      >
+      <View style={styles.hero}>
+        <Image source={{ uri: HERO_IMAGE }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+        <LinearGradient
+          pointerEvents="none"
+          colors={gradients.heroPhotoScrim}
+          start={gradientDirection.horizontal.start}
+          end={gradientDirection.horizontal.end}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.heroEyebrow}>
           <LucideIcon name="layout-dashboard" size={rf(14)} color={colors.pink} />
           <Text style={styles.heroEyebrowText}>CREATOR DASHBOARD</Text>
@@ -159,21 +167,12 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        <Pressable style={styles.heroPrimary} onPress={() => guard(() => router.push('/(app)/(tabs)/live'))} accessibilityRole="button" accessibilityLabel="Start Live">
-          <LinearGradient colors={gradients.primary} start={gradientDirection.diagonal.start} end={gradientDirection.diagonal.end} style={styles.heroPrimaryFill}>
-            <LucideIcon name="radio" size={rf(16)} color={colors.white} />
-            <Text style={styles.heroPrimaryText}>Start Live</Text>
-          </LinearGradient>
-        </Pressable>
-        <Pressable style={styles.heroSecondary} onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))} accessibilityRole="button" accessibilityLabel="Schedule Session">
-          <LucideIcon name="calendar-days" size={rf(15)} color={colors.white} />
-          <Text style={styles.heroSecondaryText}>Schedule Session</Text>
-        </Pressable>
-        <Pressable style={styles.heroSecondary} onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))} accessibilityRole="button" accessibilityLabel="Private Calls">
-          <LucideIcon name="phone" size={rf(15)} color={colors.white} />
-          <Text style={styles.heroSecondaryText}>Private Calls</Text>
-        </Pressable>
-      </LinearGradient>
+        <View style={styles.heroActions}>
+          <GradientButton label="Start Live" leftIcon="radio" fullWidth={false} onPress={() => guard(() => router.push('/(app)/(tabs)/live'))} />
+          <Button variant="secondary" style={styles.heroBtn} fullWidth={false} label="Schedule Session" leftIcon="calendar" onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))} />
+          <Button variant="secondary" style={styles.heroBtn} fullWidth={false} label="Private Calls" leftIcon="phone" onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))} />
+        </View>
+      </View>
 
       {/* ── Summary strip ── */}
       <View style={styles.summaryStrip}>
@@ -310,7 +309,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.hero,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.lg,
+    padding: spacing.md + spacing.xxs,
     gap: spacing.md,
     marginTop: spacing.sm,
     overflow: 'hidden',
@@ -345,25 +344,9 @@ const styles = StyleSheet.create({
   heroPillText: {
     ...typography.bodySm,
   },
-  heroPrimary: { height: size.cta, borderRadius: radius.button, overflow: 'hidden' },
-  heroPrimaryFill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
-  heroPrimaryText: {
-    ...typography.button,
-  },
-  heroSecondary: {
-    height: size.cta,
-    borderRadius: radius.button,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  heroSecondaryText: {
-    ...typography.buttonSm,
-  },
+  // Secondary hero buttons sit over the photo, so they need a solid fill + stronger border to read as buttons.
+  heroBtn: { backgroundColor: colors.glassSurface, borderColor: colors.borderStrong },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
 
   calloutStrong: { fontFamily: fontFamily.bold, color: colors.textPrimary },
 
@@ -424,7 +407,7 @@ const styles = StyleSheet.create({
 
   // Notification row
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.sm },
-  noteIcon: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden' },
+  noteIcon: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: webColors.circleBorder, overflow: 'hidden' },
   noteMain: { flex: 1, gap: 3 },
   noteTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   noteTitle: { flex: 1 },

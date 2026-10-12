@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -14,24 +14,17 @@ import {
   View,
 } from 'react-native';
 
-import { PageHeader, Screen, SkeletonRows } from '@components/shared';
-import { Avatar, Text } from '@components/ui';
+import { ConfirmDialog, PageHeader, Screen, SkeletonRows } from '@components/shared';
+import { LucideIcon, Text } from '@components/ui';
 import { useConversations } from '@hooks/usePrivateMessages';
+import { useDebounce } from '@hooks/useDebounce';
 import { useProfile } from '@hooks/useProfile';
 import { queryKeys } from '@constants/queryKeys';
 import { privateMessageApi } from '@services/api/privateMessageApi';
 import type { ArtistConversationSummary } from '@app-types/api';
-import { colors, fontFamily, layout, radius, spacing, typography, webColors } from '@theme';
+import { colors, fontFamily, fontSize, layout, radius, spacing, typography, webColors } from '@theme';
 import { rf } from '@utils/responsive';
 import { showToast } from '@utils/toast';
-
-const AVATAR_COLORS = [colors.pink, colors.cyan, colors.gold];
-
-function colorFor(id: string): string {
-  let sum = 0;
-  for (let i = 0; i < id.length; i += 1) sum += id.charCodeAt(i);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
-}
 
 function initialsFor(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -40,16 +33,14 @@ function initialsFor(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+/** Web `formatRelativeTime` — "just now", "5m ago", "3h ago", "5d ago". */
 function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return 'now';
-  if (min < 60) return `${min}m`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d`;
-  return new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' });
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
 }
 
 /** The web's `.pcall-status-pill` — ON is green, OFF is a neutral chip. */
@@ -66,9 +57,19 @@ const MessagesScreen = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const [tab, setTab] = useState<'all' | 'unread'>('all');
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query);
+
   const { data, isLoading } = useConversations();
   const conversations = data ?? [];
-  const unread = conversations.reduce((n, c) => n + (c.unreadCount ?? 0), 0);
+  const unreadChats = conversations.filter((c) => (c.unreadCount ?? 0) > 0).length;
+  const needle = debouncedQuery.trim().toLowerCase();
+  const visible = conversations.filter(
+    (c) =>
+      (tab === 'all' || (c.unreadCount ?? 0) > 0) &&
+      (!needle || (c.userDisplayName ?? 'Fan').toLowerCase().includes(needle)),
+  );
 
   /*
    * Accepting messages (and the per-message price) lives on the artist
@@ -123,28 +124,23 @@ const MessagesScreen = () => {
     });
   };
 
-  const confirmDeleteConversation = (c: ArtistConversationSummary) => {
-    const name = c.userDisplayName || 'this fan';
-    Alert.alert(
-      'Delete chat?',
-      `This removes your entire chat with ${name} from your inbox. It stays visible to them.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const res = await privateMessageApi.deleteConversation(c.userId);
-            if (res.success) {
-              queryClient.invalidateQueries({ queryKey: queryKeys.messages.list() });
-              showToast('Chat deleted.', 'success');
-            } else {
-              showToast(res.error, 'error');
-            }
-          },
-        },
-      ],
-    );
+  const [deleteTarget, setDeleteTarget] = useState<ArtistConversationSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDeleteConversation = (c: ArtistConversationSummary) => setDeleteTarget(c);
+
+  const performDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    const res = await privateMessageApi.deleteConversation(deleteTarget.userId);
+    setDeleting(false);
+    if (res.success) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.messages.list() });
+      showToast('Chat deleted.', 'success');
+    } else {
+      showToast(res.error, 'error');
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -155,44 +151,64 @@ const MessagesScreen = () => {
       contentContainerStyle={styles.content}
       header={
         <PageHeader
+          eyebrow="PRIVATE MESSAGE"
+          eyebrowIcon="message-circle"
           title="Messages"
+          subtitle="Fans pay to message you directly — your replies are always free."
           onBack={() => router.back()}
+          titleAdornment={loadingSettings ? null : <StatusPill on={acceptsMessages} />}
           right={
-            <View style={styles.headRight}>
-              {unread ? (
-                <View style={styles.headBadge}>
-                  <Text style={styles.headBadgeText}>{unread}</Text>
-                </View>
-              ) : null}
-              <Pressable
-                onPress={() => setSettingsOpen(true)}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Message settings"
-                style={[styles.gear, acceptsMessages ? styles.gearOn : null]}
-              >
-                <Feather
-                  name="settings"
-                  size={rf(17)}
-                  color={acceptsMessages ? webColors.green : colors.textPrimary}
-                />
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={() => setSettingsOpen(true)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Message settings"
+              style={[styles.gear, acceptsMessages ? styles.gearOn : null]}
+            >
+              <LucideIcon
+                name="settings"
+                size={rf(18)}
+                color={acceptsMessages ? webColors.green : colors.textPrimary}
+              />
+            </Pressable>
           }
         />
       }
     >
-      {/* Title row — the ON/OFF pill sits beside it, as on the web. */}
-      <View style={styles.titleRow}>
-        <View style={styles.eyebrowRow}>
-          <Feather name="message-circle" size={rf(13)} color={webColors.pinkLight} />
-          <Text style={styles.eyebrow}>Private Message</Text>
+      <View>
+        <View style={styles.cardHead}>
+          <View style={styles.search}>
+            <LucideIcon name="search" size={rf(16)} color={colors.textDim} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search"
+              placeholderTextColor={colors.textDim}
+              style={styles.searchInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="Search conversations"
+            />
+          </View>
+          <View style={styles.tabs}>
+            {(['all', 'unread'] as const).map((t) => (
+              <Pressable
+                key={t}
+                onPress={() => setTab(t)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === t }}
+                style={[styles.tab, tab === t ? styles.tabOn : null]}
+              >
+                <Text style={[styles.tabText, tab === t ? styles.tabTextOn : null]}>
+                  {t === 'all' ? 'All' : 'Unread'}
+                </Text>
+                {t === 'unread' && unreadChats > 0 ? (
+                  <Text style={styles.tabN}>{unreadChats}</Text>
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
         </View>
-        {loadingSettings ? null : <StatusPill on={acceptsMessages} />}
-      </View>
-      <Text style={styles.pageSub}>
-        Fans pay to message you directly — your replies are always free.
-      </Text>
 
       {isLoading && conversations.length === 0 ? (
         <SkeletonRows count={6} style={styles.skeleton} />
@@ -221,55 +237,69 @@ const MessagesScreen = () => {
         </View>
       ) : (
         <View style={styles.list}>
-          {conversations.map((c, i) => {
+          {visible.length === 0 ? <Text style={styles.none}>No matches.</Text> : null}
+          {visible.map((c) => {
             const name = c.userDisplayName ?? 'Fan';
             const preview = `${c.lastMessageSenderType === 'artist' ? 'You: ' : ''}${c.lastMessageText ?? ''}`;
             return (
               <Pressable
                 key={c.userId}
-                style={[styles.row, i === 0 ? null : styles.rowDivider]}
+                style={styles.row}
                 onPress={() => openThread(c)}
                 onLongPress={() => confirmDeleteConversation(c)}
                 delayLongPress={350}
                 accessibilityRole="button"
                 accessibilityLabel={`Conversation with ${name}. Long press to delete.`}
               >
-                <Avatar
-                  uri={c.userAvatarUrl ?? undefined}
-                  initials={initialsFor(name)}
-                  name={name}
-                  size="lg"
-                  color={colorFor(c.userId)}
-                />
+                {c.userAvatarUrl ? (
+                  <Image source={{ uri: c.userAvatarUrl }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initialsFor(name)}</Text>
+                  </View>
+                )}
 
                 <View style={styles.rowText}>
-                  <Text variant="bodyLg" color="textPrimary" style={styles.name} numberOfLines={1}>
-                    {name}
-                  </Text>
-                  <Text
-                    variant="bodySm"
-                    color={c.unreadCount ? 'textSecondary' : 'textMuted'}
-                    numberOfLines={1}
-                  >
-                    {preview}
-                  </Text>
-                </View>
-
-                <View style={styles.rowMeta}>
-                  <Text variant="bodySm" color="textMuted">
-                    {relativeTime(c.lastMessageAtUtc)}
-                  </Text>
-                  {c.unreadCount ? (
-                    <View style={styles.unread}>
-                      <Text style={styles.unreadText}>{c.unreadCount}</Text>
-                    </View>
-                  ) : null}
+                  <View style={styles.line}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {name}
+                    </Text>
+                    <Text style={[styles.time, c.unreadCount ? styles.timeUnread : null]}>
+                      {relativeTime(c.lastMessageAtUtc)}
+                    </Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text
+                      style={[styles.preview, c.unreadCount ? styles.previewUnread : null]}
+                      numberOfLines={1}
+                    >
+                      {preview}
+                    </Text>
+                    {c.unreadCount ? (
+                      <View style={styles.unread}>
+                        <Text style={styles.unreadText}>{c.unreadCount}</Text>
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
               </Pressable>
             );
           })}
         </View>
       )}
+      </View>
+
+      <ConfirmDialog
+        visible={deleteTarget !== null}
+        title="Delete chat?"
+        message={`This removes your entire chat with ${deleteTarget?.userDisplayName || 'this fan'} from your inbox. It stays visible to them.`}
+        confirmLabel="Delete"
+        confirmLoading={deleting}
+        onConfirm={() => void performDelete()}
+        onCancel={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}
+      />
 
       {/*
         Settings — the web's popover, as a centred popup.
@@ -382,27 +412,9 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: layout.screenPadding,
   },
-  headRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headBadge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.pink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 7,
-  },
-  headBadgeText: {
-    ...typography.badge,
-    color: colors.white,
-  },
   gear: {
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -415,22 +427,47 @@ const styles = StyleSheet.create({
     backgroundColor: webColors.greenChip,
   },
 
-  // Eyebrow + ON/OFF pill + page subtitle
-  titleRow: {
-    flexDirection: 'row',
+  cardHead: {
+    gap: 12,
+    marginTop: 12,
+  },
+  search: {
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 10,
+    height: 48,
+    paddingHorizontal: 16,
+  },
+  searchInput: {
+    color: colors.text,
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.small,
+    minWidth: 0,
+    paddingVertical: 0,
+  },
+  tabs: { flexDirection: 'row', gap: 20 },
+  tab: {
+    alignItems: 'center',
+    borderBottomColor: colors.transparent,
+    borderBottomWidth: 2,
+    flexDirection: 'row',
     gap: 8,
-    marginTop: 10,
+    paddingVertical: 8,
   },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  eyebrow: {
-    ...typography.eyebrow,
-    color: webColors.pinkLight,
-  },
-  pageSub: {
-    ...typography.subtitle,
-    marginTop: 6,
-    color: webColors.textSoft,
+  tabOn: { borderBottomColor: colors.pink },
+  tabText: { color: colors.textDim, fontFamily: fontFamily.medium, fontSize: fontSize.small },
+  tabTextOn: { color: colors.text },
+  tabN: { color: colors.textDim, fontFamily: fontFamily.mono, fontSize: fontSize.mono },
+  none: {
+    color: colors.textMuted,
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.small,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    textAlign: 'center',
   },
 
   // .pcall-status-pill
@@ -474,46 +511,40 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
   },
 
-  list: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 4,
-  },
+  list: { marginTop: 4 },
   row: {
+    alignItems: 'center',
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 14,
-    paddingVertical: 16,
+    paddingVertical: 10,
   },
-  rowDivider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  rowText: {
-    flex: 1,
-    gap: 3,
-  },
-  name: {
-    fontFamily: fontFamily.bold,
-  },
-  rowMeta: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  unread: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.pink,
+  avatar: {
     alignItems: 'center',
+    backgroundColor: colors.surfaceStrong,
+    borderRadius: 28,
+    height: 56,
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    overflow: 'hidden',
+    width: 56,
   },
-  unreadText: {
-    ...typography.badge,
-    color: colors.white,
+  avatarText: { color: colors.text, fontFamily: fontFamily.bold, fontSize: fontSize.body },
+  rowText: { flex: 1, gap: 4, minWidth: 0 },
+  line: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+  name: { color: colors.text, flex: 1, fontFamily: fontFamily.bold, fontSize: fontSize.body },
+  preview: { color: colors.textMuted, flex: 1, fontFamily: fontFamily.regular, fontSize: fontSize.small },
+  previewUnread: { color: colors.text },
+  time: { color: colors.textDim, fontFamily: fontFamily.regular, fontSize: fontSize.xs },
+  timeUnread: { color: colors.pink },
+  unread: {
+    alignItems: 'center',
+    backgroundColor: colors.pink,
+    borderRadius: 12,
+    height: 24,
+    justifyContent: 'center',
+    minWidth: 24,
+    paddingHorizontal: 7,
   },
+  unreadText: { ...typography.badge, color: colors.text },
 
   // ── Settings sheet ──
   backdrop: { flex: 1, backgroundColor: colors.scrim },
@@ -524,7 +555,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: webColors.panelBorder,
-    backgroundColor: webColors.panelFill,
+    backgroundColor: colors.backgroundDeep,
   },
   popupClose: {
     width: 34,

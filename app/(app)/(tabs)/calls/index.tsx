@@ -1,16 +1,15 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EarningsBar, Screen } from '@components/shared';
-import { Text } from '@components/ui';
+import { GradientButton, Text } from '@components/ui';
 import { useGroupCallHistorySummary } from '@hooks/useGroupCallHistory';
 import { useBroadcastHistorySummary } from '@hooks/useInsights';
 import { useProfile } from '@hooks/useProfile';
 import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, gradientDirection, gradients, layout, radius, typography } from '@theme';
+import { colors, fontFamily, layout, radius, typography } from '@theme';
 import { grouped } from '@utils/format';
 import { rf } from '@utils/responsive';
 
@@ -131,22 +130,13 @@ const CallsHubScreen = () => {
           Sessions &amp; Calls
         </Text>
 
-        <Pressable
+        <GradientButton
+          label="Schedule"
+          leftIcon="plus"
+          fullWidth={false}
           onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))}
-          accessibilityRole="button"
           accessibilityLabel="Schedule a session"
-          style={styles.scheduleBtn}
-        >
-          <LinearGradient
-            colors={gradients.cta}
-            start={gradientDirection.horizontal.start}
-            end={gradientDirection.horizontal.end}
-            style={styles.scheduleFill}
-          >
-            <Feather name="plus" size={rf(15)} color={colors.white} />
-            <Text style={styles.scheduleLabel}>SCHEDULE</Text>
-          </LinearGradient>
-        </Pressable>
+        />
       </View>
 
       {/* Areas */}
