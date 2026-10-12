@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 
 import { LucideIcon, Text, type LucideIconName } from '@components/ui';
-import { fontFamily, fontSize, gradientDirection, letterSpacing, lineHeight, palette, webColors, webGradients } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, letterSpacing, lineHeight, palette, webColors, webGradients } from '@theme';
 import { rf } from '@utils/responsive';
 
 /* -------------------------------------------------------------------------- */
@@ -70,7 +70,7 @@ export const FilterPills = <T extends string>({
         >
           {on ? (
             <LinearGradient
-              colors={webGradients.activePill}
+              colors={gradients.primary}
               start={gradientDirection.diagonal.start}
               end={gradientDirection.diagonal.end}
               style={StyleSheet.absoluteFill}
@@ -523,7 +523,7 @@ export const styles = StyleSheet.create({
     borderColor: webColors.cyanCalloutBorder,
     borderLeftColor: webColors.cyan,
     borderLeftWidth: 3,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 11,
@@ -535,7 +535,7 @@ export const styles = StyleSheet.create({
     borderColor: webColors.goldCalloutBorder,
     borderLeftColor: webColors.gold,
     borderLeftWidth: 3,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 11,
@@ -548,7 +548,7 @@ export const styles = StyleSheet.create({
     borderColor: webColors.pinkCalloutBorder,
     borderLeftColor: webColors.pinkHot,
     borderLeftWidth: 3,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 11,
@@ -562,7 +562,7 @@ export const styles = StyleSheet.create({
     backgroundColor: webColors.greenCallout,
     borderColor: webColors.greenChipBorder,
     borderLeftWidth: 3,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 11,
@@ -574,7 +574,7 @@ export const styles = StyleSheet.create({
     backgroundColor: webColors.redCallout,
     borderColor: webColors.redCalloutBorder,
     borderLeftWidth: 3,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 11,
@@ -652,7 +652,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: webColors.surface,
     borderColor: webColors.panelBorder,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 12,
@@ -662,10 +662,10 @@ export const styles = StyleSheet.create({
   },
   summaryIc: {
     alignItems: 'center',
-    borderRadius: 10,
-    height: 36,
+    borderRadius: 8,
+    height: 40,
     justifyContent: 'center',
-    width: 36,
+    width: 40,
   },
   summaryCopy: {
     flex: 1,
@@ -734,7 +734,7 @@ export const styles = StyleSheet.create({
   card: {
     backgroundColor: webColors.surface,
     borderColor: webColors.panelBorder,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -751,9 +751,9 @@ export const styles = StyleSheet.create({
     paddingTop: 14,
   },
   metricChip: {
-    backgroundColor: webColors.innerCard,
-    borderColor: webColors.hairline06,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundAlt,
+    borderColor: colors.borderSoft,
+    borderRadius: 8,
     borderWidth: 1,
     minWidth: 0,
     paddingHorizontal: 12,
@@ -789,9 +789,9 @@ export const styles = StyleSheet.create({
   },
 
   metricTile: {
-    backgroundColor: webColors.innerCard,
-    borderColor: webColors.hairline06,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundAlt,
+    borderColor: colors.borderSoft,
+    borderRadius: 8,
     borderWidth: 1,
     minWidth: 0,
     paddingHorizontal: 12,
