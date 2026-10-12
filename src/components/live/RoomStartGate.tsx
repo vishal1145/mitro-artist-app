@@ -119,6 +119,7 @@ export const RoomStartGate = memo(
           <Text style={styles.cameraBadgeText}>OFFLINE</Text>
         </View>
         <StageControls
+          placement="bottom"
           camOn={camOn}
           micOn={micOn}
           onToggleCam={onToggleCam}

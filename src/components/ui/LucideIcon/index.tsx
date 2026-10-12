@@ -19,6 +19,12 @@ export type LucideIconName =
   | 'building'
   | 'calendar-days'
   | 'camera'
+  | 'mic-vocal'
+  | 'refresh-cw'
+  | 'video'
+  | 'video-off'
+  | 'clock'
+  | 'undo-2'
   | 'check'
   | 'chevron-down'
   | 'chevron-right'
@@ -59,10 +65,12 @@ export type LucideIconName =
   | 'star'
   | 'triangle-alert'
   | 'user-round'
-  | 'video'
   | 'user'
   | 'users'
   | 'wallet'
+  | 'search'
+  | 'settings'
+  | 'trash-2'
   | 'x';
 
 export interface LucideIconProps {
@@ -174,6 +182,30 @@ const LucideIconComponent = ({
           <Circle cx="9" cy="7" r="4" {...common} />
           <Path d="M22 21v-2a4 4 0 0 0-3-3.87" {...common} />
           <Path d="M16 3.13a4 4 0 0 1 0 7.75" {...common} />
+        </>
+      ) : null}
+
+      {name === 'settings' ? (
+        <>
+          <Path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" {...common} />
+          <Circle cx="12" cy="12" r="3" {...common} />
+        </>
+      ) : null}
+
+      {name === 'trash-2' ? (
+        <>
+          <Path d="M3 6h18" {...common} />
+          <Path d="M19 6v14c0 1-1 2-2 2H8c-1 0-2-1-2-2V6" {...common} />
+          <Path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" {...common} />
+          <Line x1="10" x2="10" y1="11" y2="17" {...common} />
+          <Line x1="14" x2="14" y1="11" y2="17" {...common} />
+        </>
+      ) : null}
+
+      {name === 'search' ? (
+        <>
+          <Circle cx="11" cy="11" r="8" {...common} />
+          <Path d="m21 21-4.3-4.3" {...common} />
         </>
       ) : null}
 
@@ -493,6 +525,45 @@ const LucideIconComponent = ({
             {...common}
           />
           <Circle cx="12" cy="13" r="3" {...common} />
+        </>
+      ) : null}
+
+      {name === 'mic-vocal' ? (
+        <>
+          <Path d="m11 7.601-5.994 8.19a1 1 0 0 0 .1 1.298l.817.818a1 1 0 0 0 1.314.087L15.09 12" {...common} />
+          <Path d="M16.5 21.174C15.5 20.5 14.372 20 13 20c-2.058 0-3.928 2.356-6 2-2.072-.356-2.775-3.369-1.5-4.5" {...common} />
+          <Circle cx="16" cy="7" r="5" {...common} />
+        </>
+      ) : null}
+
+      {name === 'refresh-cw' ? (
+        <>
+          <Path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" {...common} />
+          <Path d="M21 3v5h-5" {...common} />
+          <Path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" {...common} />
+          <Path d="M8 16H3v5" {...common} />
+        </>
+      ) : null}
+
+      {name === 'clock' ? (
+        <>
+          <Circle cx="12" cy="12" r="10" {...common} />
+          <Polyline points="12 6 12 12 16 14" {...common} />
+        </>
+      ) : null}
+
+      {name === 'undo-2' ? (
+        <>
+          <Path d="M9 14 4 9l5-5" {...common} />
+          <Path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" {...common} />
+        </>
+      ) : null}
+
+      {name === 'video-off' ? (
+        <>
+          <Path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.248-3.062A.5.5 0 0 1 22 7.87v8.196" {...common} />
+          <Path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2" {...common} />
+          <Path d="m2 2 20 20" {...common} />
         </>
       ) : null}
 

@@ -27,7 +27,7 @@ import { EarningsBar, LoadFailed, Screen, Skeleton } from '@components/shared';
 import { LucideIcon, Text, type LucideIconName } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
 import { useNotificationStore } from '@store';
-import { fontFamily, fontSize, letterSpacing, lineHeight, webColors } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, lineHeight, webColors } from '@theme';
 import { webSourceHint, webSourceLabel } from '@utils/earnings';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, shortWeekday } from '@utils/format';
@@ -103,9 +103,9 @@ const STAT_ACCENT: Record<
     chipInk: webColors.green,
   },
   pending: {
-    icBg: 'rgba(255, 200, 107, 0.14)',
+    icBg: colors.warningChip,
     icInk: webColors.gold,
-    chipBg: 'rgba(255, 200, 107, 0.14)',
+    chipBg: colors.warningChip,
     chipInk: webColors.gold,
   },
   available: {
@@ -643,9 +643,9 @@ const styles = StyleSheet.create({
 
   /* .notice --------------------------------------------------------------- */
   notice: {
-    backgroundColor: 'rgba(255, 200, 107, 0.08)',
-    borderColor: 'rgba(255, 200, 107, 0.28)',
-    borderRadius: 16,
+    backgroundColor: colors.warningSoft,
+    borderColor: colors.warningBorder,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 10,
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   /* .hero-card ------------------------------------------------------------ */
   heroCard: {
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     minHeight: 200,
     overflow: 'hidden',
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: webColors.surfaceSoft,
     borderColor: webColors.panelBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     height: 34,
     justifyContent: 'center',
@@ -696,8 +696,8 @@ const styles = StyleSheet.create({
   eyebrow: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 200, 107, 0.14)',
-    borderColor: 'rgba(255, 200, 107, 0.3)',
+    backgroundColor: colors.warningChip,
+    borderColor: colors.warningBorder,
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
   statTile: {
     backgroundColor: webColors.surfaceStrong,
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     gap: 10,
     paddingHorizontal: 18,
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   },
   statIc: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     height: 34,
     justifyContent: 'center',
     width: 34,
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
   trendCard: {
     backgroundColor: webColors.surface,
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 18,
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: webColors.surfaceSoft,
     borderColor: webColors.panelBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   /* .source-pie-card ------------------------------------------------------ */
   pieCard: {
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
     paddingHorizontal: 20,
@@ -901,9 +901,9 @@ const styles = StyleSheet.create({
   },
   pieHeadIcon: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 63, 173, 0.14)',
-    borderColor: 'rgba(255, 63, 173, 0.32)',
-    borderRadius: 10,
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryBorder,
+    borderRadius: 8,
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   legendRowDivider: {
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: webColors.hairline06,
     borderTopWidth: 1,
   },
   legendTop: {
@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
   /* HelpTip popup -------------------------------------------------------- */
   tipScrim: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: colors.overlayDim,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 32,
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
   tipCard: {
     backgroundColor: webColors.surfaceStrong,
     borderColor: webColors.panelBorder,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     maxWidth: 340,
     padding: 16,

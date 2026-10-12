@@ -28,17 +28,26 @@ const withAlpha = (hex: string, alpha: number): string => {
 
 export const palette = {
   // Surfaces
-  background: '#070614',
+  // Values synced with Artist Web design-tokens.css (--color-*).
+  background: '#060513',
   backgroundAlt: '#0D0C1F',
-  surface: 'rgba(24, 21, 44, 0.92)',
-  surfaceStrong: 'rgba(30, 26, 50, 0.98)',
-  surfaceSoft: 'rgba(255, 255, 255, 0.06)',
+  /** Web --color-bg-deep (inputs, Go Live shell). */
+  backgroundDeep: '#08071A',
+  /** Web --color-glass: floating bars over media. */
+  glass: 'rgba(12, 11, 28, 0.9)',
+  surface: 'rgba(20, 18, 38, 0.72)',
+  surfaceStrong: 'rgba(27, 23, 48, 0.94)',
+  surfaceSoft: 'rgba(255, 255, 255, 0.045)',
+  /** Hover / pressed row fill (--color-surface-hover). */
+  surfaceHover: 'rgba(255, 255, 255, 0.06)',
 
   // Borders
-  border: 'rgba(255, 255, 255, 0.09)',
-  borderSoft: 'rgba(255, 255, 255, 0.05)',
-  /** Focused / pressed state. */
-  borderHot: 'rgba(255, 72, 181, 0.45)',
+  border: 'rgba(255, 255, 255, 0.10)',
+  borderSoft: 'rgba(255, 255, 255, 0.06)',
+  /** Emphasised / pressed border (--color-border-strong). */
+  borderStrong: 'rgba(255, 255, 255, 0.16)',
+  /** Active / selected border (--color-border-brand). */
+  borderHot: 'rgba(255, 72, 181, 0.38)',
 
   // Text
   text: '#F7F4FF',
@@ -59,6 +68,9 @@ export const palette = {
   /** Credit / earn amounts. */
   earn: '#35EEA3',
 
+  /** Text on a SOLID pink fill (--color-on-primary). Gradient CTAs stay white, as on the web. */
+  onPrimarySolid: '#1A0A14',
+
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
@@ -72,6 +84,8 @@ export const colors = {
   // --- Surfaces (spec names) ---
   background: palette.background,
   backgroundAlt: palette.backgroundAlt,
+  backgroundDeep: palette.backgroundDeep,
+  glass: palette.glass,
   surface: palette.surface,
   surfaceStrong: palette.surfaceStrong,
   surfaceSoft: palette.surfaceSoft,
@@ -80,6 +94,9 @@ export const colors = {
   border: palette.border,
   borderSoft: palette.borderSoft,
   borderHot: palette.borderHot,
+  borderStrong: palette.borderStrong,
+  surfaceHover: palette.surfaceHover,
+  onPrimarySolid: palette.onPrimarySolid,
   borderGold: withAlpha(palette.gold, 0.35),
 
   // --- Text ---
@@ -179,6 +196,9 @@ export const colors = {
   info: palette.cyan,
   infoSoft: withAlpha(palette.cyan, 0.12),
   infoBorder: withAlpha(palette.cyan, 0.35),
+  /** Web --color-accent-bg / --color-accent-border (numbered section badges). */
+  accentBg: withAlpha(palette.purple, 0.14),
+  accentBorder: withAlpha(palette.purple, 0.3),
 
   // --- Translucent, role-named ---
   scrim: withAlpha(palette.background, 0.65),
@@ -193,9 +213,10 @@ export const colors = {
   divider: palette.borderSoft,
 
   // --- Glow (shadowColor) ---
-  ctaGlow: withAlpha(palette.pink, 0.35),
-  focusGlow: withAlpha(palette.pink, 0.3),
-  glow: palette.pink,
+  // Web: no resting shadows (depth = surface steps + borders). Glows are transparent.
+  ctaGlow: palette.transparent,
+  focusGlow: withAlpha(palette.pink, 0.1),
+  glow: palette.transparent,
 
   // --- Utility ---
   white: palette.white,
@@ -209,23 +230,25 @@ export const colors = {
 
 export const gradients = {
   /** Primary CTAs, active pills, brand highlight rows. */
-  brandWide: ['#7C4DFF', palette.pink, '#FF7AD1'] as const,
+  brandWide: [palette.pink, palette.violet] as const,
   /** Avatar fallback fill, small badges. */
   brand: [palette.pink, palette.violet] as const,
   /** Token / coin iconography. */
   gold: ['#FFE3A8', palette.gold, '#E09A2F'] as const,
 
   // Aliases onto the spec gradients.
-  cta: ['#7C4DFF', palette.pink, '#FF7AD1'] as const,
+  cta: [palette.pink, palette.violet] as const,
   avatar: [palette.pink, palette.violet] as const,
-  live: ['#7C4DFF', palette.pink, '#FF7AD1'] as const,
-  primary: ['#7C4DFF', palette.pink, '#FF7AD1'] as const,
-  forgot: ['#7C4DFF', palette.pink, '#FF7AD1'] as const,
+  live: [palette.pink, palette.violet] as const,
+  primary: [palette.pink, palette.violet] as const,
+  forgot: [palette.pink, palette.violet] as const,
+  /** Positive actions (Turn on, Withdraw) — web .bcast-price-card-form button. */
+  green: ['#42F5A7', '#6AA238'] as const,
 
   /** Disabled CTA — the brand ramp at low opacity. */
   ctaMuted: [
-    withAlpha('#7C4DFF', 0.28),
     withAlpha(palette.pink, 0.28),
+    withAlpha(palette.violet, 0.28),
   ] as const,
   /** Profile ring — the full accent wheel. */
   ring: [
@@ -239,7 +262,29 @@ export const gradients = {
   card: ['#2C1C52', '#170F30'] as const,
 
   hero: [palette.backgroundAlt, palette.backgroundAlt] as const,
+  /** Hero wash on top of the surface fill (web .dv2-hero background). */
+  heroWash: [
+    withAlpha(palette.pink, 0.22),
+    withAlpha(palette.violet, 0.26),
+    withAlpha(palette.cyan, 0.1),
+  ] as const,
   scrim: [withAlpha(palette.background, 0), palette.background] as const,
+  /** Dashboard hero photo overlay (web .dv2-hero::before): 90deg, bg → clear. */
+  /** Go Live preview stage (web .golive-preview-stage): pink glow centre + violet→pink sheen. */
+  stageGlow: [withAlpha(palette.pink, 0.16), withAlpha(palette.pink, 0.05), 'transparent'] as const,
+  stageSheen: [withAlpha(palette.violet, 0.12), withAlpha(palette.pink, 0.05)] as const,
+  /** Go Live shell (web .gl3): violet glow top-left, pink glow bottom-right. */
+  shellViolet: [withAlpha(palette.violet, 0.38), 'transparent'] as const,
+  shellPink: ['transparent', withAlpha(palette.pink, 0.22)] as const,
+  /** Empty preview (web .gl3-empty): violet glow behind the icon. */
+  emptyGlow: ['transparent', withAlpha(palette.violet, 0.28), 'transparent'] as const,
+  /** Schedule session preview cover (web .gs3-cover): 160deg pink 45% → violet 55%. */
+  sessionCover: [withAlpha(palette.pink, 0.45), withAlpha(palette.violet, 0.55)] as const,
+  heroPhotoScrim: [
+    palette.background,
+    withAlpha(palette.background, 0.82),
+    withAlpha(palette.background, 0.35),
+  ] as const,
   glassHighlight: [
     withAlpha(palette.pink, 0),
     withAlpha(palette.pink, 0.35),
@@ -286,6 +331,7 @@ export const gradientGlow = {
   live: colors.ctaGlow,
   primary: colors.ctaGlow,
   forgot: colors.ctaGlow,
+  green: colors.ctaGlow,
 } as const;
 
 /* -------------------------------------------------------------------------- */

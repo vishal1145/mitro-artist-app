@@ -4,6 +4,8 @@ export { Button } from './Button';
 export type { ButtonProps, ButtonVariant, ButtonSize } from './Button/types';
 export { GradientButton } from './GradientButton';
 export type { GradientButtonProps } from './GradientButton/types';
+export { IconButton } from './IconButton';
+export type { IconButtonProps, IconButtonTone } from './IconButton';
 export { LogoBadge } from './LogoBadge';
 export type { LogoBadgeProps } from './LogoBadge';
 export { GoogleGlyph } from './GoogleGlyph';

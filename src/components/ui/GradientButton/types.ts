@@ -15,6 +15,10 @@ export interface GradientButtonProps extends Omit<PressableProps, 'style'> {
   gradient?: ButtonGradientToken;
   /** Label/icon color token (defaults to white for bright gradients). */
   textColor?: ColorToken;
+  /** md = 44pt (default, web control), lg = 52pt (hero CTAs). */
+  size?: 'md' | 'lg';
+  /** Stretch to the parent's width (default). Pass false for an inline button. */
+  fullWidth?: boolean;
   loading?: boolean;
   disabled?: boolean;
   leftIcon?: keyof typeof Feather.glyphMap;

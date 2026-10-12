@@ -8,13 +8,9 @@ import {
   CalloutText,
   CardDetail,
   HelpIcon,
-  HistoryCard,
   LearnLink,
-  ListHead,
   MetricGrid,
   MetricTile,
-  SummaryCell,
-  SummaryStrip,
   WebCallout,
 } from '@components/history';
 import { LoadFailed, PageHeader, Screen, Skeleton } from '@components/shared';
@@ -25,7 +21,7 @@ import {
   useBroadcastHistorySummary,
 } from '@hooks/useInsights';
 import { useFulfillRewardOrderMutation, usePendingRewardOrders } from '@hooks/useRewardOrders';
-import { colors, fontFamily, fontSize, gradientDirection, layout, letterSpacing, lineHeight, palette, webColors, webGradients } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, lineHeight, radius, spacing, typography, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, webDateTime, webDuration } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -200,7 +196,13 @@ const BroadcastHistoryScreen = () => {
           void fetchNextPage();
         }
       }}
-      header={<PageHeader title="Broadcast History" onBack={() => router.back()} />}
+      header={
+        <PageHeader
+          title="Broadcast History"
+          subtitle="Every past broadcast with peak viewers, revenue, and engagement — plus reward deliveries still owed."
+          onBack={() => router.back()}
+        />
+      }
     >
       <WebCallout>
         <CalloutText>
@@ -219,46 +221,55 @@ const BroadcastHistoryScreen = () => {
         </CalloutText>
       </WebCallout>
 
+      {/* .summary-strip — hero numbers, no boxes, divider lines */}
       {loadingSummary ? (
-        <View style={[styles.skelStrip, styles.stripMargin]}>
+        <View style={styles.skelStrip}>
           <Skeleton height={70} round={14} style={styles.skelCell} />
           <Skeleton height={70} round={14} style={styles.skelCell} />
         </View>
       ) : (
-        <SummaryStrip style={styles.stripMargin}>
-          <SummaryCell
-            icon="radio"
-            tint="cyan"
-            label="Shows"
-            hint="Total number of solo broadcasts you've hosted and ended, all-time."
-            value={grouped(summary?.totalShows ?? 0)}
-          />
-          <SummaryCell
-            icon="coins"
-            tint="gold"
-            label="Total earned"
-            hint="Combined coins earned across every broadcast below — chat highlights, reactions, reward orders, and fun-wheel spins."
-            value={`${grouped(summary?.totalRevenueTokens ?? 0)} coins`}
-          />
-          <SummaryCell
-            icon="user-round"
-            tint="purple"
-            label="Unique viewers"
-            hint="Sum of unique viewers across all your broadcasts. The same fan watching two different shows counts twice here."
-            value={grouped(summary?.totalUniqueViewers ?? 0)}
-          />
-          <SummaryCell
-            icon="clock-3"
-            tint="green"
-            label="Avg length"
-            hint="Average duration of your broadcasts, from when you went live to when the show ended."
-            value={webDuration(summary?.avgDurationSeconds ?? null)}
-          />
-        </SummaryStrip>
+        <View style={styles.strip}>
+          {[
+            [
+              { label: 'Shows', hint: "Total number of solo broadcasts you've hosted and ended, all-time.", value: grouped(summary?.totalShows ?? 0) },
+              { label: 'Total earned', hint: 'Combined coins earned across every broadcast below — chat highlights, reactions, reward orders, and fun-wheel spins.', value: `${grouped(summary?.totalRevenueTokens ?? 0)} coins`, earn: true },
+            ],
+            [
+              { label: 'Unique viewers', hint: 'Sum of unique viewers across all your broadcasts. The same fan watching two different shows counts twice here.', value: grouped(summary?.totalUniqueViewers ?? 0) },
+              { label: 'Avg length', hint: 'Average duration of your broadcasts, from when you went live to when the show ended.', value: webDuration(summary?.avgDurationSeconds ?? null) },
+            ],
+          ].map((row, r) => (
+            <View key={r} style={styles.stripRow}>
+              {row.map((cell, c) => (
+                <View key={cell.label} style={[styles.stripCell, c === 0 ? styles.stripCellFirst : null]}>
+                  <View style={styles.stripLabelRow}>
+                    <Text style={styles.stripLabel} numberOfLines={1}>{cell.label}</Text>
+                    <HelpIcon hint={cell.hint} size={12} />
+                  </View>
+                  <Text style={[styles.stripValue, cell.earn ? styles.stripValueEarn : null]}>{cell.value}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
       )}
 
+      {/* .bh-section — pending reward deliveries */}
       {hasPending ? (
-        <>
+        <View style={styles.section}>
+          <View>
+            <View style={styles.sectionHeadRow}>
+              <Text style={styles.sectionTitle}>Pending reward deliveries</Text>
+              <View style={styles.countWarn}>
+                <Text style={styles.countWarnText}>{pendingOrders.length}</Text>
+              </View>
+            </View>
+            <Text style={styles.sectionSub}>
+              Fans notice when a shoutout or song request never arrives. Quick delivery keeps them
+              tipping and booking again.
+            </Text>
+          </View>
+
           <WebCallout tone="gold">
             <CalloutText>
               <CalloutStrong>Fulfill rewards promptly</CalloutStrong> — fans notice when a shoutout
@@ -267,47 +278,42 @@ const BroadcastHistoryScreen = () => {
             </CalloutText>
           </WebCallout>
 
-          <LinearGradient
-            colors={webGradients.rewardsCard}
-            start={gradientDirection.diagonal.start}
-            end={gradientDirection.diagonal.end}
-            style={styles.rewardsCard}
-          >
-            <View style={styles.rewardsEyebrow}>
-              <LucideIcon name="check" size={rf(12)} color={webColors.gold} />
-              <Text style={styles.rewardsEyebrowText}>To fulfill</Text>
-            </View>
-            <Text style={styles.rewardsHeading}>Pending Reward Deliveries</Text>
-
-            <View style={styles.pendingList}>
-              {pendingOrders.map((order) => (
-                <View key={order.id} style={styles.pendingRow}>
-                  <Text style={styles.pendingWho}>
-                    <Text style={styles.pendingName}>{order.rewardName}</Text> for{' '}
-                    {order.buyerDisplayName} ·{' '}
-                    <Text style={styles.pendingAmt}>{grouped(order.priceCharged)} coins</Text>
+          <View style={styles.rewardsCard}>
+            {pendingOrders.map((order, i) => (
+              <View key={order.id} style={[styles.pendingRow, i < pendingOrders.length - 1 ? styles.pendingRowBorder : null]}>
+                <Text style={styles.pendingWho}>
+                  <Text style={styles.pendingName}>{order.rewardName}</Text> for{' '}
+                  {order.buyerDisplayName} ·{' '}
+                  <Text style={styles.pendingAmt}>{grouped(order.priceCharged)} coins</Text>
+                </Text>
+                <Pressable
+                  style={styles.btnGhost}
+                  onPress={() => void handleFulfill(order)}
+                  disabled={fulfillingId === order.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Mark ${order.rewardName} fulfilled`}
+                >
+                  <LucideIcon name="check" size={rf(12)} color={colors.success} />
+                  <Text style={styles.btnGhostText}>
+                    {fulfillingId === order.id ? 'Marking…' : 'Mark fulfilled'}
                   </Text>
-                  <Pressable
-                    style={styles.btnGhost}
-                    onPress={() => void handleFulfill(order)}
-                    disabled={fulfillingId === order.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Mark ${order.rewardName} fulfilled`}
-                  >
-                    <LucideIcon name="check" size={rf(12)} color={webColors.green} />
-                    <Text style={styles.btnGhostText}>
-                      {fulfillingId === order.id ? 'Marking…' : 'Mark fulfilled'}
-                    </Text>
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          </LinearGradient>
-        </>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        </View>
       ) : null}
 
-      <View>
-        <ListHead eyebrow="Past shows" heading="Broadcast History" />
+      {/* .bh-section — past shows */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeadRow}>
+          <Text style={styles.sectionTitle}>Past shows</Text>
+          {history && history.length > 0 ? (
+            <View style={styles.count}>
+              <Text style={styles.countText}>{history.length}</Text>
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.showList}>
           {loadingHistory ? (
@@ -319,14 +325,21 @@ const BroadcastHistoryScreen = () => {
               No ended broadcasts yet. They&apos;ll show up here once you end a live show.
             </Text>
           ) : (
-            history.map((item: BroadcastHistoryItem) => {
+            history.map((item: BroadcastHistoryItem, i) => {
               const isOpen = expandedId === item.broadcastId;
               const hasEarnings = item.totalRevenueTokens > 0;
               return (
-                <HistoryCard key={item.broadcastId}>
+                <View
+                  key={item.broadcastId}
+                  style={[
+                    styles.showCard,
+                    i < history.length - 1 ? styles.showCardBorder : null,
+                    isOpen ? styles.showCardOpen : null,
+                  ]}
+                >
                   <View style={styles.showRow}>
                     <View style={styles.showIcon}>
-                      <LucideIcon name="radio" size={rf(18)} color={webColors.green} />
+                      <LucideIcon name="radio" size={rf(18)} color={colors.success} />
                     </View>
 
                     <Pressable
@@ -367,7 +380,7 @@ const BroadcastHistoryScreen = () => {
                       >
                         {isOpen ? (
                           <LinearGradient
-                            colors={webGradients.activePill}
+                            colors={gradients.cta}
                             start={gradientDirection.diagonal.start}
                             end={gradientDirection.diagonal.end}
                             style={StyleSheet.absoluteFill}
@@ -376,7 +389,7 @@ const BroadcastHistoryScreen = () => {
                         <LucideIcon
                           name="bar-chart-3"
                           size={rf(12)}
-                          color={isOpen ? palette.white : webColors.muted}
+                          color={isOpen ? colors.white : colors.textMuted}
                         />
                         <Text style={isOpen ? styles.analyticsTextOn : styles.analyticsText}>
                           {isOpen ? 'Hide' : 'Analytics'}
@@ -409,16 +422,14 @@ const BroadcastHistoryScreen = () => {
                       )}
                     </CardDetail>
                   ) : null}
-                </HistoryCard>
+                </View>
               );
             })
           )}
 
-          {/* Older shows land here on their own as the artist reaches the
-              bottom — same auto-load the Transactions ledger uses. */}
           {isFetchingNextPage ? (
             <View style={styles.loadMore}>
-              <ActivityIndicator size="small" color={webColors.pinkHot} />
+              <ActivityIndicator size="small" color={colors.pink} />
             </View>
           ) : null}
         </View>
@@ -430,7 +441,7 @@ const BroadcastHistoryScreen = () => {
 const styles = StyleSheet.create({
   /* `.creator-main` is 12px at phone widths; `.creator-view` stacks at 20px. */
   content: {
-    gap: 20,
+    gap: spacing.xl,
     /* `Screen` leaves its header slot flush and expects the first element to
        supply the gap — without this the callout touched the page title. */
     paddingTop: 16,
@@ -457,10 +468,38 @@ const styles = StyleSheet.create({
     width: 40,
   },
 
-  /** `.bcast-history-page .summary-strip { margin: 16px 0 }`. */
-  stripMargin: {
-    marginVertical: 16,
+  /* .summary-strip — no boxes, divider lines (web bhistory-v2.css) */
+  strip: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    paddingVertical: spacing.xs,
   },
+  stripRow: { flexDirection: 'row' },
+  stripCell: {
+    borderLeftColor: colors.border,
+    borderLeftWidth: 1,
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  stripCellFirst: { borderLeftWidth: 0, paddingLeft: 0 },
+  stripLabelRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xxs, marginBottom: spacing.xxs },
+  stripLabel: { ...typography.label, color: colors.textDim, flexShrink: 1 },
+  stripValue: { ...typography.metric, color: colors.textPrimary },
+  stripValueEarn: { color: colors.warning },
+
+  /* .bh-section ------------------------------------------------------------ */
+  section: { gap: spacing.sm },
+  sectionHeadRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  sectionTitle: { ...typography.metric, color: colors.textPrimary },
+  sectionSub: { ...typography.subtitle, color: colors.textMuted, marginTop: spacing.xxs },
+  count: { backgroundColor: colors.surfaceHover, borderRadius: radius.pill, paddingHorizontal: spacing.xs },
+  countText: { ...typography.bodySm, fontFamily: fontFamily.semibold, color: colors.textMuted },
+  countWarn: { backgroundColor: colors.warningBg, borderColor: colors.warningBorder, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: spacing.xs },
+  countWarnText: { ...typography.bodySm, fontFamily: fontFamily.semibold, color: colors.warning },
 
   /* skeletons ------------------------------------------------------------- */
   skelStrip: {
@@ -484,89 +523,36 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  /* rewards-card ---------------------------------------------------------- */
+  /* rewards-card — one flat list inside a warning-border box ---------------- */
   rewardsCard: {
-    borderColor: webColors.panelBorder,
-    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderColor: colors.warningBorder,
+    borderRadius: radius.card,
     borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-  },
-  rewardsEyebrow: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: webColors.goldChip,
-    borderColor: webColors.goldCalloutBorder,
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  rewardsEyebrowText: {
-    color: webColors.gold,
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.xs,
-    letterSpacing: letterSpacing.mono,
-    lineHeight: lineHeight.mono,
-    textTransform: 'uppercase',
-  },
-  rewardsHeading: {
-    color: webColors.textStrong,
-    fontFamily: fontFamily.extrabold,
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    marginBottom: 12,
-  },
-
-  pendingList: {
-    gap: 8,
   },
   pendingRow: {
     alignItems: 'center',
-    backgroundColor: webColors.innerCard,
-    borderColor: webColors.hairline06,
-    borderRadius: 10,
-    borderWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.sm,
     justifyContent: 'space-between',
-    paddingHorizontal: 13,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  pendingWho: {
-    color: webColors.muted,
-    flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: fontSize.small,
-    lineHeight: lineHeight.small,
-  },
-  pendingName: {
-    color: webColors.textStrong,
-    fontFamily: fontFamily.bold,
-  },
-  pendingAmt: {
-    color: webColors.gold,
-    fontFamily: fontFamily.semibold,
-  },
+  pendingRowBorder: { borderBottomColor: colors.borderSoft, borderBottomWidth: 1 },
+  pendingWho: { ...typography.subtitle, color: colors.textMuted, flex: 1 },
+  pendingName: { color: colors.textPrimary, fontFamily: fontFamily.bold },
+  pendingAmt: { color: colors.warning },
   btnGhost: {
     alignItems: 'center',
-    borderColor: webColors.greenGhostBorder,
-    borderRadius: 8,
+    borderColor: colors.successBorder,
+    borderRadius: radius.button,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
-  btnGhostText: {
-    color: webColors.green,
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.mono,
-  },
+  btnGhostText: { ...typography.subtitle, color: colors.success },
   rewardsEmpty: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
@@ -576,101 +562,64 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* show list ------------------------------------------------------------- */
+  /* show list — one box, flat rows split by hairlines ---------------------- */
   showList: {
-    gap: 10,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
+  showCard: {},
+  showCardBorder: { borderBottomColor: colors.borderSoft, borderBottomWidth: 1 },
+  showCardOpen: { backgroundColor: colors.surfaceSoft },
   showRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 13,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   showIcon: {
     alignItems: 'center',
-    backgroundColor: webColors.greenPill,
-    borderColor: webColors.greenChipBorder,
-    borderRadius: 11,
+    backgroundColor: colors.successBg,
+    borderColor: colors.successBorder,
+    borderRadius: radius.card,
     borderWidth: 1,
     height: 40,
     justifyContent: 'center',
     width: 40,
   },
-  showMain: {
-    flex: 1,
-    minWidth: 0,
-  },
-  showTitle: {
-    color: webColors.textStrong,
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.small,
-    lineHeight: lineHeight.small,
-    marginBottom: 2,
-  },
-  showMeta: {
-    color: webColors.dim,
-    fontFamily: fontFamily.regular,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.mono,
-  },
-  showRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  /** `.show-earn { display: inline-flex; align-items: center; gap: 3px }`. */
-  showEarnRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 3,
-  },
-  showEarn: {
-    color: webColors.green,
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.small,
-    lineHeight: lineHeight.small,
-  },
-  showEarnZero: {
-    color: webColors.dim,
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.small,
-    lineHeight: lineHeight.small,
-  },
+  showMain: { flex: 1, minWidth: 0 },
+  showTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xxs },
+  showMeta: { ...typography.bodySm, color: colors.textDim },
+  showRight: { alignItems: 'flex-end', gap: spacing.xs },
+  showEarnRow: { alignItems: 'center', flexDirection: 'row', gap: 3 },
+  showEarn: { ...typography.h3, color: colors.success },
+  showEarnZero: { ...typography.h3, color: colors.textDim },
   analyticsBtn: {
     alignItems: 'center',
-    backgroundColor: webColors.surfaceSoft,
-    borderColor: webColors.panelBorder,
-    borderRadius: 999,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.button,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 13,
-    paddingVertical: 6,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
   analyticsBtnOn: {
     alignItems: 'center',
-    borderColor: palette.transparent,
-    borderRadius: 999,
+    borderColor: colors.transparent,
+    borderRadius: radius.button,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.xs,
     overflow: 'hidden',
-    paddingHorizontal: 13,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
-  analyticsText: {
-    color: webColors.muted,
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.mono,
-  },
-  analyticsTextOn: {
-    color: palette.white,
-    fontFamily: fontFamily.bold,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.mono,
-  },
+  analyticsText: { ...typography.bodySm, fontFamily: fontFamily.semibold, color: colors.textMuted },
+  analyticsTextOn: { ...typography.bodySm, fontFamily: fontFamily.semibold, color: colors.white },
 });
 
 export default BroadcastHistoryScreen;

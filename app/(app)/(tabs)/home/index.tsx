@@ -1,20 +1,25 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EarningsBar, Screen, Skeleton, VerificationBanner } from '@components/shared';
-import { Card, LucideIcon, Text } from '@components/ui';
+import { Button, Card, GradientButton, LucideIcon, Text } from '@components/ui';
 import type { LucideIconName } from '@components/ui';
 import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
 import { useFollowers } from '@hooks/useFollowers';
 import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, fontSize, layout, lineHeight, radius, spacing, typography, webColors } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, lineHeight, radius, spacing, typography, webColors } from '@theme';
 import { compactCount, duration, formatTokens, grouped, relativeShort, shortDate } from '@utils/format';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
 
 /** How many past broadcasts / notifications the dashboard panels show. */
+/** Same studio photo the web dashboard hero uses (main.tsx neonStudioImage). */
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80';
+
 const RECENT_COUNT = 5;
 const NOTES_COUNT = 5;
 
@@ -43,11 +48,11 @@ const HomeScreen = () => {
   // Summary strip — same four cells as the web dashboard, same order. The web
   // prints these as a bare grouped number (`toLocaleString()`), no unit: the
   // cell label already says what the figure is.
-  const summary: { icon: LucideIconName; tint: string; fill: string; label: string; value: string }[] = [
-    { icon: 'coins', tint: colors.gold, fill: colors.warningSoft, label: 'Total Coins', value: earnings ? grouped(earnings.totalTokens) : '—' },
-    { icon: 'clock-3', tint: colors.purple, fill: colors.purpleSoft, label: 'Pending', value: earnings ? grouped(earnings.pendingTokens) : '—' },
-    { icon: 'wallet', tint: colors.green, fill: colors.successChip, label: 'Available', value: earnings ? grouped(earnings.availableTokens) : '—' },
-    { icon: 'radio', tint: colors.cyan, fill: colors.cyanSoft, label: 'Recent Shows', value: String(recentShows) },
+  const summary: { icon: LucideIconName; tint: string; fill: string; border: string; label: string; value: string }[] = [
+    { icon: 'coins', tint: colors.gold, fill: colors.warningBg, border: colors.warningBorder, label: 'Total Coins', value: earnings ? grouped(earnings.totalTokens) : '—' },
+    { icon: 'clock-3', tint: colors.purple, fill: colors.purpleSoft, border: webColors.purpleChipBorder, label: 'Pending', value: earnings ? grouped(earnings.pendingTokens) : '—' },
+    { icon: 'wallet', tint: colors.green, fill: colors.successBg, border: colors.successBorder, label: 'Available', value: earnings ? grouped(earnings.availableTokens) : '—' },
+    { icon: 'radio', tint: colors.cyan, fill: colors.infoSoft, border: colors.infoBorder, label: 'Recent Shows', value: String(recentShows) },
   ];
 
   const topNotes = (notes ?? []).slice(0, NOTES_COUNT);
@@ -59,24 +64,24 @@ const HomeScreen = () => {
     <>
       <View style={[styles.hero, styles.heroSkeleton]}>
         <Skeleton width={150} height={16} round={6} />
-        <Skeleton width="80%" height={26} round={8} />
+        <Skeleton width="80%" height={26} round={radius.sm} />
         <View style={styles.heroPills}>
           <Skeleton width={120} height={26} round={999} />
           <Skeleton width={104} height={26} round={999} />
           <Skeleton width={96} height={26} round={999} />
         </View>
-        <Skeleton height={48} round={12} />
-        <Skeleton height={46} round={12} />
-        <Skeleton height={46} round={12} />
+        <Skeleton height={44} round={radius.sm} />
+        <Skeleton height={44} round={radius.sm} />
+        <Skeleton height={44} round={radius.sm} />
       </View>
 
       <View style={styles.summaryStrip}>
         {[0, 1, 2, 3].map((i) => (
           <View key={i} style={styles.summaryCell}>
-            <Skeleton width={36} height={36} round={10} />
+            <Skeleton width={40} height={40} round={radius.sm} />
             <View style={styles.summaryBody}>
-              <Skeleton width="60%" height={10} round={6} />
-              <Skeleton width="45%" height={18} round={6} />
+              <Skeleton width="60%" height={10} round={radius.xs} />
+              <Skeleton width="45%" height={18} round={radius.xs} />
             </View>
           </View>
         ))}
@@ -85,17 +90,17 @@ const HomeScreen = () => {
       {[0, 1].map((p) => (
         <Card key={p} style={styles.panel}>
           <View style={styles.panelHead}>
-            <Skeleton width={150} height={16} round={6} />
-            <Skeleton width={34} height={34} round={10} />
+            <Skeleton width={150} height={16} round={radius.xs} />
+            <Skeleton width={72} height={16} round={radius.xs} />
           </View>
           {[0, 1, 2, 3, 4].map((i) => (
             <View key={i} style={styles.bcastRow}>
-              <Skeleton width={34} height={34} round={10} />
+              <Skeleton width={40} height={40} round={radius.sm} />
               <View style={styles.bcastMain}>
-                <Skeleton width="65%" height={12} round={6} />
-                <Skeleton width="40%" height={10} round={6} />
+                <Skeleton width="65%" height={12} round={radius.xs} />
+                <Skeleton width="40%" height={10} round={radius.xs} />
               </View>
-              <Skeleton width={46} height={14} round={6} />
+              <Skeleton width={46} height={14} round={radius.xs} />
             </View>
           ))}
         </Card>
@@ -123,16 +128,29 @@ const HomeScreen = () => {
       {showSkeleton ? renderSkeleton() : (
       <>
       {/* ── Creator hero (dark, web-matched) ── */}
-      <LinearGradient
-        colors={['#0A0817', '#160C2B']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}
-      >
+      <View style={styles.hero}>
+        <Image source={{ uri: HERO_IMAGE }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+        <LinearGradient
+          pointerEvents="none"
+          colors={gradients.heroPhotoScrim}
+          start={gradientDirection.horizontal.start}
+          end={gradientDirection.horizontal.end}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.heroEyebrow}>
+          <LucideIcon name="layout-dashboard" size={rf(14)} color={colors.pink} />
           <Text style={styles.heroEyebrowText}>CREATOR DASHBOARD</Text>
         </View>
         <Text style={styles.heroTitle}>Manage streams, sessions, earnings, and your audience.</Text>
+
+        {/* One-line hint inside the hero (web dv2-hint) — replaces the old callout card. */}
+        <View style={styles.heroHint}>
+          <LucideIcon name="info" size={rf(14)} color={colors.textSecondary} />
+          <Text variant="bodySm" color="textSecondary" style={styles.heroHintText}>
+            Your command center: a snapshot of coins earned, recent broadcasts, and alerts that need attention. Head to{' '}
+            <Text style={styles.calloutStrong}>Earnings</Text> or <Text style={styles.calloutStrong}>Broadcast History</Text> for the full breakdown.
+          </Text>
+        </View>
 
         <View style={styles.heroPills}>
           <View style={styles.heroPill}>
@@ -149,42 +167,22 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        <Pressable style={styles.heroPrimary} onPress={() => guard(() => router.push('/(app)/(tabs)/live'))} accessibilityRole="button" accessibilityLabel="Start Live">
-          <LinearGradient colors={['#FF3FAD', '#7B35FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.heroPrimaryFill}>
-            <LucideIcon name="radio" size={rf(16)} color={colors.white} />
-            <Text style={styles.heroPrimaryText}>Start Live</Text>
-          </LinearGradient>
-        </Pressable>
-        <Pressable style={styles.heroSecondary} onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))} accessibilityRole="button" accessibilityLabel="Schedule Session">
-          <LucideIcon name="calendar-days" size={rf(15)} color={colors.white} />
-          <Text style={styles.heroSecondaryText}>Schedule Session</Text>
-        </Pressable>
-        <Pressable style={styles.heroSecondary} onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))} accessibilityRole="button" accessibilityLabel="Private Calls">
-          <LucideIcon name="phone" size={rf(15)} color={colors.white} />
-          <Text style={styles.heroSecondaryText}>Private Calls</Text>
-        </Pressable>
-      </LinearGradient>
-
-      {/* ── Info callout ── */}
-      <View style={styles.callout}>
-        <View style={styles.calloutIcon}>
-          <LucideIcon name="info" size={rf(15)} color={colors.cyan} />
+        <View style={styles.heroActions}>
+          <GradientButton label="Start Live" leftIcon="radio" fullWidth={false} onPress={() => guard(() => router.push('/(app)/(tabs)/live'))} />
+          <Button variant="secondary" style={styles.heroBtn} fullWidth={false} label="Schedule Session" leftIcon="calendar" onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))} />
+          <Button variant="secondary" style={styles.heroBtn} fullWidth={false} label="Private Calls" leftIcon="phone" onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))} />
         </View>
-        <Text variant="bodySm" color="textSecondary" style={styles.calloutText}>
-          This is your <Text style={styles.calloutStrong}>command center</Text> — a snapshot of coins earned, recent
-          broadcasts, and alerts that need attention. Head to Earnings or Broadcast History for the full breakdown.
-        </Text>
       </View>
 
       {/* ── Summary strip ── */}
       <View style={styles.summaryStrip}>
         {summary.map((cell) => (
           <View key={cell.label} style={styles.summaryCell}>
-            <View style={[styles.summaryIc, { backgroundColor: cell.fill }]}>
-              <LucideIcon name={cell.icon} size={rf(15)} color={cell.tint} />
+            <View style={[styles.summaryIc, { backgroundColor: cell.fill, borderColor: cell.border }]}>
+              <LucideIcon name={cell.icon} size={rf(17)} color={cell.tint} />
             </View>
             <View style={styles.summaryBody}>
-              <Text variant="caption" color="textMuted" numberOfLines={1}>{cell.label}</Text>
+              <Text variant="label" color="textSecondary" numberOfLines={1}>{cell.label}</Text>
               {loadingEarnings && cell.label !== 'Recent Shows' ? (
                 <Skeleton width={48} height={18} round={6} />
               ) : (
@@ -198,12 +196,10 @@ const HomeScreen = () => {
       {/* ── Recent Broadcasts panel ── */}
       <Card style={styles.panel}>
         <View style={styles.panelHead}>
-          <View style={styles.panelTitle}>
-            <LucideIcon name="radio" size={rf(15)} color={colors.pink} />
-            <Text variant="h3">Recent Broadcasts</Text>
-          </View>
-          <Pressable style={styles.iconBtn} onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View full broadcast history">
-            <LucideIcon name="bar-chart-3" size={rf(17)} color={colors.textMuted} />
+          <Text style={styles.panelTitleText}>Recent Broadcasts</Text>
+          <Pressable style={styles.panelLink} onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')} hitSlop={12} accessibilityRole="button" accessibilityLabel="View full broadcast history">
+            <LucideIcon name="bar-chart-3" size={rf(15)} color={colors.pink} />
+            <Text style={styles.panelLinkText}>View all</Text>
           </Pressable>
         </View>
 
@@ -218,20 +214,20 @@ const HomeScreen = () => {
             No ended broadcasts yet. They&apos;ll show up here once you end a live show.
           </Text>
         ) : (
-          broadcasts.map((b) => (
+          broadcasts.map((b, idx) => (
             <Pressable
               key={b.broadcastId}
-              style={styles.bcastRow}
+              style={[styles.bcastRow, idx > 0 ? styles.rowDivider : null]}
               onPress={() => router.push('/(app)/(tabs)/calls/broadcast-history')}
               accessibilityRole="button"
               accessibilityLabel={b.title}
             >
-              <View style={[styles.bcastIcon, { backgroundColor: b.endReason === CLEAN_END ? colors.successChip : colors.warningSoft }]}>
-                <LucideIcon name="radio" size={rf(15)} color={b.endReason === CLEAN_END ? colors.green : colors.gold} />
+              <View style={[styles.bcastIcon, b.endReason === CLEAN_END ? null : styles.bcastIconWarn]}>
+                <LucideIcon name="radio" size={rf(16)} color={b.endReason === CLEAN_END ? colors.pink : colors.gold} />
               </View>
               <View style={styles.bcastMain}>
                 <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>{b.title}</Text>
-                <Text variant="bodySm" color="textMuted" numberOfLines={1}>
+                <Text variant="label" color="textSecondary" numberOfLines={1} style={styles.bcastMeta}>
                   {shortDate(b.startedAtUtc)} · {duration(b.durationSeconds)} · Peak {compactCount(b.peakViewerCount)} viewers
                 </Text>
               </View>
@@ -246,12 +242,10 @@ const HomeScreen = () => {
       {/* ── Notifications panel ── */}
       <Card style={styles.panel}>
         <View style={styles.panelHead}>
-          <View style={styles.panelTitle}>
-            <LucideIcon name="bell" size={rf(15)} color={colors.pink} />
-            <Text variant="h3">Notifications</Text>
-          </View>
-          <Pressable style={styles.iconBtn} onPress={() => router.push('/(app)/(tabs)/home/notifications')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View all notifications">
-            <LucideIcon name="chevron-right" size={rf(17)} color={colors.textMuted} />
+          <Text style={styles.panelTitleText}>Notifications</Text>
+          <Pressable style={styles.panelLink} onPress={() => router.push('/(app)/(tabs)/home/notifications')} hitSlop={12} accessibilityRole="button" accessibilityLabel="View all notifications">
+            <Text style={styles.panelLinkText}>View all</Text>
+            <LucideIcon name="chevron-right" size={rf(15)} color={colors.pink} />
           </Pressable>
         </View>
 
@@ -260,12 +254,12 @@ const HomeScreen = () => {
             You&apos;re all caught up — no new notifications.
           </Text>
         ) : (
-          topNotes.map((n) => {
+          topNotes.map((n, idx) => {
             const visual = notificationVisual(n.type);
             return (
               <Pressable
                 key={n.id}
-                style={styles.noteRow}
+                style={[styles.noteRow, idx > 0 ? styles.rowDivider : null]}
                 onPress={() => router.push('/(app)/(tabs)/home/notifications')}
                 accessibilityRole="button"
                 accessibilityLabel={`${n.title}. ${n.body}`}
@@ -309,131 +303,111 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
 
-  // Hero — dark premium card (matches web .creator-hero)
+  // Hero — web .dv2-hero: surface fill + pink/violet/info wash, 1px border, radius-base
   hero: {
+    backgroundColor: colors.surface,
     borderRadius: radius.hero,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    padding: 18,
-    gap: 10,
+    borderColor: colors.border,
+    padding: spacing.md + spacing.xxs,
+    gap: spacing.md,
     marginTop: spacing.sm,
+    overflow: 'hidden',
   },
-  heroSkeleton: { backgroundColor: 'rgba(255,255,255,0.02)' },
+  heroSkeleton: { backgroundColor: colors.surfaceSoft },
   /** Stacks the verify strip over the topbar, matching `.creator-main`'s 20px. */
   headerStack: { gap: 20 },
 
-  heroEyebrow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroEyebrow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   heroEyebrowText: {
     ...typography.eyebrow,
-    /**
-     * `.creator-hero span` is gradient-filled text on web (`--premium-gradient`
-     * through `background-clip: text`), with `#ff9bcc` declared as the fallback.
-     * Left uncoloured this inherited the body white — the one eyebrow in the app
-     * that did. Every other screen's eyebrow already uses this pink.
-     */
-    color: webColors.pinkLight,
+    // web .dv2-eyebrow: mono uppercase in --color-brand-pink
+    color: colors.pink,
   },
+  heroHint: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+  heroHintText: { flex: 1, lineHeight: lineHeight.small },
   heroTitle: {
     ...typography.h1,
   },
-  heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2, marginBottom: 4 },
+  heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   heroPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(7,10,20,0.85)',
+    gap: spacing.xs,
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: colors.border,
     borderRadius: radius.pill,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
   heroPillText: {
     ...typography.bodySm,
   },
-  heroPrimary: { height: 48, borderRadius: 12, overflow: 'hidden' },
-  heroPrimaryFill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  heroPrimaryText: {
-    ...typography.button,
-  },
-  heroSecondary: {
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.13)',
-    backgroundColor: 'rgba(255,255,255,0.065)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  heroSecondaryText: {
-    ...typography.buttonSm,
-  },
+  // Secondary hero buttons sit over the photo, so they need a solid fill + stronger border to read as buttons.
+  heroBtn: { backgroundColor: colors.glassSurface, borderColor: colors.borderStrong },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
 
-  // Info callout
-  callout: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 11,
-    backgroundColor: 'rgba(52,231,255,0.06)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(52,231,255,0.25)',
-    borderLeftWidth: 3,
-    borderLeftColor: colors.cyan,
-    paddingVertical: 13,
-    paddingHorizontal: 15,
-  },
-  calloutIcon: { marginTop: 1 },
-  calloutText: { flex: 1, lineHeight: lineHeight.small },
   calloutStrong: { fontFamily: fontFamily.bold, color: colors.textPrimary },
 
-  // Summary strip — 2×2 grid on mobile
-  summaryStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  // KPI row — web .dv2-kpi (stacked icon / label / value on phones), 2×2 grid
+  summaryStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   summaryCell: {
     flexBasis: '47%',
     flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.card,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
+    padding: layout.cardPadding,
   },
-  summaryIc: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  summaryBody: { flex: 1, gap: 3, minWidth: 0 },
-  summaryValue: {
-    ...typography.metric,
-  },
-
-  // Panels
-  panel: { gap: spacing.md },
-  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  panelTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.cardRaised,
+  summaryIc: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  summaryBody: { alignSelf: 'stretch', gap: spacing.xxs, minWidth: 0 },
+  summaryValue: {
+    ...typography.numLg,
+  },
+
+  // Panels
+  panel: { gap: spacing.sm },
+  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  panelTitleText: { ...typography.metric, flex: 1 },
+  panelLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, minHeight: 44 },
+  panelLinkText: { ...typography.link, color: colors.pink },
+  rowDivider: { borderTopWidth: 1, borderTopColor: colors.borderSoft },
   rowSkeleton: { gap: 10 },
   emptyLine: { lineHeight: lineHeight.small },
 
   // Broadcast row
-  bcastRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bcastIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  bcastMain: { flex: 1, gap: 2 },
-  bcastEarn: { fontFamily: fontFamily.bold, fontSize: fontSize.small, color: colors.green },
+  bcastRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  bcastIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bcastIconWarn: { backgroundColor: colors.warningBg, borderColor: colors.warningBorder },
+  bcastMeta: { textTransform: 'none' },
+  bcastMain: { flex: 1, gap: spacing.xxs },
+  bcastEarn: { fontFamily: fontFamily.mono, fontSize: fontSize.small, color: colors.green },
   bcastEarnZero: { color: colors.textMuted },
 
   // Notification row
-  noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  noteIcon: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden' },
+  noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.sm },
+  noteIcon: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: webColors.circleBorder, overflow: 'hidden' },
   noteMain: { flex: 1, gap: 3 },
   noteTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   noteTitle: { flex: 1 },

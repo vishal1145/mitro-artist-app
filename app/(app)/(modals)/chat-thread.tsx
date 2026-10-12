@@ -2,14 +2,15 @@ import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  KeyboardAvoidingView,
   Modal,
   Pressable,
+  FlatList,
+  KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -30,7 +31,7 @@ import {
 } from '@services/realtime/privateMessageHub';
 import { privateMessageInboxHub } from '@services/realtime/privateMessageInboxHub';
 import type { ArtistConversationSummary, PrivateMessageItem } from '@app-types/api';
-import { colors, fontFamily, gradientDirection, gradients, layout, lineHeight, radius, typography } from '@theme';
+import { colors, fontFamily, gradientDirection, gradients, layout, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 const POLL_MS = 10000;
@@ -198,7 +199,17 @@ const ChatThreadScreen = () => {
   const [forwardingId, setForwardingId] = useState<string | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<FlatList<Entry>>(null);
+
+  /*
+   * Keyboard: the app is edge-to-edge, so even in `resize` mode Android does
+   * not shrink the window for the IME — it only reports its height. The
+   * KeyboardAvoidingView padding below is therefore the one thing that moves
+   * the composer, on both platforms. (`pan` mode must stay off: with it the
+   * system ALSO slid the window, and the two stacked into a large gap.)
+   */
+
+
   const inputRef = useRef<TextInput>(null);
   const mounted = useRef(true);
   const sendingRef = useRef(false);
@@ -212,8 +223,9 @@ const ChatThreadScreen = () => {
    * Nudging again next frame and after a short delay reliably closes the gap.
    */
   const nudgeScroll = useCallback((animated: boolean) => {
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated }));
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated }), 200);
+    // Inverted list: offset 0 is the newest message.
+    requestAnimationFrame(() => scrollRef.current?.scrollToOffset({ offset: 0, animated }));
+    setTimeout(() => scrollRef.current?.scrollToOffset({ offset: 0, animated }), 200);
   }, []);
 
   const { data: convData } = useConversations();
@@ -504,43 +516,35 @@ const ChatThreadScreen = () => {
     }
   };
 
-  const entries = buildEntries(messages);
+  const entriesReversed = useMemo(() => buildEntries(messages).reverse(), [messages]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.iconBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Feather name="chevron-left" size={rf(20)} color={colors.textPrimary} />
+        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
+          <Feather name="arrow-left" size={rf(18)} color={colors.textPrimary} />
         </Pressable>
         <Avatar
           uri={avatarUrl || undefined}
           initials={initialsFor(fan)}
           name={fan}
           size="md"
-          color={colors.pink}
+          color={colors.surfaceHover}
         />
-        <View style={styles.headerText}>
-          <Text variant="bodyLg" color="textPrimary" style={styles.headerName} numberOfLines={1}>
-            {fan}
-          </Text>
-          <Text variant="bodySm" color="textMuted">
-            Replies are free
-          </Text>
-        </View>
-        <Pressable onPress={() => setOptionsOpen(true)} style={styles.iconBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Options">
-          <Feather name="more-vertical" size={rf(20)} color={colors.textPrimary} />
+        <Text variant="body" color="textPrimary" style={styles.headerName} numberOfLines={1}>
+          {fan}
+        </Text>
+        <Pressable onPress={() => setOptionsOpen(true)} style={styles.backBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Chat options">
+          <Feather name="more-vertical" size={rf(18)} color={colors.textPrimary} />
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
-        <ScrollView
-          ref={scrollRef}
-          style={styles.flex}
-          contentContainerStyle={styles.thread}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
-        >
-          {loading && messages.length === 0 ? (
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior="padding"
+      >
+        {loading && messages.length === 0 ? (
+          <View style={[styles.flex, styles.thread]}>
             <View style={styles.skeletonThread}>
               {SKELETON_BUBBLES.map((b, i) => (
                 <View
@@ -551,19 +555,35 @@ const ChatThreadScreen = () => {
                 </View>
               ))}
             </View>
-          ) : messages.length === 0 ? (
-            <View style={styles.center}>
-              <Text variant="bodyLg" color="textPrimary" style={styles.emptyTitle}>
-                Say hi to {firstName}
-              </Text>
-              <Text variant="bodySm" color="textMuted" style={styles.emptyHint}>
-                Your replies are free.
-              </Text>
-            </View>
-          ) : (
-            entries.map((e) =>
+          </View>
+        ) : messages.length === 0 ? (
+          <View style={[styles.flex, styles.center]}>
+            <Text variant="bodyLg" color="textPrimary" style={styles.emptyTitle}>
+              Say hi to {firstName}
+            </Text>
+            <Text variant="bodySm" color="textMuted" style={styles.emptyHint}>
+              Your replies are free.
+            </Text>
+          </View>
+        ) : (
+          /*
+           * Inverted, like Telegram: the newest message sits at offset 0 at the
+           * bottom, so opening the keyboard or sending never leaves the latest
+           * bubble hidden behind the composer.
+           */
+          <FlatList
+            ref={scrollRef}
+            style={styles.flex}
+            contentContainerStyle={styles.thread}
+            data={entriesReversed}
+            inverted
+            keyExtractor={(e) => e.id}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={Gap}
+            renderItem={({ item: e }) =>
               e.kind === 'date' ? (
-                <View key={e.id} style={styles.dateWrap}>
+                <View style={styles.dateWrap}>
                   <View style={styles.datePill}>
                     <Text variant="bodySm" color="textMuted">
                       {e.label}
@@ -572,15 +592,14 @@ const ChatThreadScreen = () => {
                 </View>
               ) : (
                 <MessageRow
-                  key={e.id}
                   msg={e.msg}
                   fan={firstName}
                   onLongPress={() => !e.msg.isDeleted && setActionTarget(e.msg)}
                 />
-              ),
-            )
-          )}
-        </ScrollView>
+              )
+            }
+          />
+        )}
 
         {error ? (
           <View style={styles.errorBar}>
@@ -613,8 +632,8 @@ const ChatThreadScreen = () => {
             ref={inputRef}
             value={draft}
             onChangeText={setDraft}
-            placeholder={editing ? 'Edit message...' : `Message ${firstName}...`}
-            placeholderTextColor={colors.textMuted}
+            placeholder={editing ? 'Edit your message…' : 'Write a free reply…'}
+            placeholderTextColor={colors.textDim}
             style={styles.input}
             multiline
             accessibilityLabel="Message"
@@ -624,13 +643,13 @@ const ChatThreadScreen = () => {
             disabled={!draft.trim() || sending}
             style={[styles.sendBtn, (!draft.trim() || sending) && styles.sendBtnOff]}
             accessibilityRole="button"
-            accessibilityLabel="Send message"
+            accessibilityLabel={editing ? 'Save message' : 'Send reply'}
           >
-            <LinearGradient colors={gradients.cta} start={gradientDirection.diagonal.start} end={gradientDirection.diagonal.end} style={styles.sendFill}>
+            <LinearGradient colors={gradients.primary} start={gradientDirection.diagonal.start} end={gradientDirection.diagonal.end} style={styles.sendFill}>
               {sending ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Feather name={editing ? 'check' : 'send'} size={rf(17)} color={colors.white} />
+                <Feather name={editing ? 'check' : 'send'} size={rf(15)} color={colors.text} />
               )}
             </LinearGradient>
           </Pressable>
@@ -739,6 +758,30 @@ const ActionRow = ({
   </Pressable>
 );
 
+/**
+ * CSS `linear-gradient(135deg, …)` on a w×h box: the gradient line runs through
+ * the centre at 45° and is sized so the corners hit the end colours. RN's
+ * (0,0)→(1,1) is corner-to-corner instead, which on a wide, short bubble ramps
+ * almost horizontally and ends up far more violet than the web.
+ */
+const BubbleGradient = ({ size }: { size: { w: number; h: number } | null }) => {
+  const w = size?.w ?? 1;
+  const h = size?.h ?? 1;
+  const total = w + h;
+  return (
+    <LinearGradient
+      colors={gradients.primary}
+      start={{ x: (w - h) / 4 / w, y: (h - w) / 4 / h }}
+      end={{ x: (3 * w + h) / 4 / w, y: (3 * h + w) / 4 / h }}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      locations={total > 2 ? undefined : [0, 1]}
+    />
+  );
+};
+
+const Gap = () => <View style={styles.gap} />;
+
 const MessageRow = ({
   msg,
   fan,
@@ -749,94 +792,88 @@ const MessageRow = ({
   onLongPress: () => void;
 }) => {
   const out = msg.senderType === 'artist';
-
-  if (msg.isDeleted) {
-    return (
-      <View style={out ? styles.outWrap : styles.inWrap}>
-        <View style={[styles.bubble, out ? styles.bubbleOut : styles.bubbleIn, styles.deletedBubble]}>
-          <Feather name="slash" size={rf(12)} color={colors.textMuted} />
-          <Text variant="bodySm" color="textMuted" style={styles.deletedText}>
-            This message was deleted
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  const deleted = !!msg.isDeleted;
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
   return (
     <View style={out ? styles.outWrap : styles.inWrap}>
-      <Pressable onLongPress={onLongPress} delayLongPress={250} style={[styles.bubble, out ? styles.bubbleOut : styles.bubbleIn]}>
-        {msg.replyToText ? (
-          <View style={styles.quote}>
-            <Text variant="bodySm" color="pink" numberOfLines={1} style={styles.quoteWho}>
+      <Pressable
+        onLongPress={onLongPress}
+        disabled={deleted}
+        delayLongPress={250}
+        style={[styles.bubble, out ? styles.bubbleOut : styles.bubbleIn]}
+        onLayout={(e) =>
+          setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })
+        }
+      >
+        {out ? <BubbleGradient size={size} /> : null}
+        {msg.replyToText != null && !deleted ? (
+          <View style={[styles.quote, out ? styles.quoteOut : null]}>
+            <Text style={styles.quoteWho} numberOfLines={1}>
               {msg.replyToSenderType === 'artist' ? 'You' : fan}
             </Text>
-            <Text variant="bodySm" color={out ? 'screen' : 'textMuted'} numberOfLines={2}>
-              {msg.replyToText}
+            <Text style={styles.quoteText} numberOfLines={2}>
+              {msg.replyToText || 'message'}
             </Text>
           </View>
         ) : null}
-        <Text variant="body" color={out ? 'screen' : 'textPrimary'} style={styles.bubbleText}>
-          {msg.messageText}
-        </Text>
-      </Pressable>
-      <View style={styles.metaRow}>
-        {msg.editedAtUtc ? (
-          <Text variant="bodySm" color="textMuted" style={styles.edited}>
-            edited
+        {deleted ? (
+          <View style={styles.deletedRow}>
+            <Feather name="trash-2" size={rf(12)} color={colors.textMuted} />
+            <Text style={styles.deletedText}>This message was deleted</Text>
+          </View>
+        ) : (
+          <Text style={styles.bubbleText}>{msg.messageText}</Text>
+        )}
+        <View style={styles.metaRow}>
+          <Text style={[styles.metaText, out ? styles.metaTextOut : null]}>
+            {bubbleTime(msg.createdAtUtc)}
+            {msg.editedAtUtc && !deleted ? ' • edited' : ''}
+            {/* Fans pay to message; replies are free — only a fan's bubble shows its cost. */}
+            {!out && !deleted && msg.priceCharged > 0 ? ` • ${msg.priceCharged} coins` : ''}
           </Text>
-        ) : null}
-        <Text variant="bodySm" color="textMuted">
-          {bubbleTime(msg.createdAtUtc)}
-          {/* Fans pay to message; the artist's replies are free — so only a
-              fan's own bubble shows what it cost them, matching artist web. */}
-          {!out && msg.priceCharged > 0 ? ` · ${msg.priceCharged} coins` : ''}
-        </Text>
-        {out ? (
-          <Feather
-            name={msg.readAtUtc ? 'check-circle' : 'check'}
-            size={rf(11)}
-            color={msg.readAtUtc ? colors.cyan : colors.textMuted}
-          />
-        ) : null}
-      </View>
+          {out && !deleted ? (
+            <Feather
+              name={isPendingId(msg.id) ? 'clock' : msg.readAtUtc ? 'check-circle' : 'check'}
+              size={rf(12)}
+              color={colors.text}
+              style={msg.readAtUtc ? undefined : styles.tickSent}
+            />
+          ) : null}
+        </View>
+      </Pressable>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.screen },
+  safe: { flex: 1, backgroundColor: colors.backgroundDeep },
   flex: { flex: 1 },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerText: { flex: 1, gap: 2 },
-  headerName: { fontFamily: fontFamily.bold },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+  headerName: { flex: 1, fontFamily: fontFamily.bold },
+  backBtn: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   thread: {
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: 18,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flexGrow: 1,
-    justifyContent: 'flex-end',
   },
+  gap: { height: 4 },
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 60 },
   skeletonThread: { gap: 12 },
   skeletonRow: { flexDirection: 'row' },
@@ -845,40 +882,52 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: fontFamily.bold },
   emptyHint: { textAlign: 'center' },
 
-  dateWrap: { alignItems: 'center', marginVertical: 4 },
+  dateWrap: { alignItems: 'center', marginVertical: 12 },
   datePill: {
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceHover,
   },
 
-  inWrap: { alignSelf: 'flex-start', maxWidth: '82%' },
-  outWrap: { alignSelf: 'flex-end', maxWidth: '82%', alignItems: 'flex-end' },
-  bubble: { borderRadius: radius.card, paddingHorizontal: 16, paddingVertical: 13, flexShrink: 1, maxWidth: '100%' },
-  bubbleIn: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderBottomLeftRadius: 6,
-  },
-  bubbleOut: { backgroundColor: colors.textPrimary, borderBottomRightRadius: 6 },
-  bubbleText: { lineHeight: lineHeight.small, flexShrink: 1, flexWrap: 'wrap' },
-  deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.8 },
-  deletedText: { fontStyle: 'italic' },
-  quote: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.pink,
-    paddingLeft: 8,
-    marginBottom: 6,
-    opacity: 0.9,
+  inWrap: { alignSelf: 'flex-start', maxWidth: '88%' },
+  outWrap: { alignSelf: 'flex-end', maxWidth: '88%', alignItems: 'flex-end' },
+  bubble: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexShrink: 1,
+    maxWidth: '100%',
+    overflow: 'hidden',
   },
-  quoteWho: { fontFamily: fontFamily.bold },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
-  edited: { fontStyle: 'italic' },
+  bubbleIn: { backgroundColor: colors.surfaceSoft, borderBottomLeftRadius: 4 },
+  bubbleOut: { borderBottomRightRadius: 4 },
+  bubbleText: {
+    color: colors.text,
+    fontFamily: fontFamily.regular,
+    fontSize: 16,
+    lineHeight: 24,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+  deletedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  deletedText: { color: colors.textMuted, fontFamily: fontFamily.regular, fontSize: 14, fontStyle: 'italic' },
+  quote: {
+    backgroundColor: colors.chipSurface,
+    borderLeftColor: colors.pink,
+    borderLeftWidth: 3,
+    borderRadius: 4,
+    marginBottom: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  quoteOut: {},
+  quoteWho: { color: colors.text, fontFamily: fontFamily.bold, fontSize: 12 },
+  quoteText: { color: colors.textMuted, fontFamily: fontFamily.regular, fontSize: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, marginTop: 2 },
+  metaText: { color: colors.textDim, fontFamily: fontFamily.regular, fontSize: 12 },
+  tickSent: { opacity: 0.75 },
+  metaTextOut: { color: colors.text, opacity: 0.85 },
 
   errorBar: {
     flexDirection: 'row',
@@ -913,30 +962,38 @@ const styles = StyleSheet.create({
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 10,
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: 10,
-    paddingBottom: 12,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   input: {
     ...typography.input,
     flex: 1,
     maxHeight: 110,
     minHeight: 44,
-    backgroundColor: colors.card,
+    backgroundColor: colors.backgroundDeep,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.pill,
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 12,
-    color: colors.textPrimary,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    color: colors.text,
   },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden' },
+  sendBtn: { height: 44, width: 44, borderRadius: 22, overflow: 'hidden' },
   sendBtnOff: { opacity: 0.5 },
-  sendFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  sendFill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendText: { color: colors.text, fontFamily: fontFamily.medium, fontSize: 14 },
 
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheetBackdrop: { flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.screen,
     borderTopLeftRadius: 22,

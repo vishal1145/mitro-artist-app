@@ -9,7 +9,6 @@ import {
   CardDetail,
   FilterPills,
   HelpIcon,
-  HistoryCard,
   LearnLink,
   ListHead,
   MetricChip,
@@ -26,7 +25,7 @@ import {
   useGroupCallHistoryPaged,
   useGroupCallHistorySummary,
 } from '@hooks/useGroupCallHistory';
-import { colors, fontFamily, fontSize, layout, letterSpacing, lineHeight, webColors } from '@theme';
+import { colors, fontFamily, fontSize, layout, letterSpacing, lineHeight, radius, spacing, typography, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, webDateTime, webDuration } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -54,6 +53,33 @@ const statusChip = (status: string) => {
   }
   return chipStyles.ended;
 };
+
+/** Groups calls by local calendar day (list is already newest first). */
+const groupByDay = (items: GroupCallHistoryItem[]) => {
+  const groups: { key: string; label: string; items: GroupCallHistoryItem[] }[] = [];
+  const today = new Date().toDateString();
+  items.forEach((item) => {
+    const d = item.startedAtUtc ? new Date(item.startedAtUtc) : null;
+    const key = d ? d.toDateString() : 'unknown';
+    const label = !d
+      ? 'NEVER STARTED'
+      : key === today
+        ? 'TODAY'
+        : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(item);
+    else groups.push({ key, label, items: [item] });
+  });
+  return groups;
+};
+
+/** Ring colour per status — ended green, terminated gold, cancelled/failed red. */
+const statusDot = (status: string) =>
+  status === 'cancelled' || status === 'failed'
+    ? colors.error
+    : status === 'terminated'
+      ? colors.warning
+      : colors.success;
 
 /** `GcallSummaryStripSkeleton` + `GcallHistorySkeleton`, in the app's shimmer. */
 const ListSkeleton = () => (
@@ -153,7 +179,7 @@ const GroupCallHistoryScreen = () => {
         />
       ) : (
         <>
-          <WebCallout>
+          <WebCallout plain>
             <CalloutText>
               This is the{' '}
               <CalloutStrong>full ledger of your past group sessions</CalloutStrong>, newest
@@ -172,8 +198,9 @@ const GroupCallHistoryScreen = () => {
             </CalloutText>
           </WebCallout>
 
-          <SummaryStrip>
+          <SummaryStrip plain>
             <SummaryCell
+              plain
               icon="video"
               tint="cyan"
               label="Calls"
@@ -182,6 +209,7 @@ const GroupCallHistoryScreen = () => {
 
             />
             <SummaryCell
+              plain
               icon="coins"
               tint="gold"
               label="Total earned"
@@ -190,6 +218,7 @@ const GroupCallHistoryScreen = () => {
 
             />
             <SummaryCell
+              plain
               icon="clock-3"
               tint="green"
               label="Avg length"
@@ -199,58 +228,64 @@ const GroupCallHistoryScreen = () => {
             />
           </SummaryStrip>
 
-          <View>
+          <View style={styles.histSection}>
             <ListHead eyebrow="Past shows" heading="Group Call History" />
 
             <View style={styles.callList}>
-              {history.map((item: GroupCallHistoryItem) => {
-                const isOpen = expandedId === item.groupCallId;
-                const hasEarnings = item.totalRevenueTokens > 0;
-                return (
-                  <HistoryCard key={item.groupCallId}>
-                    <Pressable
-                      style={styles.callRow}
-                      onPress={() => toggleExpand(item.groupCallId)}
-                      accessibilityRole="button"
-                      accessibilityState={{ expanded: isOpen }}
-                      accessibilityLabel={`${item.title}, ${isOpen ? 'collapse' : 'expand'} details`}
-                    >
-                      <View style={styles.callIcon}>
-                        <LucideIcon name="video" size={rf(18)} color={webColors.purple} />
-                      </View>
-
-                      <View style={styles.callMain}>
-                        <View style={styles.callTitleRow}>
-                          <Text numberOfLines={1} style={styles.callTitle}>
-                            {item.title}
-                          </Text>
-                          <View style={statusChip(item.status)}>
-                            <Text style={statusChipInk(item.status)}>{item.status}</Text>
-                          </View>
+              {groupByDay(history).map((group) => (
+                <View key={group.key}>
+                  <Text style={styles.dayLabel}>{group.label}</Text>
+                  {group.items.map((item: GroupCallHistoryItem, i) => {
+                    const isOpen = expandedId === item.groupCallId;
+                    const hasEarnings = item.totalRevenueTokens > 0;
+                    const first = i === 0;
+                    const last = i === group.items.length - 1;
+                    return (
+                      <View key={item.groupCallId} style={styles.tlRow}>
+                        <View style={styles.tlRail} pointerEvents="none">
+                          <View style={[styles.tlLine, first ? styles.tlLineFirst : null, last ? styles.tlLineLast : null, first && last ? styles.tlLineOnly : null]} />
+                          <View style={[styles.tlDot, { borderColor: statusDot(item.status) }]} />
                         </View>
-                        <Text style={styles.callMeta}>
-                          {item.startedAtUtc ? webDateTime(item.startedAtUtc) : 'never started'}
-                          {' · '}
-                          {webDuration(item.durationSeconds)}
-                        </Text>
-                      </View>
+                        <View style={styles.tlBody}>
+                          <Pressable
+                            style={styles.tlContent}
+                            onPress={() => toggleExpand(item.groupCallId)}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: isOpen }}
+                            accessibilityLabel={`${item.title}, ${isOpen ? 'collapse' : 'expand'} details`}
+                          >
+                            <View style={styles.callMain}>
+                              <View style={styles.callTitleRow}>
+                                <Text numberOfLines={1} style={styles.callTitle}>
+                                  {item.title}
+                                </Text>
+                                <View style={statusChip(item.status)}>
+                                  <Text style={statusChipInk(item.status)}>{item.status}</Text>
+                                </View>
+                              </View>
+                              <Text style={styles.callMeta}>
+                                {item.startedAtUtc ? webDateTime(item.startedAtUtc) : 'never started'}
+                                {' · '}
+                                {webDuration(item.durationSeconds)}
+                              </Text>
+                            </View>
 
-                      <View style={styles.callRight}>
-                        <Text style={hasEarnings ? styles.callEarn : styles.callEarnZero}>
-                          {hasEarnings ? `+${grouped(item.totalRevenueTokens)} coins` : '0 coins'}
-                        </Text>
-                        <HelpIcon
-                          hint={`You earned ${grouped(item.totalRevenueTokens)} coins for this call based on duration (${webDuration(item.durationSeconds)}) and peak participants (${grouped(item.peakParticipantCount)}).`}
-                        />
-                        <View style={isOpen ? styles.chevOpen : undefined}>
-                          <LucideIcon
-                            name="chevron-down"
-                            size={rf(16)}
-                            color={isOpen ? webColors.textStrong : webColors.dim}
-                          />
-                        </View>
-                      </View>
-                    </Pressable>
+                            <View style={styles.callRight}>
+                              <Text style={hasEarnings ? styles.callEarn : styles.callEarnZero}>
+                                {hasEarnings ? `+${grouped(item.totalRevenueTokens)} coins` : '0 coins'}
+                              </Text>
+                              <HelpIcon
+                                hint={`You earned ${grouped(item.totalRevenueTokens)} coins for this call based on duration (${webDuration(item.durationSeconds)}) and peak participants (${grouped(item.peakParticipantCount)}).`}
+                              />
+                              <View style={isOpen ? styles.chevOpen : undefined}>
+                                <LucideIcon
+                                  name="chevron-down"
+                                  size={rf(16)}
+                                  color={isOpen ? webColors.textStrong : webColors.dim}
+                                />
+                              </View>
+                            </View>
+                          </Pressable>
 
                     {isOpen ? (
                       <CardDetail>
@@ -298,7 +333,7 @@ const GroupCallHistoryScreen = () => {
                             </MetricGrid>
 
                             <View style={styles.detailCallout}>
-                              <WebCallout tone="gold">
+                              <WebCallout plain tone="gold">
                                 <CalloutText>
                                   If a request is rejected or the call is cancelled, that
                                   participant is refunded — only{' '}
@@ -357,9 +392,12 @@ const GroupCallHistoryScreen = () => {
                         ) : null}
                       </CardDetail>
                     ) : null}
-                  </HistoryCard>
-                );
-              })}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
 
               {/* Older calls land here on their own as the artist reaches the
                   bottom — same auto-load the Transactions ledger uses. */}
@@ -440,6 +478,18 @@ const statusChipInk = (status: string) => {
 };
 
 const styles = StyleSheet.create({
+  /* --- History timeline (divider on top, no card boxes) --- */
+  histSection: { marginTop: spacing.xs, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  dayLabel: { ...typography.label, color: colors.textMuted, paddingVertical: spacing.sm, paddingLeft: spacing.lg + spacing.xs },
+  tlRow: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm },
+  tlRail: { width: 20, alignSelf: 'stretch', alignItems: 'center' },
+  tlLine: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.borderStrong },
+  tlLineFirst: { top: spacing.sm + 9 },
+  tlLineLast: { bottom: undefined, height: spacing.sm + 9 },
+  tlLineOnly: { display: 'none' },
+  tlDot: { marginTop: spacing.sm + 2, width: 14, height: 14, borderRadius: radius.pill, borderWidth: 2, backgroundColor: colors.background },
+  tlBody: { flex: 1, minWidth: 0 },
+  tlContent: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.sm },
   /* `.creator-main` is 12px at phone widths; `.creator-view` stacks at 20px. */
   content: {
     gap: 20,

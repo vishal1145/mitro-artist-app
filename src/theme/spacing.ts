@@ -24,36 +24,37 @@ export const spacing = {
  * spec calls out — those win for the named components.
  */
 export const radius = {
-  // Base scale.
+  // Artist Web: --radius-xs 4 (tags), --radius-base 8 (cards, buttons, inputs,
+  // images), --radius-circle 66 (pills), --radius-round 50% (avatars, dots).
+  xs: 4,
   sm: 8,
-  md: 12,
-  lg: 20,
+  md: 8,
+  lg: 8,
   pill: 999,
 
-  /** Large hero / glam cards: 26–28. */
-  hero: 26,
-  /** Standard cards and input fields: 14–18. */
-  card: 18,
-  input: 18,
-  button: 18,
-  /** Small chips and badges: 7–14. */
-  chip: 12,
-  iconChip: 12,
+  /** Hero / large cards: same base radius as everything else on the web. */
+  hero: 8,
+  card: 8,
+  input: 8,
+  button: 8,
+  chip: 8,
+  iconChip: 8,
+  /** Floating tab bar is mobile-only (no web equivalent): unchanged. */
   navPill: 26,
 
   // Legacy aliases.
   none: 0,
-  xl: 20,
-  xxl: 26,
+  xl: 8,
+  xxl: 8,
   full: 999,
 } as const;
 
 /** Fixed element heights / sizes. */
 export const size = {
-  /** Inputs are 56 tall per the spec. */
-  input: 56,
-  /** Full-width primary CTA. */
-  cta: 56,
+  /** Web --size-control is 40; mobile keeps the 44pt minimum touch target. */
+  input: 44,
+  /** Full-width primary CTA (44pt minimum touch target). */
+  cta: 44,
   /** Compact gradient chip button. */
   ctaCompact: 28,
   /** Filter pills / tabs. */
@@ -76,10 +77,10 @@ export const layout = {
    * on a wrapper inside the content — that is what made every non-dashboard
    * screen sit further from the edge than this one.
    */
-  screenPadding: 16,
+  screenPadding: 12,
   /** Cards: 20–22 top/sides, 18 bottom. */
-  cardPadding: 22,
-  cardPaddingBottom: 18,
+  cardPadding: 16,
+  cardPaddingBottom: 16,
   inputPadding: 16,
   fieldGap: 12,
   sectionGap: 16,

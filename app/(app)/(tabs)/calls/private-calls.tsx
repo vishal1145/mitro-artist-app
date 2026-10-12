@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { PageHeader, Screen, Skeleton } from '@components/shared';
-import { LucideIcon, Text } from '@components/ui';
+import { GradientButton, LucideIcon, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
 import { activePrivateCallStore } from '@services/privateCall/activePrivateCall';
 import { profileApi } from '@services/api/profileApi';
@@ -20,7 +20,7 @@ import type {
   PrivateCallHistoryItem,
   PrivateCallRequestItem,
 } from '@app-types/privateCall';
-import { fontFamily, gradientDirection, layout, palette, typography, webColors, webGradients } from '@theme';
+import { colors, fontFamily, gradientDirection, layout, palette, radius, spacing, typography, webColors, webGradients } from '@theme';
 
 /* Timings copied from the web screen (PrivateCallScreen.tsx). The backend
  * auto-expires a pending request 60s after it's created — the tick only drives
@@ -96,18 +96,33 @@ const historyStatusMeta = (
   }
 };
 
-const TONE_FILL: Record<HistoryTone, string> = {
-  ok: webColors.greenPill,
-  warn: webColors.goldTone,
-  bad: webColors.dangerTone,
-  neutral: webColors.chip,
-};
-
 const TONE_INK: Record<HistoryTone, string> = {
   ok: webColors.green,
   warn: webColors.gold,
   bad: webColors.danger,
   neutral: webColors.chipText,
+};
+
+/** Groups history rows by local calendar day, newest first (list is already newest first). */
+const groupHistoryByDay = (items: PrivateCallHistoryItem[]) => {
+  const groups: { key: string; label: string; items: PrivateCallHistoryItem[] }[] = [];
+  const today = new Date().toDateString();
+  items.forEach((item) => {
+    const when = item.acceptedAtUtc ?? item.endedAtUtc;
+    const d = when ? new Date(when) : null;
+    const key = d ? d.toDateString() : 'unknown';
+    let label = 'EARLIER';
+    if (d) {
+      label =
+        key === today
+          ? 'TODAY'
+          : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    }
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(item);
+    else groups.push({ key, label, items: [item] });
+  });
+  return groups;
 };
 
 /** One loading row of the History list — mirrors the web's `.mitro-skel` set. */
@@ -449,38 +464,14 @@ const PrivateCallsScreen = () => {
                 </View>
               </View>
 
-              <Pressable
-                onPress={handleSaveSettings}
+              <GradientButton
+                gradient="green"
+                textColor="onSuccess"
+                label={isSavingSettings ? 'Saving...' : on ? 'Turn off' : 'Turn on'}
                 disabled={isSavingSettings || isLoadingSettings}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  on ? 'Turn off private calls' : 'Turn on private calls'
-                }
-                style={({ pressed }) => [
-                  styles.ctaWrap,
-                  pressed ? styles.pressed : null,
-                ]}
-              >
-                <LinearGradient
-                  colors={webGradients.greenCta}
-                  start={gradientDirection.diagonal.start}
-                  end={gradientDirection.diagonal.end}
-                  style={[
-                    styles.cta,
-                    isSavingSettings || isLoadingSettings
-                      ? styles.ctaDisabled
-                      : null,
-                  ]}
-                >
-                  <Text style={styles.ctaLabel}>
-                    {isSavingSettings
-                      ? 'Saving...'
-                      : on
-                        ? 'Turn off'
-                        : 'Turn on'}
-                  </Text>
-                </LinearGradient>
-              </Pressable>
+                onPress={handleSaveSettings}
+                accessibilityLabel={on ? 'Turn off private calls' : 'Turn on private calls'}
+              />
             </View>
           </LinearGradient>
 
@@ -630,22 +621,10 @@ const PrivateCallsScreen = () => {
           </View>
         </View>
 
-        {/* History */}
-        <View style={styles.sideCard}>
-          <LinearGradient
-            colors={webGradients.sideCard}
-            start={gradientDirection.diagonal.start}
-            end={gradientDirection.diagonal.end}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-          <View style={styles.sideCardHead}>
-            <LucideIcon name="history" size={18} color={webColors.textStrong} />
-            <Text style={styles.sideCardTitle}>History</Text>
-          </View>
-          <Text style={styles.sideCardSub}>
-            Every past private call, most recent first.
-          </Text>
+        {/* History — plain timeline: divider on top, no card box */}
+        <View style={styles.historySection}>
+          <Text style={styles.historyHeading}>History</Text>
+          <Text style={styles.historySub}>Every past private call, most recent first.</Text>
 
           {isLoadingHistory ? (
             <View style={styles.historyList}>
@@ -655,59 +634,42 @@ const PrivateCallsScreen = () => {
             </View>
           ) : history.length === 0 ? (
             <View style={styles.historyEmpty}>
-              <LucideIcon name="phone" size={32} color={webColors.textSoft} />
+              <LucideIcon name="phone" size={32} color={colors.textMuted} />
               <Text style={styles.emptyText}>No past private calls yet.</Text>
             </View>
           ) : (
             <View style={styles.historyList}>
-              {history.map((item, i) => {
-                const meta = historyStatusMeta(item.status, item.endReason);
-                const duration = formatCallDuration(
-                  item.acceptedAtUtc,
-                  item.endedAtUtc,
-                );
-                const last = i === history.length - 1 && !isLoadingMoreHistory;
-                return (
-                  <View
-                    key={item.privateCallId}
-                    style={[
-                      styles.historyRow,
-                      last ? styles.historyRowLast : null,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.historyIcon,
-                        { backgroundColor: TONE_FILL[meta.tone] },
-                      ]}
-                    >
-                      <LucideIcon
-                        name="phone"
-                        size={15}
-                        color={TONE_INK[meta.tone]}
-                      />
-                    </View>
-                    <View style={styles.historyInfo}>
-                      <Text style={styles.historyTitle} numberOfLines={1}>
-                        {meta.label}
-                      </Text>
-                      <Text style={styles.historyMeta} numberOfLines={1}>
-                        {`${item.acceptedAtUtc ? new Date(item.acceptedAtUtc).toLocaleString('en-US') : 'never accepted'}${duration ? ` • ${duration}` : ''}`}
-                      </Text>
-                    </View>
-                    <View style={styles.historyAmount}>
-                      <LucideIcon
-                        name="coins"
-                        size={13}
-                        color={webColors.textStrong}
-                      />
-                      <Text style={styles.historyAmountText}>
-                        {(item.totalCoinsCharged - item.totalRefundedCoins).toLocaleString()}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
+              {groupHistoryByDay(history).map((group) => (
+                <View key={group.key}>
+                  <Text style={styles.dayLabel}>{group.label}</Text>
+                  {group.items.map((item, i) => {
+                    const meta = historyStatusMeta(item.status, item.endReason);
+                    const duration = formatCallDuration(item.acceptedAtUtc, item.endedAtUtc);
+                    const when = item.acceptedAtUtc ?? item.endedAtUtc;
+                    const time = when
+                      ? new Date(when).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase()
+                      : 'never accepted';
+                    const net = item.totalCoinsCharged - item.totalRefundedCoins;
+                    const first = i === 0;
+                    const last = i === group.items.length - 1;
+                    return (
+                      <View key={item.privateCallId} style={styles.tlRow}>
+                        <View style={styles.tlRail} pointerEvents="none">
+                          <View style={[styles.tlLine, first ? styles.tlLineFirst : null, last ? styles.tlLineLast : null, first && last ? styles.tlLineOnly : null]} />
+                          <View style={[styles.tlDot, { borderColor: TONE_INK[meta.tone] }]} />
+                        </View>
+                        <View style={styles.tlInfo}>
+                          <Text style={styles.tlTitle} numberOfLines={1}>{meta.label}</Text>
+                          <Text style={styles.tlMeta} numberOfLines={1}>{`${time}${duration ? ` · ${duration}` : ''}`}</Text>
+                        </View>
+                        <Text style={[styles.tlAmount, net > 0 ? styles.tlAmountPos : null]}>
+                          {net > 0 ? `+${net.toLocaleString()}` : net.toLocaleString()}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
 
               {isLoadingMoreHistory ? (
                 <>
@@ -733,6 +695,31 @@ const PrivateCallsScreen = () => {
  * at mobile widths, where `.creator-main` pads the page by 12px and the
  * two-column `.gsched-grid` collapses to one column. */
 const styles = StyleSheet.create({
+  /* --- History timeline --- */
+  historySection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    gap: spacing.xxs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  historyHeading: { ...typography.metric, color: colors.textPrimary },
+  historySub: { ...typography.subtitle, color: colors.textMuted, marginBottom: spacing.sm },
+  dayLabel: { ...typography.label, color: colors.textMuted, paddingVertical: spacing.sm, paddingLeft: spacing.lg + spacing.xs },
+  // One continuous rail per day: the line fills each row's full height (no
+  // overflow, which Android clips) so it joins dot to dot.
+  tlRow: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm },
+  tlRail: { width: 20, alignSelf: 'stretch', alignItems: 'center' },
+  tlLine: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.borderStrong },
+  tlLineFirst: { top: spacing.sm + 9 },
+  tlLineLast: { bottom: undefined, height: spacing.sm + 9 },
+  tlLineOnly: { display: 'none' },
+  tlDot: { marginTop: spacing.sm + 2, width: 14, height: 14, borderRadius: radius.pill, borderWidth: 2, backgroundColor: colors.background },
+  tlInfo: { flex: 1, gap: spacing.xxs, paddingVertical: spacing.sm },
+  tlTitle: { ...typography.h2, color: colors.textPrimary },
+  tlMeta: { ...typography.subtitle, color: colors.textMuted },
+  tlAmount: { ...typography.h2, color: colors.textMuted, paddingVertical: spacing.sm },
+  tlAmountPos: { color: colors.success },
   content: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: 12,

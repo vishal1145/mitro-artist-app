@@ -1624,7 +1624,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 20,
     paddingHorizontal: 16,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: C.border,
     marginBottom: 16,
@@ -1713,7 +1713,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 24,
+    borderRadius: 8,
     marginBottom: 16,
   },
   h2: {
@@ -1730,7 +1730,7 @@ const styles = StyleSheet.create({
     gap: 11,
     paddingVertical: 13,
     paddingHorizontal: 15,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderLeftWidth: 3,
     marginBottom: 14,
@@ -1774,7 +1774,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surfaceStrong,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   fieldInputTop: {
     alignItems: 'flex-start',
@@ -1865,7 +1865,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surfaceStrong,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   btnFileText: {
     color: C.text,
@@ -1885,7 +1885,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surfaceStrong,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   btnGhostSmText: {
     color: C.muted,
@@ -1893,7 +1893,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
   },
   btnPrimarySm: {
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   btnPrimarySmFill: {
@@ -2016,7 +2016,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surfaceStrong,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   btnGhostText: {
     color: C.muted,
@@ -2025,7 +2025,7 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.small,
   },
   btnPrimary: {
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   btnPrimaryFill: {
@@ -2097,7 +2097,7 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     backgroundColor: C.pink,
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 14,
     height: 44,
     justifyContent: 'center',
@@ -2318,7 +2318,7 @@ const styles = StyleSheet.create({
   previewStatBox: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
     alignItems: 'center',
     borderWidth: 1,
