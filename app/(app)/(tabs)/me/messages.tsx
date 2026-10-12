@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   gear: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   popup: {
     gap: spacing.md,
     padding: 18,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: webColors.panelBorder,
     backgroundColor: webColors.panelFill,
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
   shield: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

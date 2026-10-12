@@ -672,14 +672,9 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: web.cardBorder,
-    borderRadius: 14,
+    borderRadius: 8,
     backgroundColor: web.cardBase,
     overflow: 'hidden',
-    shadowColor: web.shadow,
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.38,
-    shadowRadius: 29,
-    elevation: 10,
   },
   cardHead: {
     paddingTop: 20,
@@ -732,7 +727,7 @@ const styles = StyleSheet.create({
     color: web.textStrong,
     borderWidth: 1,
     borderColor: web.inputBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: web.inputBg,
   },
   inputText: {
@@ -789,7 +784,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -800,11 +795,6 @@ const styles = StyleSheet.create({
   modeBtnActive: {
     borderColor: web.transparent,
     backgroundColor: web.transparent,
-    shadowColor: web.pinkGlow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 1,
-    shadowRadius: 13,
-    elevation: 6,
   },
   modeText: {
     ...typography.body,
@@ -825,7 +815,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: web.approvalBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: web.approvalBg,
   },
   approvalCopy: {
@@ -881,11 +871,6 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 999,
     overflow: 'hidden',
-    shadowColor: web.pinkGlow,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 1,
-    shadowRadius: 21,
-    elevation: 10,
   },
   submitDisabled: {
     opacity: 0.7,
@@ -926,14 +911,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: web.cardBorder,
-    borderRadius: 14,
+    borderRadius: 8,
     backgroundColor: web.sideBase,
     overflow: 'hidden',
-    shadowColor: web.shadow,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.3,
-    shadowRadius: 21,
-    elevation: 8,
   },
   /* .gsched-sidebar gap is 16, the page grid gap is 20. */
   mathCard: {

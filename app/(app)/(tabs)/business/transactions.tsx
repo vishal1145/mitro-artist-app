@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   ledgerCard: {
     backgroundColor: webColors.surface,
     borderColor: webColors.panelBorder,
-    borderRadius: 18,
+    borderRadius: 8,
     borderWidth: 1,
   },
   /** `.ledger-head { padding: 16px 18px 12px }`. */
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   txIcon: {
     alignItems: 'center',
-    borderRadius: 11,
+    borderRadius: 8,
     height: 38,
     justifyContent: 'center',
     width: 38,

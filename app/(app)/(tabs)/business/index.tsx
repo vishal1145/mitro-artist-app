@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   notice: {
     backgroundColor: 'rgba(255, 200, 107, 0.08)',
     borderColor: 'rgba(255, 200, 107, 0.28)',
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 10,
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   /* .hero-card ------------------------------------------------------------ */
   heroCard: {
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     minHeight: 200,
     overflow: 'hidden',
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: webColors.surfaceSoft,
     borderColor: webColors.panelBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     height: 34,
     justifyContent: 'center',
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
   statTile: {
     backgroundColor: webColors.surfaceStrong,
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     gap: 10,
     paddingHorizontal: 18,
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   },
   statIc: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     height: 34,
     justifyContent: 'center',
     width: 34,
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
   trendCard: {
     backgroundColor: webColors.surface,
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 18,
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: webColors.surfaceSoft,
     borderColor: webColors.panelBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   /* .source-pie-card ------------------------------------------------------ */
   pieCard: {
     borderColor: webColors.panelBorder,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
     paddingHorizontal: 20,
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 63, 173, 0.14)',
     borderColor: 'rgba(255, 63, 173, 0.32)',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
   tipCard: {
     backgroundColor: webColors.surfaceStrong,
     borderColor: webColors.panelBorder,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     maxWidth: 340,
     padding: 16,

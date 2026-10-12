@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   noteIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
