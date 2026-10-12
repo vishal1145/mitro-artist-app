@@ -123,13 +123,10 @@ const GradientButtonComponent = ({
 export const GradientButton = memo(GradientButtonComponent);
 
 const styles = StyleSheet.create({
-  // Spec: full width, height 56, radius 18, shadow 0 12px 30px pink/35.
+  // Web: full width, radius-base (8), no resting shadow (depth comes from
+  // surface steps and borders). Height stays at the 44pt touch target.
   wrapper: {
     borderRadius: radius.button,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1, // alpha is already baked into the rgba glow color
-    shadowRadius: 30,
-    elevation: 12,
   },
   fill: {
     height: size.cta,

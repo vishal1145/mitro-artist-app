@@ -66,7 +66,7 @@ const SkeletonComponent = ({
       accessibilityLabel="Loading"
       style={[
         styles.block,
-        { width, height, borderRadius: round ?? 10 },
+        { width, height, borderRadius: round ?? radius.sm },
         pulse,
         style,
       ]}

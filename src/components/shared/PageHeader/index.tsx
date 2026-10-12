@@ -3,7 +3,7 @@ import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, typography } from '@theme';
+import { colors, HIT_TARGET, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface PageHeaderProps {
@@ -64,9 +64,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   back: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: HIT_TARGET,
+    height: HIT_TARGET,
+    borderRadius: radius.sm,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
