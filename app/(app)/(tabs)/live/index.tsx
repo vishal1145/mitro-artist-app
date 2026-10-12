@@ -20,7 +20,7 @@ import {
 } from '@services/agora/agoraEngine';
 import { activeBroadcastStore } from '@services/broadcast/activeBroadcast';
 import { useNotificationStore } from '@store';
-import { colors, layout, radius, typography } from '@theme';
+import { colors, layout, lineHeight, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 // Matches the artist web's Go Live category chips (text-only pills).
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   stageHeadline: {
     ...typography.h3,
   },
-  stageHint: { color: 'rgba(255,250,255,0.72)', lineHeight: rf(18), paddingHorizontal: 8 },
+  stageHint: { color: 'rgba(255,250,255,0.72)', lineHeight: lineHeight.small, paddingHorizontal: 8 },
 
   // Controls
   controls: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 12 },

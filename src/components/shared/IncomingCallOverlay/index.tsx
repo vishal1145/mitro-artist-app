@@ -13,8 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Text } from '@components/ui';
 import { privateCallApi } from '@services/api/privateCallApi';
+import { incomingCallAlert } from '@services/incomingCallAlert';
 import { useIncomingCallStore } from '@store';
-import { colors, fontFamily, radius, spacing, TAB_BAR_SPACE } from '@theme';
+import { colors, fontFamily, letterSpacing, radius, spacing, TAB_BAR_SPACE } from '@theme';
 import { parseServerUtcMs } from '@utils/format';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
@@ -71,6 +72,23 @@ export const IncomingCallOverlay = () => {
 
   const requestId = request?.requestId;
   const expiresAt = request?.expiresAtUtc;
+
+  // Ring + vibrate while a request is pending. The store clears `current` on
+  // accept / reject / cancel / expiry, which stops it; the timer covers expiry
+  // between the store's 6s polls. Also stops on unmount.
+  useEffect(() => {
+    // Silent inside a live call/broadcast room, and once Accept/Decline is tapped.
+    if (!requestId || busy || /-room/.test(pathname ?? '')) return;
+    incomingCallAlert.start();
+    const at = parseServerUtcMs(expiresAt ?? '');
+    const timer = at
+      ? setTimeout(() => incomingCallAlert.stop(), Math.max(0, at - Date.now()))
+      : null;
+    return () => {
+      if (timer) clearTimeout(timer);
+      incomingCallAlert.stop();
+    };
+  }, [requestId, expiresAt, busy, pathname]);
 
   // Reset the button state whenever a different request takes the stage.
   useEffect(() => {
@@ -286,7 +304,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   eyebrow: {
-    letterSpacing: 0.4,
+    letterSpacing: letterSpacing.mono,
   },
   name: {
     fontFamily: fontFamily.extrabold,

@@ -3,7 +3,7 @@ import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, radius, spacing } from '@theme';
 import { rf } from '@utils/responsive';
 
 import { live } from './liveTokens';
@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
   headerText: {
     fontFamily: fontFamily.bold,
     color: colors.textMuted,
-    fontSize: rf(11),
-    letterSpacing: 1.1,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.small,
   },
   rule: { flex: 1, height: 1, backgroundColor: live.hairline },
   close: {

@@ -6,7 +6,7 @@ import {
   type TextStyle,
 } from 'react-native';
 
-import { colors, typography, type TypographyVariant } from '@theme';
+import { colors, fontFamily, typography, type TypographyVariant } from '@theme';
 
 export interface TextProps extends RNTextProps {
   variant?: TypographyVariant;
@@ -35,7 +35,11 @@ const TextComponent = ({
       next.textAlign = align;
     }
     if (weight) {
-      next.fontWeight = weight;
+      // The weight is baked into the family (Inter 400/500/600), so map to a
+      // family instead of setting fontWeight, which would fake-bold on Android.
+      const w = Number(weight);
+      next.fontFamily =
+        w >= 600 ? fontFamily.semibold : w >= 500 ? fontFamily.medium : fontFamily.regular;
     }
     return next;
   }, [color, align, weight]);

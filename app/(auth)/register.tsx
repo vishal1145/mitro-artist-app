@@ -6,14 +6,13 @@ import {
   AuthLegal,
   AuthLogo,
   FormInput,
-  PasswordStrengthMeter,
   Screen,
 } from '@components/shared';
+import { PasswordRules } from '@components/shared/PasswordRules';
 import { GradientButton, Text } from '@components/ui';
 import { useStageNameAvailability } from '@hooks/useStageNameAvailability';
 import { useRegister } from '@screens/auth/register/useRegister';
 import { layout } from '@theme';
-import { authPasswordStrength } from '@utils/validators';
 
 /** Register screen — UI only. Logic in useRegister(). */
 const RegisterScreen = () => {
@@ -101,11 +100,7 @@ const RegisterScreen = () => {
               leftIcon="lock"
               onSubmitEditing={handleSubmit}
             />
-            {password.length ? (
-              <View style={styles.meter}>
-                <PasswordStrengthMeter score={authPasswordStrength(password)} />
-              </View>
-            ) : null}
+            {password.length ? <PasswordRules password={password} /> : null}
           </View>
         </View>
 
@@ -176,9 +171,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   availability: {
-    marginTop: 8,
-  },
-  meter: {
     marginTop: 8,
   },
   submitError: {

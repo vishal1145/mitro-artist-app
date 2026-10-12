@@ -96,6 +96,19 @@ export const settingsApi = {
      wheel was read-only in the app: the name, the price, the on/off switch and
      Delete all moved the UI and sent nothing. */
 
+  /**
+   * First-time creation of the artist's wheel (`POST /settings/fun-wheel`).
+   * The server creates it active and answers 409 if one already exists.
+   */
+  async createFunWheel(payload: UpdateFunWheelPayload): Promise<Result<FunWheel>> {
+    try {
+      const res = await api.post<FunWheel>(ENDPOINTS.settings.funWheel, payload);
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  },
+
   /** Rename the wheel / change its price per spin. */
   async updateFunWheel(
     wheelId: string,

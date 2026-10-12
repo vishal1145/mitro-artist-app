@@ -19,7 +19,7 @@ import {
 import { LucideIcon, Text } from '@components/ui';
 import { useNotificationStore } from '@store';
 import type { NotificationItem } from '@app-types/api';
-import { colors, fontFamily, layout, radius } from '@theme';
+import { colors, fontFamily, layout, lineHeight, radius } from '@theme';
 import { relativeShort } from '@utils/format';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     marginTop: 32,
-    lineHeight: rf(17),
+    lineHeight: lineHeight.mono,
   },
   skeleton: {
     marginTop: 24,

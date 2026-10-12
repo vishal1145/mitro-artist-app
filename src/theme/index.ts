@@ -18,7 +18,14 @@ import {
   spacing,
   TAB_BAR_SPACE,
 } from './spacing';
-import { fontFamily, fontSize, fontWeight, typography } from './typography';
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  letterSpacing,
+  lineHeight,
+  typography,
+} from './typography';
 
 export type { ColorToken, GradientToken, CtaGradientToken } from './colors';
 export type {
@@ -50,6 +57,8 @@ export {
   fontFamily,
   fontWeight,
   fontSize,
+  lineHeight,
+  letterSpacing,
 };
 
 /** Convenience aggregate for consumers that want the whole theme object. */

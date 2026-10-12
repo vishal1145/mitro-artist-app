@@ -30,7 +30,7 @@ import {
   switchCamera,
 } from '@services/agora/agoraEngine';
 import type { BroadcastActivityItem, BroadcastViewer, StartBroadcastResponse } from '@app-types/broadcast';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, lineHeight, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
 
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   progressSegs: { flexDirection: 'row', gap: 4 },
   seg: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
   segFilled: { backgroundColor: colors.pink },
-  progressText: { lineHeight: rf(17) },
+  progressText: { lineHeight: lineHeight.mono },
   bold: { fontFamily: fontFamily.bold },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   confirmOverlay: {
@@ -702,13 +702,13 @@ const styles = StyleSheet.create({
   },
   confirmTitleWrap: { flex: 1, gap: 4 },
   confirmEyebrow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  confirmEyebrowText: { fontFamily: fontFamily.extrabold, fontSize: rf(12), letterSpacing: 0.3, color: '#FFB7DF' },
+  confirmEyebrowText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: '#FFB7DF' },
   confirmTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   confirmTitle: { flexShrink: 1 },
   confirmStats: { alignItems: 'flex-end', gap: 6 },
   offlinePill: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   offlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.4)' },
-  offlinePillText: { fontFamily: fontFamily.extrabold, fontSize: rf(11), letterSpacing: 0.5, color: colors.textPrimary },
+  offlinePillText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: colors.textPrimary },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   progressBar: {
     gap: 10,
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   progressSegments: { flexDirection: 'row', gap: 6 },
   progSeg: { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)' },
   progSegFilled: { backgroundColor: colors.pink },
-  confirmProgressText: { fontFamily: fontFamily.body, fontSize: rf(12.5), lineHeight: rf(19), color: colors.textSecondary },
+  confirmProgressText: { fontFamily: fontFamily.body, fontSize: fontSize.xs, lineHeight: lineHeight.mono, color: colors.textSecondary },
   confirmStage: {
     flex: 1,
     marginTop: spacing.md,
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   cameraBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.4)' },
-  cameraBadgeText: { fontFamily: fontFamily.extrabold, fontSize: rf(10.5), letterSpacing: 0.4, color: colors.textPrimary },
+  cameraBadgeText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: colors.textPrimary },
   stageQuick: { position: 'absolute', top: 14, right: 14, zIndex: 2, flexDirection: 'row', gap: 8 },
   stageQuickBtn: {
     width: 34,
@@ -764,11 +764,11 @@ const styles = StyleSheet.create({
   },
   stageQuickMuted: { borderColor: 'rgba(239,68,68,0.45)', backgroundColor: 'rgba(239,68,68,0.14)' },
   confirmPlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 28 },
-  confirmPlaceholderTitle: { fontFamily: fontFamily.bold, fontSize: rf(15), color: colors.white },
-  confirmPlaceholderHint: { lineHeight: rf(18) },
+  confirmPlaceholderTitle: { fontFamily: fontFamily.bold, fontSize: fontSize.body, color: colors.white },
+  confirmPlaceholderHint: { lineHeight: lineHeight.small },
   startShow: { height: 52, borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.md },
   startShowFill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  startShowText: { fontFamily: fontFamily.extrabold, fontSize: rf(14), letterSpacing: 0.6, color: colors.white },
+  startShowText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.small, letterSpacing: letterSpacing.small, color: colors.white },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.error, marginHorizontal: spacing.md, marginBottom: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md },
 
   half: { flex: 1, paddingHorizontal: spacing.md },
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
   controlsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   endShow: { flex: 1, height: 46, borderRadius: radius.pill, overflow: 'hidden' },
   endShowFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  endShowText: { fontFamily: fontFamily.extrabold, fontSize: rf(13), letterSpacing: 0.5, color: colors.white },
+  endShowText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.small, letterSpacing: letterSpacing.small, color: colors.white },
   manageBtn: { width: 52, height: 46, borderRadius: radius.card, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   pendingPill: { position: 'absolute', top: 4, right: 4, backgroundColor: colors.error, borderRadius: radius.pill, minWidth: 16, paddingHorizontal: 4, alignItems: 'center' },
 
@@ -799,13 +799,13 @@ const styles = StyleSheet.create({
   actDetail: { color: 'rgba(255,250,255,0.72)' },
   highlightDetail: { color: '#FFD68A', fontFamily: fontFamily.semibold, fontStyle: 'italic' },
   hostBadge: { backgroundColor: 'rgba(124,92,255,0.16)', borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  hostBadgeText: { fontFamily: fontFamily.extrabold, fontSize: rf(9), letterSpacing: 0.3, color: '#7C5CFF' },
+  hostBadgeText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: '#7C5CFF' },
   tokenPill: { backgroundColor: 'rgba(255,200,107,0.14)', borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  tokenPillText: { fontFamily: fontFamily.extrabold, fontSize: rf(10), color: '#FFC86B' },
+  tokenPillText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, color: '#FFC86B' },
   itemStatus: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  itemStatusText: { fontFamily: fontFamily.bold, fontSize: rf(9.5), letterSpacing: 0.3 },
+  itemStatusText: { fontFamily: fontFamily.bold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small },
   composeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.sm },
-  chatInput: { flex: 1, height: wp(10), backgroundColor: colors.glassSurface, borderRadius: radius.pill, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: rf(13) },
+  chatInput: { flex: 1, height: wp(10), backgroundColor: colors.glassSurface, borderRadius: radius.pill, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: fontSize.small },
   sendBtn: { width: wp(10), height: wp(10), borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   viewerList: { padding: spacing.sm, gap: spacing.sm },
   viewerEmpty: { padding: spacing.md },
@@ -823,11 +823,11 @@ const styles = StyleSheet.create({
   headerMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
   liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: radius.pill, backgroundColor: '#E8192C' },
   liveBadgeDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#fff' },
-  liveBadgeText: { fontFamily: fontFamily.extrabold, color: '#fff', fontSize: rf(10.5), letterSpacing: 0.5 },
-  headerSub: { flexShrink: 1, fontFamily: fontFamily.semibold, color: 'rgba(255,255,255,0.62)', fontSize: rf(12) },
+  liveBadgeText: { fontFamily: fontFamily.extrabold, color: '#fff', fontSize: fontSize.xs, letterSpacing: letterSpacing.small },
+  headerSub: { flexShrink: 1, fontFamily: fontFamily.semibold, color: 'rgba(255,255,255,0.62)', fontSize: fontSize.xs },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerPill: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 30, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.42)' },
-  headerPillText: { fontFamily: fontFamily.bold, color: colors.textPrimary, fontSize: rf(12) },
+  headerPillText: { fontFamily: fontFamily.bold, color: colors.textPrimary, fontSize: fontSize.xs },
 
   // Video area
   videoArea: { flex: 1, marginHorizontal: spacing.md, marginTop: spacing.xs, marginBottom: spacing.sm, borderRadius: 22, backgroundColor: '#090716', position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(140,77,255,0.55)', alignItems: 'center', justifyContent: 'center' },
@@ -836,13 +836,13 @@ const styles = StyleSheet.create({
   /* Fullscreen is inside the same SafeAreaView — the status-bar inset is
      already paid for, so the controls ride the stage's very top edge. */
   fsPillFull: { top: 6 },
-  fsPillText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: '#fff' },
+  fsPillText: { fontFamily: fontFamily.bold, fontSize: fontSize.xs, color: '#fff' },
   quickBtnMuted: { borderWidth: 1, borderColor: 'rgba(239,68,68,0.45)', backgroundColor: 'rgba(239,68,68,0.14)' },
 
   // Chat / Viewers panel
   panelSection: { flex: 1, marginHorizontal: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.backgroundAlt, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   panelHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xs },
-  panelHeaderText: { fontFamily: fontFamily.bold, color: colors.textMuted, fontSize: rf(11), letterSpacing: 1.1 },
+  panelHeaderText: { fontFamily: fontFamily.bold, color: colors.textMuted, fontSize: fontSize.xs, letterSpacing: letterSpacing.small },
   panelHeaderRule: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.07)' },
   panelClose: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)' },
 

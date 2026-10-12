@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { LogoBadge } from '@components/ui/LogoBadge';
 import { Text } from '@components/ui/Text';
 import { useConversations } from '@hooks/usePrivateMessages';
-import { colors, fontFamily, radius, typography } from '@theme';
+import { colors, fontFamily, fontSize, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface EarningsBarProps {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(17),
+    fontSize: fontSize.body,
     color: colors.textPrimary,
   },
   pill: {

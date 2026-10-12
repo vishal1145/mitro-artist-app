@@ -25,15 +25,7 @@ import {
   useBroadcastHistorySummary,
 } from '@hooks/useInsights';
 import { useFulfillRewardOrderMutation, usePendingRewardOrders } from '@hooks/useRewardOrders';
-import {
-  colors,
-  fontFamily,
-  gradientDirection,
-  layout,
-  palette,
-  webColors,
-  webGradients,
-} from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, layout, letterSpacing, lineHeight, palette, webColors, webGradients } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped, webDateTime, webDuration } from '@utils/format';
 import { rf } from '@utils/responsive';
@@ -515,17 +507,17 @@ const styles = StyleSheet.create({
   },
   rewardsEyebrowText: {
     color: webColors.gold,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10.5),
-    letterSpacing: 0.53,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   rewardsHeading: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(16),
-    lineHeight: rf(21),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 12,
   },
 
@@ -548,8 +540,8 @@ const styles = StyleSheet.create({
     color: webColors.muted,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.6),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   pendingName: {
     color: webColors.textStrong,
@@ -572,14 +564,14 @@ const styles = StyleSheet.create({
   btnGhostText: {
     color: webColors.green,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   rewardsEmpty: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     paddingVertical: 10,
     textAlign: 'center',
   },
@@ -612,15 +604,15 @@ const styles = StyleSheet.create({
   showTitle: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     marginBottom: 2,
   },
   showMeta: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   showRight: {
     alignItems: 'center',
@@ -636,14 +628,14 @@ const styles = StyleSheet.create({
   showEarn: {
     color: webColors.green,
     fontFamily: fontFamily.bold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   showEarnZero: {
     color: webColors.dim,
     fontFamily: fontFamily.medium,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   analyticsBtn: {
     alignItems: 'center',
@@ -670,14 +662,14 @@ const styles = StyleSheet.create({
   analyticsText: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   analyticsTextOn: {
     color: palette.white,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 });
 

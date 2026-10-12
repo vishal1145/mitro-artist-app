@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Header, ListRow, Screen } from '@components/shared';
 import { Card, GradientButton, Text } from '@components/ui';
 import { useEarningsSummary } from '@hooks/useInsights';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, radius, spacing } from '@theme';
 import { grouped } from '@utils/format';
 import { rf, wp } from '@utils/responsive';
 
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   heroLabel: {
-    letterSpacing: 1.6,
+    letterSpacing: letterSpacing.mono,
   },
   heroValue: {
     flexDirection: 'row',
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   heroNumber: {
-    fontSize: rf(35),
+    fontSize: fontSize.headingLg,
   },
   heroPending: {
     flexDirection: 'row',
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     color: colors.textPrimary,
     fontFamily: fontFamily.display,
-    fontSize: rf(28),
+    fontSize: fontSize.heading,
     textAlign: 'center',
     paddingVertical: spacing.lg,
   },

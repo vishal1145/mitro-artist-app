@@ -9,7 +9,7 @@ import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
 import { useFollowers } from '@hooks/useFollowers';
 import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, layout, radius, spacing, typography, webColors } from '@theme';
+import { colors, fontFamily, fontSize, layout, lineHeight, radius, spacing, typography, webColors } from '@theme';
 import { compactCount, duration, formatTokens, grouped, relativeShort, shortDate } from '@utils/format';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   calloutIcon: { marginTop: 1 },
-  calloutText: { flex: 1, lineHeight: rf(18) },
+  calloutText: { flex: 1, lineHeight: lineHeight.small },
   calloutStrong: { fontFamily: fontFamily.bold, color: colors.textPrimary },
 
   // Summary strip — 2×2 grid on mobile
@@ -422,13 +422,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowSkeleton: { gap: 10 },
-  emptyLine: { lineHeight: rf(18) },
+  emptyLine: { lineHeight: lineHeight.small },
 
   // Broadcast row
   bcastRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bcastIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   bcastMain: { flex: 1, gap: 2 },
-  bcastEarn: { fontFamily: fontFamily.bold, fontSize: rf(13), color: colors.green },
+  bcastEarn: { fontFamily: fontFamily.bold, fontSize: fontSize.small, color: colors.green },
   bcastEarnZero: { color: colors.textMuted },
 
   // Notification row

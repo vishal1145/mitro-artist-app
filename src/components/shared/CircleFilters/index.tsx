@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { Text } from '@components/ui/Text';
-import { colors, gradientDirection, gradients, typography } from '@theme';
+import { colors, fontSize, gradientDirection, gradients, letterSpacing, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 export interface CircleFilterOption {
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
   // The `label` variant's tracking makes "FOLLOWERS" wider than its column,
   // so this row tightens it and caps it to one line.
   label: {
-    fontSize: rf(9),
-    letterSpacing: 0.3,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.small,
     textAlign: 'center',
   },
   circleWrap: {

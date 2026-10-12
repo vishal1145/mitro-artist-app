@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 
 import { LucideIcon, Text, type LucideIconName } from '@components/ui';
-import { fontFamily, gradientDirection, palette, webColors, webGradients } from '@theme';
+import { fontFamily, fontSize, gradientDirection, letterSpacing, lineHeight, palette, webColors, webGradients } from '@theme';
 import { rf } from '@utils/responsive';
 
 /* -------------------------------------------------------------------------- */
@@ -470,16 +470,16 @@ export const styles = StyleSheet.create({
   pageHeadH1: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
-    letterSpacing: -0.22,
-    lineHeight: rf(27),
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
+    lineHeight: lineHeight.heading,
     marginBottom: 4,
   },
   pageHeadP: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 
   /* filter-pills ---------------------------------------------------------- */
@@ -507,14 +507,14 @@ export const styles = StyleSheet.create({
   pillText: {
     color: webColors.white62,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   pillTextOn: {
     color: palette.white,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* info-callout ---------------------------------------------------------- */
@@ -591,8 +591,8 @@ export const styles = StyleSheet.create({
   calloutText: {
     color: webColors.muted,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(20),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   calloutStrong: {
     color: webColors.textStrong,
@@ -601,15 +601,15 @@ export const styles = StyleSheet.create({
   learnLink: {
     color: webColors.cyan,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12),
-    lineHeight: rf(20),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textDecorationLine: 'underline',
   },
   learnLinkGold: {
     color: webColors.gold,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12),
-    lineHeight: rf(20),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textDecorationLine: 'underline',
   },
 
@@ -637,8 +637,8 @@ export const styles = StyleSheet.create({
   tooltipText: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(11.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* grids ----------------------------------------------------------------- */
@@ -681,17 +681,17 @@ export const styles = StyleSheet.create({
   summaryLabel: {
     color: webColors.dim,
     flexShrink: 1,
-    fontFamily: fontFamily.bold,
-    fontSize: rf(10.5),
-    letterSpacing: 0.63,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   summaryValue: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(17.5),
-    lineHeight: rf(22),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
 
   /* list-head ------------------------------------------------------------- */
@@ -715,17 +715,17 @@ export const styles = StyleSheet.create({
   },
   eyebrowText: {
     color: webColors.gold,
-    fontFamily: fontFamily.extrabold,
-    fontSize: rf(10.5),
-    letterSpacing: 0.53,
-    lineHeight: rf(14),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   listHeading: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(16),
-    lineHeight: rf(21),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 12,
     marginTop: 6,
   },
@@ -769,17 +769,17 @@ export const styles = StyleSheet.create({
   metricChipLabel: {
     color: webColors.dim,
     flexShrink: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(10),
-    letterSpacing: 0.5,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   metricChipValue: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(16),
-    lineHeight: rf(21),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
   inkGood: {
     color: webColors.green,
@@ -806,17 +806,17 @@ export const styles = StyleSheet.create({
   metricTileLabel: {
     color: webColors.dim,
     flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: rf(9.6),
-    letterSpacing: 0.48,
-    lineHeight: rf(13),
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
+    lineHeight: lineHeight.mono,
     textTransform: 'uppercase',
   },
   metricTileValue: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(17.5),
-    lineHeight: rf(22),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 6,
   },
   miniTrack: {
@@ -833,8 +833,8 @@ export const styles = StyleSheet.create({
   metricTileCaption: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(10),
-    lineHeight: rf(14),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
 
   /* breakdown ------------------------------------------------------------- */
@@ -855,8 +855,8 @@ export const styles = StyleSheet.create({
     color: webColors.muted,
     flexShrink: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   bdTrack: {
     backgroundColor: webColors.hairline06,
@@ -872,8 +872,8 @@ export const styles = StyleSheet.create({
   bdAmt: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textAlign: 'right',
     width: 60,
   },
@@ -888,8 +888,8 @@ export const styles = StyleSheet.create({
   emptyText: {
     color: webColors.textSoft,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(20),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     textAlign: 'center',
   },
 });

@@ -36,7 +36,7 @@ const BadgeComponent = ({ label, tone = 'neutral' }: BadgeProps) => {
 
   return (
     <View style={[styles.badge, toneStyle]}>
-      <Text variant="caption" color={TONE_TEXT[tone]} weight="600">
+      <Text variant="badge" color={TONE_TEXT[tone]}>
         {label}
       </Text>
     </View>

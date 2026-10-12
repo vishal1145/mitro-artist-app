@@ -12,7 +12,10 @@ import { authPasswordSchema, mobileSchema, stageNameSchema } from '@utils/valida
 export const registerSchema = z.object({
   username: stageNameSchema,
   mobile: mobileSchema,
-  password: authPasswordSchema,
+  // Same rules as the User app: 8+ chars, a number, an uppercase letter.
+  password: authPasswordSchema
+    .refine((v) => /\d/.test(v), 'Contains a number')
+    .refine((v) => /[A-Z]/.test(v), 'Contains an uppercase letter'),
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

@@ -34,7 +34,7 @@ import type {
   GroupCallConnectionResponse,
   GroupCallParticipant,
 } from '@app-types/groupCall';
-import { callUi, colors, fontFamily, radius, spacing } from '@theme';
+import { callUi, colors, fontFamily, fontSize, letterSpacing, lineHeight, radius, spacing } from '@theme';
 import { rf, wp } from '@utils/responsive';
 import { showToast } from '@utils/toast';
 
@@ -756,11 +756,11 @@ const styles = StyleSheet.create({
   headerName: { flexShrink: 1, fontFamily: fontFamily.bold },
   liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: radius.pill, backgroundColor: callUi.liveBadge },
   liveBadgeDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: callUi.white },
-  liveBadgeText: { fontFamily: fontFamily.extrabold, color: callUi.white, fontSize: rf(10.5), letterSpacing: 0.5 },
-  headerSub: { flexShrink: 1, fontFamily: fontFamily.semibold, color: callUi.headerSub, fontSize: rf(12) },
+  liveBadgeText: { fontFamily: fontFamily.extrabold, color: callUi.white, fontSize: fontSize.xs, letterSpacing: letterSpacing.small },
+  headerSub: { flexShrink: 1, fontFamily: fontFamily.semibold, color: callUi.headerSub, fontSize: fontSize.xs },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerPill: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 30, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: callUi.headerPill },
-  headerPillText: { fontFamily: fontFamily.bold, color: colors.textPrimary, fontSize: rf(12) },
+  headerPillText: { fontFamily: fontFamily.bold, color: colors.textPrimary, fontSize: fontSize.xs },
 
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.error, marginHorizontal: spacing.md, marginBottom: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md },
 
@@ -769,18 +769,18 @@ const styles = StyleSheet.create({
   videoAreaFull: { marginHorizontal: 0, marginTop: 0, marginBottom: 0, borderRadius: 0, borderWidth: 0 },
   stagePlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20 },
   gatePlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 28 },
-  gatePlaceholderTitle: { fontFamily: fontFamily.bold, fontSize: rf(15), color: colors.white },
-  gatePlaceholderHint: { lineHeight: rf(18) },
+  gatePlaceholderTitle: { fontFamily: fontFamily.bold, fontSize: fontSize.body, color: colors.white },
+  gatePlaceholderHint: { lineHeight: lineHeight.small },
   fsPill: { position: 'absolute', top: 12, left: 12, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 12, borderRadius: 999, backgroundColor: callUi.glassPill, borderWidth: 1, borderColor: callUi.glassPillBorder },
   /* Fullscreen is inside the same SafeAreaView — the status-bar inset is
      already paid for, so the controls ride the stage's very top edge. */
   fsPillFull: { top: 6 },
-  fsPillText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: callUi.white },
+  fsPillText: { fontFamily: fontFamily.bold, fontSize: fontSize.xs, color: callUi.white },
   connectingPill: { position: 'absolute', bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8, height: 34, paddingHorizontal: 14, borderRadius: 999, backgroundColor: callUi.glassPill, borderWidth: 1, borderColor: callUi.glassPillBorder },
-  connectingText: { fontFamily: fontFamily.bold, fontSize: rf(12.5), color: callUi.white },
+  connectingText: { fontFamily: fontFamily.bold, fontSize: fontSize.xs, color: callUi.white },
 
   // Sub-headers inside the participants panel (RoomPanel owns the top header)
-  subHeaderText: { fontFamily: fontFamily.bold, color: colors.textMuted, fontSize: rf(11), letterSpacing: 1.1 },
+  subHeaderText: { fontFamily: fontFamily.bold, color: colors.textMuted, fontSize: fontSize.xs, letterSpacing: letterSpacing.small },
   subHeaderRule: { flex: 1, height: 1, backgroundColor: callUi.hairline },
   subHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: 2 },
 
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   feedContent: { padding: spacing.sm, gap: spacing.sm },
   empty: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: spacing.xl },
   composeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.sm },
-  chatInput: { flex: 1, height: wp(10), backgroundColor: colors.glassSurface, borderRadius: radius.pill, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: rf(13) },
+  chatInput: { flex: 1, height: wp(10), backgroundColor: colors.glassSurface, borderRadius: radius.pill, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: fontSize.small },
   sendBtn: { width: wp(10), height: wp(10), borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
 
   viewerList: { padding: spacing.sm, gap: spacing.sm },

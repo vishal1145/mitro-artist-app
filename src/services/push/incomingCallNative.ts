@@ -13,6 +13,8 @@ interface IncomingCallNative {
   openFullScreenIntentSettings: () => void;
   cancel: (requestId: string) => void;
   cancelAll: () => void;
+  startRingtone: () => void;
+  stopRingtone: () => void;
 }
 
 const native: IncomingCallNative | null =
@@ -22,6 +24,15 @@ const FSI_PROMPTED_AT = 'mitro.incomingCall.fsiPromptedAt';
 const FSI_PROMPT_EVERY_MS = 24 * 60 * 60 * 1000;
 
 export const incomingCallNative = {
+  /** Looping system ringtone for the in-app dialog (foreground). */
+  startRingtone(): void {
+    native?.startRingtone?.();
+  },
+
+  stopRingtone(): void {
+    native?.stopRingtone?.();
+  },
+
   /** Stop the native ring for one request (handled / cancelled). */
   cancel(requestId: string): void {
     native?.cancel(requestId);

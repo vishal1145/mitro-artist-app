@@ -9,7 +9,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { Text } from '@components/ui';
 import { useVerificationGate } from '@hooks/useVerificationGate';
-import { colors, fontFamily, gradientDirection, gradients, layout } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, letterSpacing, lineHeight } from '@theme';
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
 
@@ -238,8 +238,8 @@ const styles = StyleSheet.create({
   label: {
     // Sentence case — the `label` type variant uppercases, so opt out here.
     fontFamily: fontFamily.bold,
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     textTransform: 'none',
   },
   labelActive: {
@@ -248,9 +248,9 @@ const styles = StyleSheet.create({
   // "LIVE" sits inside the circle, under the icon.
   liveLabel: {
     fontFamily: fontFamily.extrabold,
-    fontSize: 9,
-    lineHeight: 11,
-    letterSpacing: 0.6,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
+    letterSpacing: letterSpacing.small,
     color: colors.white,
   },
 });

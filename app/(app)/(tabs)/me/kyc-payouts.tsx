@@ -32,7 +32,7 @@ import { LucideIcon, Text, type LucideIconName } from '@components/ui';
 import { queryKeys } from '@constants/queryKeys';
 import { useBankAccount, useKyc } from '@hooks/useKyc';
 import { kycApi } from '@services/api';
-import { fontFamily, webColors, webGradients } from '@theme';
+import { fontFamily, fontSize, letterSpacing, lineHeight, webColors, webGradients } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { rf } from '@utils/responsive';
 import { showPopupToast } from '@utils/toast';
@@ -1062,9 +1062,9 @@ const styles = StyleSheet.create({
   h1: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(22),
-    letterSpacing: -0.22,
-    lineHeight: rf(27),
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
+    lineHeight: lineHeight.heading,
   },
 
   /* .priority-card (no box styling on this page) -------------------------- */
@@ -1077,8 +1077,8 @@ const styles = StyleSheet.create({
   big: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(16),
-    lineHeight: rf(24.8),
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 16,
   },
 
@@ -1125,8 +1125,8 @@ const styles = StyleSheet.create({
   dotNum: {
     color: webColors.dim,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(12),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   dotNumCurrent: {
     color: webColors.onGoldDeep,
@@ -1136,8 +1136,8 @@ const styles = StyleSheet.create({
     color: webColors.muted,
     flexShrink: 1,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   stepLblDone: {
     color: webColors.green,
@@ -1191,8 +1191,8 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flexShrink: 1,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   accChip: {
     backgroundColor: webColors.surfaceSoft,
@@ -1206,8 +1206,8 @@ const styles = StyleSheet.create({
   accChipText: {
     color: webColors.dim,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(10),
-    lineHeight: rf(13),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   accChipTextDone: {
     color: webColors.green,
@@ -1229,8 +1229,8 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: webColors.muted,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginBottom: 5,
   },
   fieldInput: {
@@ -1252,8 +1252,8 @@ const styles = StyleSheet.create({
     color: webColors.textStrong,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(19),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   /** Strip the platform's default TextInput chrome so it sits like the web's
    *  bare `<input>` inside the shared `.field-input` box. */
@@ -1264,8 +1264,8 @@ const styles = StyleSheet.create({
     color: webColors.placeholderInk,
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(12.5),
-    lineHeight: rf(19),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   /** `.field-row2 { grid-template-columns: 1fr 1fr; gap: 10px }` — no mobile
    *  override on the web, so the pair stays side by side here too. */
@@ -1301,7 +1301,7 @@ const styles = StyleSheet.create({
   pickerTitle: {
     color: webColors.textStrong,
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(15),
+    fontSize: fontSize.body,
     marginBottom: 12,
   },
   pickerRow: {
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
   pickerRowText: {
     color: webColors.textStrong,
     fontFamily: fontFamily.regular,
-    fontSize: rf(14),
+    fontSize: fontSize.small,
   },
   pickerRowTextActive: {
     color: webColors.purple,
@@ -1345,14 +1345,14 @@ const styles = StyleSheet.create({
   uploadStrong: {
     color: webColors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: rf(12.5),
-    lineHeight: rf(19),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   uploadSmall: {
     color: webColors.dim,
     fontFamily: fontFamily.regular,
-    fontSize: rf(10.5),
-    lineHeight: rf(16),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   btnUpload: {
     alignItems: 'center',
@@ -1376,8 +1376,8 @@ const styles = StyleSheet.create({
   btnUploadText: {
     color: webColors.uploadInk,
     fontFamily: fontFamily.bold,
-    fontSize: rf(11.5),
-    lineHeight: rf(15),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   btnUploadTextDone: {
     color: webColors.green,
@@ -1430,8 +1430,8 @@ const styles = StyleSheet.create({
   missingTitle: {
     color: '#EF4444',
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(13),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
     marginBottom: 8,
   },
   missingItem: {
@@ -1442,15 +1442,15 @@ const styles = StyleSheet.create({
   missingBullet: {
     color: '#FCA5A5',
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
   missingText: {
     color: '#FCA5A5',
     flex: 1,
     fontFamily: fontFamily.regular,
-    fontSize: rf(13),
-    lineHeight: rf(18),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 
   /* .kyc-submit ----------------------------------------------------------- */
@@ -1470,8 +1470,8 @@ const styles = StyleSheet.create({
   submitText: {
     color: '#FFFFFF',
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(14),
-    lineHeight: rf(19),
+    fontSize: fontSize.small,
+    lineHeight: lineHeight.small,
   },
 });
 

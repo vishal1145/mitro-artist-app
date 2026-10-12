@@ -7,7 +7,7 @@ import { Screen, SectionLabel, Skeleton } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
 import { useBroadcastAnalytics } from '@hooks/useInsights';
 import { usePendingRewardOrders } from '@hooks/useRewardOrders';
-import { colors, fontFamily, gradientDirection, gradients, layout, radius } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, letterSpacing, lineHeight, radius } from '@theme';
 import { grouped, initialsFrom, webDuration } from '@utils/format';
 import { pressable } from '@utils/press';
 import { rf } from '@utils/responsive';
@@ -219,13 +219,13 @@ const styles = StyleSheet.create({
   },
   earnedValue: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(46),
-    lineHeight: rf(52),
-    letterSpacing: -1,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
+    letterSpacing: letterSpacing.headingLg,
     color: colors.pink,
   },
   earnedUnit: {
-    letterSpacing: 1.8,
+    letterSpacing: letterSpacing.mono,
     marginTop: 2,
   },
 
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   ctaLabel: {
     fontFamily: fontFamily.extrabold,
-    fontSize: rf(15),
+    fontSize: fontSize.body,
     color: colors.white,
   },
   ghost: {

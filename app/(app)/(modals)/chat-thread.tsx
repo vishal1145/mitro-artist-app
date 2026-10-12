@@ -30,7 +30,7 @@ import {
 } from '@services/realtime/privateMessageHub';
 import { privateMessageInboxHub } from '@services/realtime/privateMessageInboxHub';
 import type { ArtistConversationSummary, PrivateMessageItem } from '@app-types/api';
-import { colors, fontFamily, gradientDirection, gradients, layout, radius, typography } from '@theme';
+import { colors, fontFamily, gradientDirection, gradients, layout, lineHeight, radius, typography } from '@theme';
 import { rf } from '@utils/responsive';
 
 const POLL_MS = 10000;
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 6,
   },
   bubbleOut: { backgroundColor: colors.textPrimary, borderBottomRightRadius: 6 },
-  bubbleText: { lineHeight: rf(18), flexShrink: 1, flexWrap: 'wrap' },
+  bubbleText: { lineHeight: lineHeight.small, flexShrink: 1, flexWrap: 'wrap' },
   deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.8 },
   deletedText: { fontStyle: 'italic' },
   quote: {

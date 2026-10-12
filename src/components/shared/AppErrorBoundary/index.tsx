@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@components/ui/Text';
-import { colors, fontFamily, radius } from '@theme';
+import { colors, fontFamily, fontSize, lineHeight, radius } from '@theme';
 import { pressable } from '@utils/press';
 import { rf } from '@utils/responsive';
 
@@ -104,8 +104,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stack: {
-    fontSize: rf(9),
-    lineHeight: rf(13),
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   retry: {
     flexDirection: 'row',

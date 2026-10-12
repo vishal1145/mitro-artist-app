@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@components/ui';
-import { colors, fontFamily, radius, spacing } from '@theme';
+import { colors, fontFamily, fontSize, letterSpacing, lineHeight, radius, spacing } from '@theme';
 import { rf } from '@utils/responsive';
 
 import { live } from './liveTokens';
@@ -177,13 +177,13 @@ const styles = StyleSheet.create({
   },
   titleWrap: { flex: 1, gap: 4 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  eyebrowText: { fontFamily: fontFamily.extrabold, fontSize: rf(12), letterSpacing: 0.3, color: live.gateEyebrow },
+  eyebrowText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: live.gateEyebrow },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { flexShrink: 1 },
   stats: { alignItems: 'flex-end', gap: 6 },
   offlinePill: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   offlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: live.offlineDot },
-  offlinePillText: { fontFamily: fontFamily.extrabold, fontSize: rf(11), letterSpacing: 0.5, color: colors.textPrimary },
+  offlinePillText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: colors.textPrimary },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
   progressBar: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   progressSegments: { flexDirection: 'row', gap: 6 },
   progSeg: { flex: 1, height: 4, borderRadius: 2, backgroundColor: live.progressTrack },
   progSegFilled: { backgroundColor: colors.pink },
-  progressText: { fontFamily: fontFamily.body, fontSize: rf(12.5), lineHeight: rf(19), color: colors.textSecondary },
+  progressText: { fontFamily: fontFamily.body, fontSize: fontSize.xs, lineHeight: lineHeight.mono, color: colors.textSecondary },
 
   stage: {
     flex: 1,
@@ -227,10 +227,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   cameraBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: live.offlineDot },
-  cameraBadgeText: { fontFamily: fontFamily.extrabold, fontSize: rf(10.5), letterSpacing: 0.4, color: colors.textPrimary },
+  cameraBadgeText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.xs, letterSpacing: letterSpacing.small, color: colors.textPrimary },
 
   start: { height: 52, borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.md },
   startBusy: { opacity: 0.8 },
   startFill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  startText: { fontFamily: fontFamily.extrabold, fontSize: rf(14), letterSpacing: 0.6, color: colors.white },
+  startText: { fontFamily: fontFamily.extrabold, fontSize: fontSize.small, letterSpacing: letterSpacing.small, color: colors.white },
 });

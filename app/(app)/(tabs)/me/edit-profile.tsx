@@ -57,6 +57,7 @@ import {
 import { getErrorMessage } from '@utils/errorHandler';
 import { showPopupToast } from '@utils/toast';
 
+import { fontSize, lineHeight, letterSpacing, fontFamily } from '@theme';
 /* --------------------------------------------------------------------------
  * Exact web palette — hardcoded, NOT the app theme tokens, so this replica of
  * the "Creator Profile Management" web screen matches pixel-for-pixel.
@@ -428,7 +429,7 @@ const CategoryPicker = ({
                   <Text
                     style={[
                       styles.pickerRowText,
-                      selected ? { color: C.pink, fontWeight: '700' } : null,
+                      selected ? { color: C.pink, fontFamily: fontFamily.semibold } : null,
                     ]}
                   >
                     {cat.name}
@@ -566,7 +567,7 @@ const CategorySubGroup = ({
                   <Text
                     style={[
                       styles.pickerRowText,
-                      selected ? { color: C.pink, fontWeight: '700' } : null,
+                      selected ? { color: C.pink, fontFamily: fontFamily.semibold } : null,
                     ]}
                   >
                     {sub.name}
@@ -1604,15 +1605,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   h1: {
-    fontWeight: '900',
-    fontSize: 24,
-    letterSpacing: -0.24,
+    fontFamily: fontFamily.semibold,
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
     color: C.text,
     marginBottom: 4,
   },
   subtitle: {
     color: C.dim,
-    fontSize: 13,
+    fontSize: fontSize.small,
   },
 
   /* Strength card */
@@ -1645,14 +1646,14 @@ const styles = StyleSheet.create({
   },
   eyebrowText: {
     color: C.gold,
-    fontSize: 10.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    letterSpacing: letterSpacing.small,
   },
   priorityBig: {
-    fontWeight: '900',
-    fontSize: 22,
-    letterSpacing: -0.22,
+    fontFamily: fontFamily.semibold,
+    fontSize: fontSize.heading,
+    letterSpacing: letterSpacing.heading,
     color: C.text,
     marginTop: 10,
     marginBottom: 6,
@@ -1669,8 +1670,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   stepChipText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   stepChipDone: {
     backgroundColor: 'rgba(66,245,167,0.12)',
@@ -1694,13 +1695,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringNumBig: {
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: fontSize.subheading,
+    fontFamily: fontFamily.semibold,
     color: C.text,
   },
   ringNumSmall: {
-    fontSize: 9,
-    letterSpacing: 0.36,
+    fontSize: fontSize.xs,
+    letterSpacing: letterSpacing.mono,
     color: C.dim,
     textTransform: 'uppercase',
   },
@@ -1717,8 +1718,8 @@ const styles = StyleSheet.create({
   },
   h2: {
     marginBottom: 12,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: fontSize.body,
+    fontFamily: fontFamily.semibold,
     color: C.text,
   },
 
@@ -1737,16 +1738,16 @@ const styles = StyleSheet.create({
   calloutText: {
     flex: 1,
     color: C.muted,
-    fontSize: 12,
-    lineHeight: 20,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
   },
   calloutBold: {
     color: C.text,
-    fontWeight: '700',
+    fontFamily: fontFamily.semibold,
   },
   learnLink: {
     color: C.cyan,
-    fontWeight: '700',
+    fontFamily: fontFamily.semibold,
     textDecorationLine: 'underline',
   },
 
@@ -1761,8 +1762,8 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 6,
     color: C.muted,
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   fieldInput: {
     flexDirection: 'row',
@@ -1784,7 +1785,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: C.text,
-    fontSize: 13,
+    fontSize: fontSize.small,
     padding: 0,
   },
   textarea2: {
@@ -1814,8 +1815,8 @@ const styles = StyleSheet.create({
   },
   pickerTitle: {
     color: C.text,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: fontSize.body,
+    fontFamily: fontFamily.semibold,
     marginBottom: 12,
   },
   pickerRow: {
@@ -1828,7 +1829,7 @@ const styles = StyleSheet.create({
   },
   pickerRowText: {
     color: C.text,
-    fontSize: 14,
+    fontSize: fontSize.small,
   },
 
   /* Avatar row */
@@ -1851,8 +1852,8 @@ const styles = StyleSheet.create({
     height: 60,
   },
   avatarBigText: {
-    fontWeight: '900',
-    fontSize: 20,
+    fontFamily: fontFamily.semibold,
+    fontSize: fontSize.subheading,
     color: '#fff',
   },
   btnFile: {
@@ -1868,8 +1869,8 @@ const styles = StyleSheet.create({
   },
   btnFileText: {
     color: C.text,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
 
   /* Buttons */
@@ -1888,8 +1889,8 @@ const styles = StyleSheet.create({
   },
   btnGhostSmText: {
     color: C.muted,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   btnPrimarySm: {
     borderRadius: 12,
@@ -1905,12 +1906,12 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: {
     color: '#fff',
-    fontSize: 12.5,
-    fontWeight: '800',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
     // Without an explicit lineHeight, Android sizes this from the font's own
     // metrics and then the rounded, overflow:hidden parent clips the result —
     // which is why the descender in "Save Profile" looked chopped off.
-    lineHeight: 18,
+    lineHeight: lineHeight.mono,
   },
 
   /* Change password */
@@ -1922,8 +1923,8 @@ const styles = StyleSheet.create({
   },
   pwToggleText: {
     color: C.text,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSize.small,
+    fontFamily: fontFamily.semibold,
   },
   pwBody: {
     marginTop: 10,
@@ -1938,7 +1939,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   passRuleText: {
-    fontSize: 14,
+    fontSize: fontSize.small,
     color: 'rgba(255,255,255,0.45)',
   },
   pwActions: {
@@ -1993,8 +1994,8 @@ const styles = StyleSheet.create({
   },
   galleryAddText: {
     color: C.dim,
-    fontSize: 10.5,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
 
   /* Save bar */
@@ -2019,9 +2020,9 @@ const styles = StyleSheet.create({
   },
   btnGhostText: {
     color: C.muted,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
+    fontSize: fontSize.small,
+    fontFamily: fontFamily.semibold,
+    lineHeight: lineHeight.small,
   },
   btnPrimary: {
     borderRadius: 12,
@@ -2049,8 +2050,8 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   tagCounter: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
     color: C.dim,
   },
   tagChipsWrap: {
@@ -2075,16 +2076,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,200,107,0.4)',
   },
   primaryBadge: {
-    fontSize: 9,
-    fontWeight: '900',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
     color: C.gold,
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.small,
     marginRight: 2,
   },
   tagChipText: {
     color: C.text,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   tagChipClose: {
     padding: 2,
@@ -2104,11 +2105,11 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   maxReachedText: {
-    fontSize: 11,
+    fontSize: fontSize.xs,
     color: C.dim,
     fontStyle: 'italic',
     marginTop: 2,
@@ -2132,13 +2133,13 @@ const styles = StyleSheet.create({
   },
   suggestionPillText: {
     color: C.muted,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   catHint: {
     color: C.dim,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginTop: -2,
     marginBottom: 10,
   },
@@ -2163,20 +2164,23 @@ const styles = StyleSheet.create({
   },
   modalDoneText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   pickerTrigger: {
     marginTop: 2,
   },
   previewHint: {
     color: C.dim,
-    fontSize: 12,
+    fontSize: fontSize.xs,
     marginTop: -4,
     marginBottom: 12,
   },
   previewMedia: {
-    height: 110,
+    // 3:4 card, same ratio fans see on the user app's artist card.
+    width: 160,
+    aspectRatio: 3 / 4,
+    alignSelf: 'center',
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: C.surfaceStrong,
@@ -2215,8 +2219,8 @@ const styles = StyleSheet.create({
   },
   previewBadgeText: {
     color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   previewIdRow: {
     flexDirection: 'row',
@@ -2241,8 +2245,8 @@ const styles = StyleSheet.create({
   },
   previewAvatarInitials: {
     color: C.pink,
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: fontSize.body,
+    fontFamily: fontFamily.semibold,
   },
   previewNameRow: {
     flexDirection: 'row',
@@ -2251,18 +2255,18 @@ const styles = StyleSheet.create({
   },
   previewStageName: {
     color: C.text,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: fontSize.body,
+    fontFamily: fontFamily.semibold,
   },
   previewMeta: {
     color: C.dim,
-    fontSize: 11,
+    fontSize: fontSize.xs,
     marginTop: 2,
   },
   previewBio: {
     color: C.muted,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginBottom: 12,
   },
   previewSection: {
@@ -2276,15 +2280,15 @@ const styles = StyleSheet.create({
   },
   previewSectionTitle: {
     color: C.dim,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.mono,
   },
   previewAboutText: {
     color: C.muted,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.mono,
     marginBottom: 8,
   },
   previewChip: {
@@ -2297,12 +2301,12 @@ const styles = StyleSheet.create({
   },
   previewChipText: {
     color: C.text,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
   },
   previewEmptyText: {
     color: C.dim,
-    fontSize: 11,
+    fontSize: fontSize.xs,
     fontStyle: 'italic',
   },
   previewStatsRow: {
@@ -2322,12 +2326,12 @@ const styles = StyleSheet.create({
   },
   previewStatVal: {
     color: C.gold,
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: fontSize.body,
+    fontFamily: fontFamily.semibold,
   },
   previewStatSub: {
     color: C.dim,
-    fontSize: 10,
+    fontSize: fontSize.xs,
     marginTop: 2,
   },
   previewGalleryStrip: {
