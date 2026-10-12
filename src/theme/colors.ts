@@ -251,6 +251,12 @@ export const gradients = {
   card: ['#2C1C52', '#170F30'] as const,
 
   hero: [palette.backgroundAlt, palette.backgroundAlt] as const,
+  /** Hero wash on top of the surface fill (web .dv2-hero background). */
+  heroWash: [
+    withAlpha(palette.pink, 0.22),
+    withAlpha(palette.violet, 0.26),
+    withAlpha(palette.cyan, 0.1),
+  ] as const,
   scrim: [withAlpha(palette.background, 0), palette.background] as const,
   glassHighlight: [
     withAlpha(palette.pink, 0),
