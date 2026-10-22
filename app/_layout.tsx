@@ -13,7 +13,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -30,6 +30,7 @@ import {
 } from '@store';
 import { colors } from '@theme';
 import { logger } from '@utils/logger';
+import { MAX_APP_WIDTH } from '@utils/responsive';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -168,6 +169,8 @@ const RootLayout = () => {
         <ThemeProvider value={navigationTheme}>
           <QueryClientProvider client={queryClient}>
             <StatusBar style="light" backgroundColor={colors.background} />
+            {/* Phone-width column: full width on every phone, centred on tablets / unfolded foldables. */}
+            <View style={styles.frame}>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -183,6 +186,7 @@ const RootLayout = () => {
             <NotificationToastHost />
             {/* Global incoming private-call pop-up — floats over any screen, above the tab bar. */}
             <IncomingCallOverlay />
+            </View>
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>
@@ -193,6 +197,13 @@ const RootLayout = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  frame: {
+    flex: 1,
+    width: '100%',
+    maxWidth: MAX_APP_WIDTH,
+    alignSelf: 'center',
   },
   stackContent: {
     backgroundColor: colors.background,

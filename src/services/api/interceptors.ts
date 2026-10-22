@@ -46,7 +46,7 @@ export const registerAuthHandlers = (handlers: {
 // generated once per install and kept in secure storage, so the same phone
 // logging in again replaces its own session instead of being blocked as
 // "another phone".
-const CLIENT_PLATFORM = Platform.OS === 'web' ? 'web' : 'android';
+const CLIENT_PLATFORM = Platform.OS === 'web' ? 'web' : Platform.OS === 'ios' ? 'ios' : 'android';
 let cachedDeviceId: string | null = null;
 
 const generateDeviceId = (): string =>

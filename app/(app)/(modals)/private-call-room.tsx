@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -109,6 +110,22 @@ const PrivateCallRoomScreen = () => {
     total: 0,
   });
   const [activity, setActivity] = useState<BroadcastActivityItem[]>([]);
+  // Reward + Fun-wheel spend lives in the activity feed (priceCharged), not in
+  // the per-minute cost pushes, so add it on top of cost.total.
+  const extraCoins = useMemo(
+    () =>
+      activity.reduce(
+        (sum, a) =>
+          (a.type === 'reward' || a.type === 'fun_wheel') &&
+          String(a.status) !== 'refunded' &&
+          String(a.status) !== 'cancelled'
+            ? sum + (a.priceCharged ?? 0)
+            : sum,
+        0,
+      ),
+    [activity],
+  );
+  const totalCoins = cost.total + extraCoins;
   const [pendingRewards, setPendingRewards] = useState<RewardOrder[]>([]);
   const [pendingSpins, setPendingSpins] = useState<FunWheelSpinOrder[]>([]);
   const [fulfillingId, setFulfillingId] = useState<string | null>(null);
@@ -625,11 +642,15 @@ const PrivateCallRoomScreen = () => {
             </View>
             <View style={styles.headerPill}>
               <Feather
-                name="dollar-sign"
+                name="disc"
                 size={rf(12)}
                 color={colors.textPrimary}
               />
-              <Text style={styles.headerPillText}>{cost.total}</Text>
+              {/* Coins the fan has spent on this call: per-minute charges plus
+                  every Reward / Fun-wheel purchase, updated live. */}
+              <Text style={styles.headerPillText}>
+                {totalCoins.toLocaleString()} Coins
+              </Text>
             </View>
           </View>
         </View>

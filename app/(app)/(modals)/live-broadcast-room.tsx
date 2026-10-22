@@ -12,6 +12,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AgoraVideoView } from '@components/call/AgoraVideoView';
+import { useKeyboardOverlap } from '@hooks/useKeyboard';
 import { ActivityRow, RoundChip } from '@components/live';
 import { BottomSheet, ConfirmDialog } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
@@ -73,6 +74,8 @@ const LiveBroadcastRoomScreen = () => {
   // Shown in the live header — overridden from the persisted record on rejoin
   // (when there's no sessionConfig param) so the real title/category still show.
   const [liveTitle, setLiveTitle] = useState(displayTitle);
+  // Header title: 2 lines by default, tap to read a long title in full.
+  const [titleOpen, setTitleOpen] = useState(false);
   const [liveCategory, setLiveCategory] = useState<string | undefined>(config.category);
 
   const [status, setStatus] = useState<'ready' | 'starting' | 'live'>('starting');
@@ -104,6 +107,16 @@ const LiveBroadcastRoomScreen = () => {
   const liveStartedRef = useRef(false);
   const endedRef = useRef(false);
   const chatRef = useRef<ScrollView>(null);
+  // Edge-to-edge Android doesn't shrink the window for the keyboard, so the
+  // room lifts itself: pad the bottom by the keyboard overlap and hide the
+  // action bar while typing so the chat + input sit right above the keyboard.
+  const keyboardOverlap = useKeyboardOverlap();
+  const typing = keyboardOverlap > 0;
+  useEffect(() => {
+    if (!typing) return;
+    const id = setTimeout(() => chatRef.current?.scrollToEnd({ animated: true }), 60);
+    return () => clearTimeout(id);
+  }, [typing]);
   const confirmResolveRef = useRef<(() => void) | null>(null);
   const videoAvailable = isAgoraAvailable();
 
@@ -369,7 +382,7 @@ const LiveBroadcastRoomScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, typing && { paddingBottom: keyboardOverlap }]} edges={typing ? ['top'] : ['top', 'bottom']}>
       {/* Header — stream title · category · LIVE / timer / viewers */}
       {!isFullscreen ? (
         <View style={styles.header}>
@@ -379,7 +392,7 @@ const LiveBroadcastRoomScreen = () => {
                 {status === 'live' ? <View style={styles.liveBadgeDot} /> : null}
                 <Text style={styles.liveBadgeText}>{status === 'live' ? 'LIVE' : 'GOING LIVE'}</Text>
               </View>
-              <Text variant="bodyLg" color="textPrimary" numberOfLines={1} style={styles.headerName}>{liveTitle}</Text>
+              <Text variant="bodyLg" color="textPrimary" numberOfLines={titleOpen ? undefined : 2} style={styles.headerName} onPress={() => setTitleOpen((v) => !v)} accessibilityRole="button" accessibilityHint="Show or hide the full title">{liveTitle}</Text>
             </View>
             <Text style={styles.headerSub} numberOfLines={1}>{liveCategory || 'Live now'}</Text>
           </View>
@@ -404,7 +417,7 @@ const LiveBroadcastRoomScreen = () => {
       ) : null}
 
       {/* ── Video area ── */}
-      <View style={[styles.videoArea, isFullscreen && styles.videoAreaFull]}>
+      <View style={[styles.videoArea, isFullscreen && styles.videoAreaFull, !isFullscreen && typing && styles.videoAreaCompact]}>
         {videoAvailable && camOn ? (
           <AgoraVideoView key={videoKey} uid={0} style={StyleSheet.absoluteFill} />
         ) : (
@@ -497,7 +510,7 @@ const LiveBroadcastRoomScreen = () => {
       ) : null}
 
       {/* ── Round action bar ── */}
-      {!isFullscreen ? (
+      {!isFullscreen && !typing ? (
         <View style={styles.roundBar}>
           <RoundChip variant="danger" icon="phone-off" label="End show" onPress={() => setConfirmingEnd(true)} />
           <RoundChip variant="neutral" icon="message-circle" label="Chat" onPress={() => setPanel((p) => (p === 'chat' ? null : 'chat'))} active={panel === 'chat'} />
@@ -589,7 +602,7 @@ const LiveBroadcastRoomScreen = () => {
                 <Text style={styles.confirmEyebrowText}>Stream studio</Text>
               </View>
               <View style={styles.confirmTitleRow}>
-                <Text variant="h2" color="textPrimary" numberOfLines={1} style={styles.confirmTitle}>{displayTitle}</Text>
+                <Text variant="h2" color="textPrimary" numberOfLines={3} style={styles.confirmTitle}>{displayTitle}</Text>
                 <Feather name="mic" size={rf(15)} color={colors.textMuted} />
               </View>
             </View>
@@ -831,6 +844,7 @@ const styles = StyleSheet.create({
 
   // Video area
   videoArea: { flex: 1, marginHorizontal: spacing.md, marginTop: spacing.xs, marginBottom: spacing.sm, borderRadius: 22, backgroundColor: '#090716', position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(140,77,255,0.55)', alignItems: 'center', justifyContent: 'center' },
+  videoAreaCompact: { flex: 0.7, minHeight: 64, marginBottom: spacing.xs },
   videoAreaFull: { marginHorizontal: 0, marginTop: 0, marginBottom: 0, borderRadius: 0, borderWidth: 0 },
   fsPill: { position: 'absolute', top: 12, left: 12, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 12, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.66)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
   /* Fullscreen is inside the same SafeAreaView — the status-bar inset is

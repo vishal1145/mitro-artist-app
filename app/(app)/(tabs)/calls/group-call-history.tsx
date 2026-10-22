@@ -256,7 +256,7 @@ const GroupCallHistoryScreen = () => {
                           >
                             <View style={styles.callMain}>
                               <View style={styles.callTitleRow}>
-                                <Text numberOfLines={1} style={styles.callTitle}>
+                                <Text numberOfLines={2} style={styles.callTitle}>
                                   {item.title}
                                 </Text>
                                 <View style={statusChip(item.status)}>

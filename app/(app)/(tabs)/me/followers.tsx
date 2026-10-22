@@ -7,7 +7,6 @@ import {
   RefreshControl,
   StyleSheet,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -25,7 +24,7 @@ import { useDebounce } from '@hooks/useDebounce';
 import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, letterSpacing, lineHeight, webColors } from '@theme';
 import { getErrorMessage } from '@utils/errorHandler';
 import { grouped } from '@utils/format';
-import { rf } from '@utils/responsive';
+import { rf, useAppWidth } from '@utils/responsive';
 
 import type { Follower, FollowerBadge } from '@app-types/api';
 
@@ -144,7 +143,7 @@ const FollowersScreen = () => {
   const [tab, setTab] = useState<TabKey>('all');
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query);
-  const { width: winW } = useWindowDimensions();
+  const winW = useAppWidth();
   /** `.fl-grid` — two columns at phone width, 16px gap. */
   const cardW = Math.floor((winW - layout.screenPadding * 2 - 16) / 2);
 

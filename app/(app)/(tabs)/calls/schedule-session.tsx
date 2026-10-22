@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { PageHeader, Screen } from '@components/shared';
@@ -77,6 +77,7 @@ const ScheduleSessionScreen = () => {
   const [mode, setMode] = useState<'video' | 'audio'>('video');
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [creating, setCreating] = useState(false);
+  const submitting = useRef(false);
   /** Blocks the form until we know whether a call is already running. */
   const [checkingActive, setCheckingActive] = useState(true);
 
@@ -140,7 +141,10 @@ const ScheduleSessionScreen = () => {
   const canSchedule = missing.length === 0 && seatsNum > 0 && priceNum >= 0;
 
   const schedule = async () => {
-    if (creating) {
+    // Synchronous lock: `creating` is React state and only flips on the next
+    // render, so a fast double-tap could slip through. The ref blocks it
+    // immediately, and stays locked until we navigate away (or it fails).
+    if (creating || submitting.current) {
       return;
     }
     if (!title.trim()) {
@@ -176,6 +180,7 @@ const ScheduleSessionScreen = () => {
       return;
     }
 
+    submitting.current = true;
     setCreating(true);
     const res = await groupCallApi.create({
       title: title.trim(),
@@ -187,9 +192,11 @@ const ScheduleSessionScreen = () => {
       scheduledStartAtUtc,
       expectedDurationMinutes: parseInt(duration, 10) || undefined,
     });
-    setCreating(false);
-
     if (!res.success) {
+      // Only a failure re-enables the button. On success it stays disabled
+      // ("Scheduling...") through the follow-up calls until the room opens.
+      submitting.current = false;
+      setCreating(false);
       showToast(res.error, 'error');
       return;
     }

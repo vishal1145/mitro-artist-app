@@ -20,6 +20,11 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   /** Static text before the field, separated by a rule (e.g. a "+91" dial code). */
   prefix?: string;
   disabled?: boolean;
+  /**
+   * 'auth' = the larger login/sign-up field (56pt tall, 18 radius, 16pt text) that
+   * matches the user app's auth screens. Default keeps the compact field.
+   */
+  variant?: 'default' | 'auth';
   /** Shows a live character counter (requires maxLength). */
   showCounter?: boolean;
   containerStyle?: StyleProp<ViewStyle>;

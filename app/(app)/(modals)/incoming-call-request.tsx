@@ -1,10 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Vibration, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Text } from '@components/ui';
+import { incomingCallAlert } from '@services/incomingCallAlert';
 import { privateCallApi } from '@services/api/privateCallApi';
 import { incomingCallNative } from '@services/push/incomingCallNative';
 import { colors, fontFamily, radius, spacing } from '@theme';
@@ -43,15 +44,17 @@ const IncomingCallRequestScreen = () => {
   const settled = useRef(false);
 
   useEffect(() => {
-    // Vibrate phone while ringing (pattern: wait 0ms, vibrate 800ms, wait 600ms, repeat)
-    Vibration.vibrate([0, 800, 600, 800, 600], true);
+    // Ring (looping system ringtone) AND vibrate while the request is pending -
+    // same as the in-app overlay and the website's incomingCallAlert. This
+    // screen used to only vibrate, so the call was silent.
+    incomingCallAlert.start();
     return () => {
-      Vibration.cancel();
+      incomingCallAlert.stop();
     };
   }, []);
 
   const dismiss = useCallback(() => {
-    Vibration.cancel();
+    incomingCallAlert.stop();
     if (requestId) incomingCallNative.cancel(requestId);
     if (settled.current) return;
     settled.current = true;
@@ -61,7 +64,7 @@ const IncomingCallRequestScreen = () => {
 
   const accept = useCallback(async () => {
     if (settled.current || !requestId) return;
-    Vibration.cancel();
+    incomingCallAlert.stop();
     incomingCallNative.cancel(requestId);
     setBusy('accept');
     const res = await privateCallApi.acceptRequest(requestId);
@@ -91,7 +94,7 @@ const IncomingCallRequestScreen = () => {
 
   const reject = useCallback(async () => {
     if (settled.current || !requestId) return;
-    Vibration.cancel();
+    incomingCallAlert.stop();
     incomingCallNative.cancel(requestId);
     setBusy('reject');
     await privateCallApi.rejectRequest(requestId, 'Not available right now');

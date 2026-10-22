@@ -26,6 +26,8 @@
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
+        "NSCameraUsageDescription": "Mitro needs camera access for video calls and live broadcasts.",
+        "NSMicrophoneUsageDescription": "Mitro needs microphone access for calls and live broadcasts.",
         "UIBackgroundModes": [
           "remote-notification"
         ]
@@ -62,6 +64,7 @@
       ],
       "./plugins/withNotificationColorMergeFix",
       "./plugins/withIncomingCallNotification",
+      "./plugins/withNoAutofillHighlight",
       [
         "expo-image-picker",
         {

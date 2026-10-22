@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgoraVideoView } from '@components/call/AgoraVideoView';
+import { useKeyboardOverlap } from '@hooks/useKeyboard';
 import { ActivityRow, RoomPanel, RoomStartGate, RoundChip, StageControls } from '@components/live';
 import { BottomSheet, ConfirmDialog } from '@components/shared';
 import { Avatar, Text } from '@components/ui';
@@ -81,6 +82,8 @@ const GroupCallRoomScreen = () => {
   // Seeded from the params for a fresh room; overwritten from the stored
   // record when we rejoin a call the artist walked out of (no params then).
   const [displayTitle, setDisplayTitle] = useState((config.title || 'Group Call').trim());
+  // Header title: 2 lines by default, tap to read a long title in full.
+  const [titleOpen, setTitleOpen] = useState(false);
   const [maxParticipants, setMaxParticipants] = useState(config.maxParticipants ?? 8);
   const [isAudioOnly, setIsAudioOnly] = useState(config.mode === 'audio');
 
@@ -114,6 +117,16 @@ const GroupCallRoomScreen = () => {
   const liveStartedRef = useRef(false);
   const endedRef = useRef(false);
   const chatRef = useRef<ScrollView>(null);
+  // Edge-to-edge Android doesn't shrink the window for the keyboard, so the
+  // room lifts itself: pad the bottom by the keyboard overlap and hide the
+  // action bar while typing so the chat + input sit right above the keyboard.
+  const keyboardOverlap = useKeyboardOverlap();
+  const typing = keyboardOverlap > 0;
+  useEffect(() => {
+    if (!typing) return;
+    const id = setTimeout(() => chatRef.current?.scrollToEnd({ animated: true }), 60);
+    return () => clearTimeout(id);
+  }, [typing]);
   const confirmResolveRef = useRef<(() => void) | null>(null);
   const videoAvailable = isAgoraAvailable();
 
@@ -453,7 +466,7 @@ const GroupCallRoomScreen = () => {
       : { title: 'Camera is off', hint: 'Turn it back on to show your live feed.' };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, typing && { paddingBottom: keyboardOverlap }]} edges={typing ? ['top'] : ['top', 'bottom']}>
       {/* Header — call title · seats · LIVE / timer / in-room count */}
       {!isFullscreen ? (
         <View style={styles.header}>
@@ -463,7 +476,7 @@ const GroupCallRoomScreen = () => {
                 {status === 'live' ? <View style={styles.liveBadgeDot} /> : null}
                 <Text style={styles.liveBadgeText}>{status === 'live' ? 'LIVE' : 'CONNECTING'}</Text>
               </View>
-              <Text variant="bodyLg" color="textPrimary" numberOfLines={1} style={styles.headerName}>{displayTitle}</Text>
+              <Text variant="bodyLg" color="textPrimary" numberOfLines={titleOpen ? undefined : 2} style={styles.headerName} onPress={() => setTitleOpen((v) => !v)} accessibilityRole="button" accessibilityHint="Show or hide the full title">{displayTitle}</Text>
             </View>
             <Text style={styles.headerSub} numberOfLines={1}>
               {isAudioOnly ? 'Audio-only group call' : 'Group call'}
@@ -490,7 +503,7 @@ const GroupCallRoomScreen = () => {
       ) : null}
 
       {/* ── Video area ── */}
-      <View style={[styles.videoArea, isFullscreen && styles.videoAreaFull]}>
+      <View style={[styles.videoArea, isFullscreen && styles.videoAreaFull, !isFullscreen && typing && styles.videoAreaCompact]}>
         {videoAvailable && camOn && !isAudioOnly ? (
           <AgoraVideoView key={videoKey} uid={0} style={StyleSheet.absoluteFill} />
         ) : (
@@ -609,7 +622,7 @@ const GroupCallRoomScreen = () => {
       ) : null}
 
       {/* ── Round action bar ── */}
-      {!isFullscreen ? (
+      {!isFullscreen && !typing ? (
         <View style={styles.roundBar}>
           <RoundChip variant="danger" icon="phone-off" label="End call" onPress={() => setConfirmingEnd(true)} />
           <RoundChip variant="neutral" icon="message-circle" label="Chat" onPress={() => setPanel((p) => (p === 'chat' ? null : 'chat'))} active={panel === 'chat'} />
@@ -766,6 +779,7 @@ const styles = StyleSheet.create({
 
   // Video area
   videoArea: { flex: 1, marginHorizontal: spacing.md, marginTop: spacing.xs, marginBottom: spacing.sm, borderRadius: 22, backgroundColor: callUi.stageFill, position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: callUi.stageBorder, alignItems: 'center', justifyContent: 'center' },
+  videoAreaCompact: { flex: 0.7, minHeight: 64, marginBottom: spacing.xs },
   videoAreaFull: { marginHorizontal: 0, marginTop: 0, marginBottom: 0, borderRadius: 0, borderWidth: 0 },
   stagePlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20 },
   gatePlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 28 },

@@ -45,6 +45,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     leftIcon,
     prefix,
     disabled = false,
+    variant = 'default',
     showCounter = false,
     maxLength,
     value,
@@ -92,6 +93,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       <View
         style={[
           styles.field,
+          variant === 'auth' ? styles.fieldAuth : null,
           focused ? styles.fieldFocused : null,
           hasError ? styles.fieldError : null,
           disabled ? styles.fieldDisabled : null,
@@ -123,7 +125,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           selectionColor={colors.primary}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          style={styles.input}
+          style={[styles.input, variant === 'auth' ? styles.inputAuth : null]}
           accessibilityLabel={label}
           accessibilityHint={accessibilityHint}
           accessibilityState={{ disabled }}
@@ -202,6 +204,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.input,
     paddingHorizontal: layout.inputPadding,
   },
+  // Same dimensions as the user app's AuthField: 56 tall, 18 radius.
+  fieldAuth: {
+    height: rf(56),
+    borderRadius: 18,
+  },
   fieldFocused: {
     borderColor: colors.inputBorderFocused,
   },
@@ -230,6 +237,14 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.textPrimary,
     paddingVertical: spacing.sm,
+  },
+  // 16/24 text with no vertical padding, so descenders (p, g, y) are never clipped.
+  inputAuth: {
+    fontSize: rf(16),
+    lineHeight: rf(24),
+    letterSpacing: -0.19,
+    paddingVertical: 0,
+    height: '100%',
   },
   toggle: {
     paddingLeft: spacing.xs,

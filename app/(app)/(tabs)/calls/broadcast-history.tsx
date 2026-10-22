@@ -348,7 +348,7 @@ const BroadcastHistoryScreen = () => {
                       accessibilityRole="button"
                       accessibilityLabel={`${item.title}, ${isOpen ? 'hide' : 'show'} analytics`}
                     >
-                      <Text numberOfLines={1} style={styles.showTitle}>
+                      <Text numberOfLines={2} style={styles.showTitle}>
                         {item.title}
                       </Text>
                       <Text style={styles.showMeta}>

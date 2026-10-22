@@ -78,7 +78,7 @@ const ListRowComponent = ({
         ) : null)}
 
       <View style={styles.body}>
-        <Text variant="link" color="textPrimary" numberOfLines={1}>
+        <Text variant="link" color="textPrimary" numberOfLines={2}>
           {title}
         </Text>
         {subtitle ? (

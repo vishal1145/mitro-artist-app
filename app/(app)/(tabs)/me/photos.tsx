@@ -17,7 +17,7 @@ import {
 import { Text } from '@components/ui';
 import { usePhotoGallery } from '@screens/profile/photos/usePhotoGallery';
 import { colors, fontFamily, layout, radius } from '@theme';
-import { rf, SCREEN } from '@utils/responsive';
+import { rf, SCREEN, useAppWidth } from '@utils/responsive';
 
 const COLUMNS = 3;
 const GAP = 10;
@@ -27,6 +27,9 @@ const TILE =
 
 /** Photo gallery — UI only. Logic in usePhotoGallery(). */
 const PhotosScreen = () => {
+  const appW = useAppWidth();
+  const tile = (appW - layout.screenPadding * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
+  const tileSize = { width: tile, height: tile };
   const router = useRouter();
   const {
     photos,
@@ -73,7 +76,7 @@ const PhotosScreen = () => {
       {isLoading ? (
         <View style={styles.grid}>
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} width={TILE} height={TILE} round={radius.card} />
+            <Skeleton key={i} width={tile} height={tile} round={radius.card} />
           ))}
         </View>
       ) : loadError ? (
@@ -91,7 +94,7 @@ const PhotosScreen = () => {
           {photos.map((photo) => (
             <Pressable
               key={photo.id}
-              style={styles.tile}
+              style={[styles.tile, tileSize]}
               onPress={() => openViewer(photo)}
               accessibilityRole="imagebutton"
               accessibilityLabel="Open photo"
@@ -125,7 +128,7 @@ const PhotosScreen = () => {
           {/* Add tile sits in the grid so it's always the next slot. */}
           <Pressable
             onPress={addPhoto}
-            style={[styles.tile, styles.addTile]}
+            style={[styles.tile, styles.addTile, tileSize]}
             accessibilityRole="button"
             accessibilityLabel="Add photo"
           >

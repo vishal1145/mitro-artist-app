@@ -40,7 +40,7 @@ const TimelineRowComponent = ({
       </View>
 
       <View style={styles.text}>
-        <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>
+        <Text variant="bodyLg" color="textPrimary" numberOfLines={2}>
           {title}
         </Text>
         <Text variant="bodySm" color="textMuted" numberOfLines={1}>

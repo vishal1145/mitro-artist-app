@@ -86,7 +86,7 @@ export const RoomStartGate = memo(
             <Text style={styles.eyebrowText}>{eyebrow}</Text>
           </View>
           <View style={styles.titleRow}>
-            <Text variant="h2" color="textPrimary" numberOfLines={1} style={styles.title}>
+            <Text variant="h2" color="textPrimary" numberOfLines={3} style={styles.title}>
               {title}
             </Text>
           </View>

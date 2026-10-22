@@ -1,16 +1,17 @@
+import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EarningsBar, Screen, Skeleton, VerificationBanner } from '@components/shared';
-import { Button, Card, GradientButton, LucideIcon, Text } from '@components/ui';
+import { Card, GradientButton, LucideIcon, Text } from '@components/ui';
 import type { LucideIconName } from '@components/ui';
 import { useBroadcastHistory, useEarningsSummary } from '@hooks/useInsights';
 import { useFollowers } from '@hooks/useFollowers';
 import { useVerificationGate } from '@hooks/useVerificationGate';
 import { useNotificationStore } from '@store';
-import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, lineHeight, radius, spacing, typography, webColors } from '@theme';
+import { colors, fontFamily, fontSize, gradientDirection, gradients, layout, lineHeight, radius, size, spacing, typography, webColors } from '@theme';
 import { compactCount, duration, formatTokens, grouped, relativeShort, shortDate } from '@utils/format';
 import { notificationVisual } from '@utils/notifications';
 import { rf } from '@utils/responsive';
@@ -169,8 +170,30 @@ const HomeScreen = () => {
 
         <View style={styles.heroActions}>
           <GradientButton label="Start Live" leftIcon="radio" fullWidth={false} onPress={() => guard(() => router.push('/(app)/(tabs)/live'))} />
-          <Button variant="secondary" style={styles.heroBtn} fullWidth={false} label="Schedule Session" leftIcon="calendar" onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))} />
-          <Button variant="secondary" style={styles.heroBtn} fullWidth={false} label="Private Calls" leftIcon="phone" onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))} />
+          <View style={styles.heroBtn}>
+            <Pressable
+              style={styles.heroBtnPress}
+              android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+              onPress={() => guard(() => router.push('/(app)/(tabs)/calls/schedule-session'))}
+              accessibilityRole="button"
+              accessibilityLabel="Schedule Session"
+            >
+              <Feather name="calendar" size={rf(18)} color={colors.textPrimary} />
+              <Text variant="button" color="textPrimary" numberOfLines={1}>Schedule Session</Text>
+            </Pressable>
+          </View>
+          <View style={styles.heroBtn}>
+            <Pressable
+              style={styles.heroBtnPress}
+              android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+              onPress={() => guard(() => router.push('/(app)/(tabs)/calls/private-calls'))}
+              accessibilityRole="button"
+              accessibilityLabel="Private Calls"
+            >
+              <Feather name="phone" size={rf(18)} color={colors.textPrimary} />
+              <Text variant="button" color="textPrimary" numberOfLines={1}>Private Calls</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -226,7 +249,7 @@ const HomeScreen = () => {
                 <LucideIcon name="radio" size={rf(16)} color={b.endReason === CLEAN_END ? colors.pink : colors.gold} />
               </View>
               <View style={styles.bcastMain}>
-                <Text variant="bodyLg" color="textPrimary" numberOfLines={1}>{b.title}</Text>
+                <Text variant="bodyLg" color="textPrimary" numberOfLines={2}>{b.title}</Text>
                 <Text variant="label" color="textSecondary" numberOfLines={1} style={styles.bcastMeta}>
                   {shortDate(b.startedAtUtc)} · {duration(b.durationSeconds)} · Peak {compactCount(b.peakViewerCount)} viewers
                 </Text>
@@ -344,8 +367,24 @@ const styles = StyleSheet.create({
   heroPillText: {
     ...typography.bodySm,
   },
-  // Secondary hero buttons sit over the photo, so they need a solid fill + stronger border to read as buttons.
-  heroBtn: { backgroundColor: colors.glassSurface, borderColor: colors.borderStrong },
+  // Schedule Session / Private Calls: same bordered box as the hero pills
+  // ("coins pending" etc.) - soft fill, 1px border, pill radius.
+  heroBtn: {
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.button,
+    overflow: 'hidden',
+  },
+  heroBtnPress: {
+    height: size.cta,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+  },
+  heroBtnPressed: { opacity: 0.8 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
 
   calloutStrong: { fontFamily: fontFamily.bold, color: colors.textPrimary },

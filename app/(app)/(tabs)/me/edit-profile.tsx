@@ -1421,7 +1421,7 @@ const EditProfileScreen = () => {
                   <Text style={styles.previewBadgeText}>Fans see this</Text>
                 </View>
                 {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={styles.previewCoverImg} contentFit="cover" />
+                  <PreviewCover uri={avatarUrl} />
                 ) : (
                   <View style={styles.previewCoverPlaceholder}>
                     <LucideIcon name="mic" size={26} color={C.pink} />
@@ -1572,6 +1572,22 @@ const EditProfileScreen = () => {
         onCancel={avatar.cancel}
       />
     </View>
+  );
+};
+
+/** Public preview photo in its own shape - the whole picture, no crop, no empty bands. */
+const PreviewCover = ({ uri }: { uri: string }) => {
+  const [ratio, setRatio] = useState<number | null>(null);
+  return (
+    <Image
+      source={{ uri }}
+      style={[styles.previewCoverImg, ratio ? { aspectRatio: ratio } : null]}
+      contentFit="cover"
+      onLoad={(e) => {
+        const { width, height } = e.source;
+        if (width > 0 && height > 0) setRatio(Math.min(2, Math.max(0.5, width / height)));
+      }}
+    />
   );
 };
 
@@ -2179,7 +2195,6 @@ const styles = StyleSheet.create({
   previewMedia: {
     // 3:4 card, same ratio fans see on the user app's artist card.
     width: 160,
-    aspectRatio: 3 / 4,
     alignSelf: 'center',
     borderRadius: 14,
     overflow: 'hidden',
@@ -2192,9 +2207,11 @@ const styles = StyleSheet.create({
   },
   previewCoverImg: {
     width: '100%',
-    height: '100%',
+    aspectRatio: 3 / 4,
   },
   previewCoverPlaceholder: {
+    width: '100%',
+    aspectRatio: 3 / 4,
     alignItems: 'center',
     justifyContent: 'center',
   },

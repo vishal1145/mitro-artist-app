@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -25,11 +25,29 @@ const MODES: readonly [AuthToggleOption<IdentifierMode>, AuthToggleOption<Identi
 const LoginScreen = () => {
   // `submitError` is intentionally not read here — a failed login surfaces as
   // the top popup toast raised in useLogin(), not as text under the form.
-  const { control, isValid, isSubmitting, handleSubmit, goToRegister, goToForgotPassword } =
-    useLogin();
+  const {
+    control,
+    isValid,
+    isSubmitting,
+    handleSubmit,
+    getIdentifier,
+    setIdentifier,
+    goToRegister,
+    goToForgotPassword,
+  } = useLogin();
 
   const [mode, setMode] = useState<IdentifierMode>('mobile');
   const mobile = mode === 'mobile';
+
+  // Mobile Number and Stage Name are two separate fields: each tab keeps its
+  // own text, and switching tabs never carries one tab's entry into the other.
+  const drafts = useRef<Record<IdentifierMode, string>>({ mobile: '', stage: '' });
+  const handleModeChange = (next: IdentifierMode) => {
+    if (next === mode) return;
+    drafts.current[mode] = getIdentifier();
+    setMode(next);
+    setIdentifier(drafts.current[next]);
+  };
 
   return (
     <Screen
@@ -50,17 +68,20 @@ const LoginScreen = () => {
         </View>
 
         <View style={styles.toggle}>
-          <AuthToggle options={MODES} value={mode} onChange={setMode} />
+          <AuthToggle options={MODES} value={mode} onChange={handleModeChange} />
         </View>
 
         <View style={styles.fields}>
           <FormInput
+            // key remounts the native input per tab, so each tab is its own field.
+            key={mode}
+            variant="auth"
             control={control}
             name="identifier"
             // Same field either way — the mode only changes how it's entered.
             prefix={mobile ? '+91' : undefined}
             leftIcon={mobile ? undefined : 'at-sign'}
-            placeholder={mobile ? '00000 00000' : 'yourstagename'}
+            placeholder={mobile ? 'Enter mobile number' : 'Enter your stage name'}
             keyboardType={mobile ? 'number-pad' : 'default'}
             autoCapitalize="none"
             autoComplete="username"
@@ -70,6 +91,7 @@ const LoginScreen = () => {
           />
 
           <FormInput
+            variant="auth"
             control={control}
             name="password"
             placeholder="Enter your password"

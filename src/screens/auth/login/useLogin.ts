@@ -22,6 +22,8 @@ export const useLogin = (): UseLoginResult => {
   const {
     control,
     handleSubmit,
+    getValues,
+    setValue,
     formState: { isValid, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -80,6 +82,8 @@ export const useLogin = (): UseLoginResult => {
     submitError,
     socialNotice,
     handleSubmit: handleSubmit(onSubmit),
+    getIdentifier: () => getValues('identifier'),
+    setIdentifier: (value: string) => setValue('identifier', value, { shouldValidate: true }),
     onSocialLogin,
     goToRegister: () => router.push('/(auth)/register'),
     goToForgotPassword: () => router.push('/(auth)/forgot-password'),

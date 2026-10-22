@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   withAndroidManifest,
+  withAppBuildGradle,
   withDangerousMod,
   withMainApplication,
 } = require('@expo/config-plugins');
@@ -129,7 +130,24 @@ const withPackageRegistration = (config) =>
     return cfg;
   });
 
+// IncomingCallMessagingService.kt uses com.google.firebase.messaging.RemoteMessage, but
+// @react-native-firebase/messaging declares firebase-messaging as `implementation`, so it
+// is not on the app module's compile classpath. Add it explicitly (same BoM as RNFirebase).
+const withFirebaseMessagingDependency = (config) =>
+  withAppBuildGradle(config, (cfg) => {
+    let src = cfg.modResults.contents;
+    if (src.includes('com.google.firebase:firebase-messaging')) return cfg;
+    const bom = require('@react-native-firebase/app/package.json').sdkVersions.android.firebase;
+    const deps =
+      `    implementation platform("com.google.firebase:firebase-bom:${bom}")\n` +
+      `    implementation "com.google.firebase:firebase-messaging"\n`;
+    src = src.replace(/^dependencies\s*\{\r?\n/m, (m) => m + deps);
+    cfg.modResults.contents = src;
+    return cfg;
+  });
+
 module.exports = function withIncomingCallNotification(config) {
+  config = withFirebaseMessagingDependency(config);
   config = withManifest(config);
   config = withKotlinSources(config);
   config = withPackageRegistration(config);
